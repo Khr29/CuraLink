@@ -11,7 +11,7 @@
 // export const sendEmail = async (to, subject, text) => {
 //   try {
 //     await transporter.sendMail({
-//       from: `"MediLink" <${process.env.EMAIL_USER}>`,
+//       from: `"CuraLink" <${process.env.EMAIL_USER}>`,
 //       to,
 //       subject,
 //       text,html
@@ -33,7 +33,7 @@ const transporter = nodemailer.createTransport({
 export const sendEmail = async (to, subject, html) => {
   try {
     await transporter.sendMail({
-      from: `"MediLink" <${process.env.EMAIL_USER}>`,
+      from: `"CuraLink" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html   // ✅ only html

@@ -17,9 +17,9 @@ const Footer = () => (
 
         {/* Brand */}
         <div className="lg:col-span-2">
-          <img src={assets.logo} alt="Medilink" className="h-9 w-auto brightness-200 mb-4" />
+          <img src={assets.logo} alt="CuraLink" className="h-9 w-auto brightness-200 mb-4" />
           <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
-            Medilink connects patients with trusted, verified doctors across India. Book appointments online in minutes, anytime, anywhere.
+            CuraLink connects patients with trusted, verified doctors across India. Book appointments online in minutes, anytime, anywhere.
           </p>
 
           {/* Social */}
@@ -104,7 +104,7 @@ const Footer = () => (
 
       {/* Bottom bar */}
       <div className="mt-12 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-        <p>© {new Date().getFullYear()} Medilink. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} CuraLink. All rights reserved.</p>
         <div className="flex gap-4">
           <button className="hover:text-slate-300 transition-colors">Terms</button>
           <button className="hover:text-slate-300 transition-colors">Privacy</button>

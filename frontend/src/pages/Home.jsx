@@ -72,7 +72,7 @@ const WHY = [
 const WhyChooseUs = () => (
   <section className="py-16 px-4 bg-gradient-section">
     <div className="text-center mb-12">
-      <span className="section-tag">Why Medilink</span>
+      <span className="section-tag">Why CuraLink</span>
       <h2 className="section-title">Healthcare Made Simple</h2>
       <p className="section-subtitle mx-auto">
         Everything you need for a better healthcare experience, all in one platform.
@@ -100,7 +100,7 @@ const TESTIMONIALS = [
     avatar: "PS",
     color: "bg-teal-500",
     rating: 5,
-    text: "Medilink made it so easy to find a dermatologist near me. Booked in 2 minutes and got instant confirmation. The doctor was excellent!",
+    text: "CuraLink made it so easy to find a dermatologist near me. Booked in 2 minutes and got instant confirmation. The doctor was excellent!",
   },
   {
     name: "Rahul Mehta",
@@ -126,7 +126,7 @@ const Testimonials = () => (
       <span className="section-tag">Patient Stories</span>
       <h2 className="section-title">What Our Patients Say</h2>
       <p className="section-subtitle mx-auto">
-        Thousands of patients trust Medilink for their healthcare needs.
+        Thousands of patients trust CuraLink for their healthcare needs.
       </p>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -162,8 +162,8 @@ const Testimonials = () => (
 
 /* ─── FAQ ────────────────────────────────────────────────── */
 const FAQS = [
-  { q: "How do I book an appointment on Medilink?", a: "Simply browse our doctor listings, select your preferred doctor, choose an available time slot, and confirm. You'll receive an instant confirmation via email." },
-  { q: "Are all doctors on Medilink verified?", a: "Yes, every doctor on our platform goes through a rigorous verification process including license validation, credential checks, and background screening." },
+  { q: "How do I book an appointment on CuraLink?", a: "Simply browse our doctor listings, select your preferred doctor, choose an available time slot, and confirm. You'll receive an instant confirmation via email." },
+  { q: "Are all doctors on CuraLink verified?", a: "Yes, every doctor on our platform goes through a rigorous verification process including license validation, credential checks, and background screening." },
   { q: "Can I cancel or reschedule my appointment?", a: "Absolutely! You can cancel or reschedule your appointment up to 2 hours before the scheduled time from your My Appointments page." },
   { q: "Is my personal health data secure?", a: "We take privacy seriously. All your data is encrypted end-to-end and we are fully compliant with healthcare data protection standards." },
   { q: "What payment methods are accepted?", a: "We accept all major UPI apps, credit/debit cards, net banking, and digital wallets through our secure Razorpay payment gateway." },
@@ -178,7 +178,7 @@ const FAQ = () => {
           <span className="section-tag">FAQ</span>
           <h2 className="section-title">Frequently Asked Questions</h2>
           <p className="section-subtitle mx-auto">
-            Everything you need to know about Medilink.
+            Everything you need to know about CuraLink.
           </p>
         </div>
         <div className="flex flex-col gap-3">

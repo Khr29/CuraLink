@@ -27,7 +27,7 @@ const Banner = () => {
               <span className="gradient-text">Next Appointment?</span>
             </h2>
             <p className="text-white/65 text-base md:text-lg mb-8 max-w-md mx-auto md:mx-0 leading-relaxed">
-              Join thousands of patients who trust Medilink for their healthcare needs. Quick, safe, and reliable.
+              Join thousands of patients who trust CuraLink for their healthcare needs. Quick, safe, and reliable.
             </p>
 
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">

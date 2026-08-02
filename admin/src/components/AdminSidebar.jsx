@@ -99,7 +99,10 @@ const AdminSidebar = () => {
               fontSize: 16, fontWeight: 800, color: '#fff'
             }}>M</div>
             <div>
-              <p style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 15, margin: 0 }}>Medilink</p>
+              <p style={{ fontSize: 15, margin: 0 }}>CuraLink</p>
+              <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>
+                  Admin Portal
+              </p>
               <p style={{ color: '#64748B', fontSize: 10, margin: 0 }}>Admin Panel</p>
             </div>
           </div>

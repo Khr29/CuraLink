@@ -42,7 +42,7 @@ const registerUser = async (req, res) => {
         try {
             await sendEmail(
                 email,
-                "Welcome to MediLink 🎉",
+                "Welcome to CuraLink 🎉",
                 `
                 <div style="font-family: Arial, sans-serif; background:#f4f6f8; padding:20px;">
                   
@@ -50,7 +50,7 @@ const registerUser = async (req, res) => {
                     
                     <!-- Header -->
                     <div style="background:#1976d2; color:white; padding:20px; text-align:center;">
-                      <h2 style="margin:0;">MediLink</h2>
+                      <h2 style="margin:0;">CuraLink</h2>
                       <p style="margin:5px 0 0;">Welcome 🎉</p>
                     </div>
 
@@ -60,7 +60,7 @@ const registerUser = async (req, res) => {
                       <p style="font-size:16px;">Hi <b>${name}</b>,</p>
                       
                       <p style="color:#555;">
-                        Welcome to <b>MediLink</b>! 🎉 Your account has been successfully created.
+                        Welcome to <b>CuraLink</b>! 🎉 Your account has been successfully created.
                       </p>
 
                       <p style="color:#555;">
@@ -83,7 +83,7 @@ const registerUser = async (req, res) => {
 
                     <!-- Footer -->
                     <div style="background:#f1f1f1; padding:15px; text-align:center; font-size:12px; color:#777;">
-                      © 2026 MediLink. All rights reserved.
+                      © 2026 CuraLink. All rights reserved.
                     </div>
 
                   </div>
@@ -226,7 +226,7 @@ const bookAppointment = async (req, res) => {
             
             <!-- Header -->
             <div style="background:#4CAF50; color:white; padding:20px; text-align:center;">
-              <h2 style="margin:0;">MediLink</h2>
+              <h2 style="margin:0;">CuraLink</h2>
               <p style="margin:5px 0 0;">Appointment Confirmed 🎉</p>
             </div>
 
@@ -267,7 +267,7 @@ const bookAppointment = async (req, res) => {
 
             <!-- Footer -->
             <div style="background:#f1f1f1; padding:15px; text-align:center; font-size:12px; color:#777;">
-              © 2026 MediLink. All rights reserved.
+              © 2026 CuraLink. All rights reserved.
             </div>
 
           </div>
@@ -359,7 +359,7 @@ const cancelAppointment = async (req, res) => {
 
                     <br/>
                     <p style="font-size:12px; color:gray;">
-                      — Team MediLink
+                      — Team CuraLink
                     </p>
                   </div>
                 </div>
@@ -451,7 +451,7 @@ const verifyRazorpay = async (req, res) => {
             
             <!-- Header -->
             <div style="background:#2e7d32; color:white; padding:20px; text-align:center;">
-              <h2 style="margin:0;">MediLink</h2>
+              <h2 style="margin:0;">CuraLink</h2>
               <p style="margin:5px 0 0;">Payment Successful ✅</p>
             </div>
 
@@ -493,7 +493,7 @@ const verifyRazorpay = async (req, res) => {
 
             <!-- Footer -->
             <div style="background:#f1f1f1; padding:15px; text-align:center; font-size:12px; color:#777;">
-              © 2026 MediLink. All rights reserved.
+              © 2026 CuraLink. All rights reserved.
             </div>
 
           </div>

@@ -96,7 +96,7 @@ const DoctorSidebar = () => {
               fontSize: 16, fontWeight: 800, color: '#fff'
             }}>D</div>
             <div>
-              <p style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 15, margin: 0 }}>Medilink</p>
+              <p style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 15, margin: 0 }}>CuraLink</p>
               <p style={{ color: '#64748B', fontSize: 10, margin: 0 }}>Doctor Panel</p>
             </div>
           </div>

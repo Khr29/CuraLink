@@ -233,7 +233,7 @@ const Login = () => {
           <div style={{ width: 64, height: 64, borderRadius: 18, background: 'linear-gradient(135deg, #14B8A6, #6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: '#fff', margin: '0 auto 24px' }}>M</div>
 
           <h1 style={{ fontSize: 32, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2, margin: '0 0 16px' }}>
-            Medilink<br />
+            CuraLink<br />
             <span style={{ background: 'linear-gradient(90deg, #5EEAD4, #BAE6FD)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               Dashboard
             </span>

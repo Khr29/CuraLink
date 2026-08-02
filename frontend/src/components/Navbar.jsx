@@ -50,7 +50,7 @@ const Navbar = () => {
             className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
             aria-label="Go to homepage"
           >
-            <img src={assets.logo} alt="Medilink" className="h-8 w-auto" />
+            <img src={assets.logo} alt="CuraLink" className="h-8 w-auto" />
           </button>
 
           {/* Desktop Nav */}
@@ -168,7 +168,7 @@ const Navbar = () => {
           }`}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <img src={assets.logo} alt="Medilink" className="h-7 w-auto" />
+          <img src={assets.logo} alt="CuraLink" className="h-7 w-auto" />
           <button
             onClick={() => setShowMenu(false)}
             className="p-2 rounded-lg hover:bg-slate-100 text-text-secondary transition-colors"

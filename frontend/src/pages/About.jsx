@@ -32,7 +32,7 @@ const About = () => (
         <span className="block gradient-text">Access for Everyone</span>
       </h1>
       <p className="section-subtitle mx-auto mt-3">
-        Medilink bridges the gap between patients and doctors, making quality healthcare accessible, affordable, and effortless.
+        CuraLink bridges the gap between patients and doctors, making quality healthcare accessible, affordable, and effortless.
       </p>
     </div>
 
@@ -43,7 +43,7 @@ const About = () => (
         <div className="relative rounded-3xl overflow-hidden shadow-card-lg">
           <img
             src={assets.about_image}
-            alt="About Medilink"
+            alt="About CuraLink"
             loading="lazy"
             className="w-full h-full object-cover"
           />
@@ -55,7 +55,7 @@ const About = () => (
                 M
               </div>
               <div>
-                <p className="text-sm font-bold text-text-primary">Medilink Platform</p>
+                <p className="text-sm font-bold text-text-primary">CuraLink Platform</p>
                 <p className="text-xs text-text-muted">500+ verified doctors across India</p>
               </div>
             </div>
@@ -67,10 +67,10 @@ const About = () => (
       <div className="flex-1">
         <div className="space-y-5 text-text-secondary text-sm leading-relaxed mb-8">
           <p>
-            Welcome to <strong className="text-text-primary">Medilink</strong>, your trusted partner in managing your healthcare needs conveniently and efficiently. At Medilink, we understand the challenges individuals face when it comes to scheduling doctor appointments and managing their health records.
+            Welcome to <strong className="text-text-primary">CuraLink</strong>, your trusted partner in managing your healthcare needs conveniently and efficiently. At CuraLink, we understand the challenges individuals face when it comes to scheduling doctor appointments and managing their health records.
           </p>
           <p>
-            Medilink is committed to excellence in healthcare technology. We continuously strive to enhance our platform, integrating the latest advancements to improve user experience and deliver superior service. Whether you're booking your first appointment or managing ongoing care, Medilink is here to support you every step of the way.
+            CuraLink is committed to excellence in healthcare technology. We continuously strive to enhance our platform, integrating the latest advancements to improve user experience and deliver superior service. Whether you're booking your first appointment or managing ongoing care, CuraLink is here to support you every step of the way.
           </p>
         </div>
 
@@ -86,7 +86,7 @@ const About = () => (
             <h3 className="text-base font-bold text-text-primary">Our Vision</h3>
           </div>
           <p className="text-sm text-text-secondary leading-relaxed">
-            Our vision at Medilink is to create a seamless healthcare experience for every user. We aim to bridge the gap between patients and healthcare providers, making it easier for you to access the care you need, when you need it.
+            Our vision at CuraLink is to create a seamless healthcare experience for every user. We aim to bridge the gap between patients and healthcare providers, making it easier for you to access the care you need, when you need it.
           </p>
         </div>
 
@@ -110,7 +110,7 @@ const About = () => (
     <div className="mb-16">
       <div className="text-center mb-10">
         <span className="section-tag">Our Values</span>
-        <h2 className="section-title">Why Choose Medilink?</h2>
+        <h2 className="section-title">Why Choose CuraLink?</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {VALUES.map((v, i) => (
