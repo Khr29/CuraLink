@@ -1,11 +1,58 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { AdminContext } from "../../context/AdminContext";
 import { assets } from "../../assets/assets";
 
 const AddHospital = () => {
   const [image, setImage] = useState(false);
 
+const { backendUrl, aToken } = useContext(AdminContext);
+
+const [hospitalData, setHospitalData] = useState({
+  name: "",
+  description: "",
+  email: "",
+  phone: "",
+  website: "",
+  hospitalType: "Private",
+  openingHours: "24 Hours",
+  beds: "",
+  address: {
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    country: "India",
+    pincode: "",
+  },
+  location: {
+    latitude: "",
+    longitude: "",
+  },
+  departments: [],
+  facilities: [],
+  active: true,
+});
+
+const submitHandler = async (e) => {
+  e.preventDefault();
+
+  try {
+    console.log(hospitalData);
+
+    toast.success("Hospital data is ready to submit!");
+
+  } catch (error) {
+    toast.error(error.message);
+  }
+};
+
   return (
-    <form className="w-full p-6">
+    <form
+        className="w-full p-6"
+        onSubmit={submitHandler}
+        >
 
       <p className="text-2xl font-semibold mb-6">
         Add Hospital
