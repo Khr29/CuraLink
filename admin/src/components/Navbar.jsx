@@ -21,7 +21,7 @@ const Navbar = () => {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '0 28px', height: 60,
+      padding: '0 20px', height: 68,
       background: 'rgba(255,255,255,0.85)',
       backdropFilter: 'blur(16px)',
       borderBottom: '1px solid #F1F5F9',
@@ -30,14 +30,14 @@ const Navbar = () => {
     }}>
 
       {/* Left */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
 
       {/* CuraLink Brand */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 10,
           cursor: 'pointer'
         }}
       >
@@ -45,18 +45,26 @@ const Navbar = () => {
           src={assets.admin_logo}
           alt="CuraLink"
           style={{
-            width: 56,
-            height: 56,
+            width: 60,
+            height: 60,
+            marginTop: -2,
             objectFit: 'contain'
           }}
         />
 
-        <div style={{ lineHeight: 1.1 }}>
+       <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          height: 60
+        }}
+      >
           <h2
         style={{
           margin: 0,
-          fontSize: 22,
-          fontWeight: 800,
+          fontSize: 28,
+          fontWeight: 900,
+          letterSpacing: '-0.5px',
           background: 'linear-gradient(90deg,#2563EB,#14B8A6)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent'
@@ -64,17 +72,6 @@ const Navbar = () => {
       >
         CuraLink
       </h2>
-
-          <p
-            style={{
-              margin: 0,
-              fontSize: 12,
-              color: '#475569',
-              fontWeight: 500
-            }}
-          >
-            Admin Portal
-          </p>
         </div>
       </div>
 
@@ -83,6 +80,7 @@ const Navbar = () => {
           display: 'flex', alignItems: 'center', gap: 7,
           padding: '4px 12px', borderRadius: 99,
           background: role === 'Admin' ? '#EEF2FF' : '#F0FDF4',
+
           border: `1px solid ${role === 'Admin' ? '#C7D2FE' : '#BBF7D0'}`
         }}>
           <div style={{

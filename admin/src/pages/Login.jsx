@@ -264,7 +264,7 @@ const Login = () => {
 
           {/* Mobile Logo */}
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #14B8A6, #6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: '#fff', margin: '0 auto 14px' }}>M</div>
+            <div style={{ width: 54, height: 54, borderRadius: 14, background: 'linear-gradient(135deg, #14B8A6, #6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: '#fff', margin: '0 auto 14px' }}>M</div>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Welcome back</h2>
             <p style={{ fontSize: 14, color: '#64748B', marginTop: 6 }}>Sign in to your {state} account</p>
           </div>

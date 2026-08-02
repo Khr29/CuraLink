@@ -85,29 +85,44 @@ const AdminSidebar = () => {
 
       {/* Logo area */}
       <div style={{
-        padding: collapsed ? '20px 16px' : '20px 20px',
+        padding: collapsed ? '20px 16px' : '18px 24px',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         display: 'flex', alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'space-between',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        marginLeft: "auto",
         gap: 10
       }}>
         {!collapsed && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              flex: 1
+            }}
+          >
             <img
               src={assets.admin_logo}
               alt="CuraLink"
               style={{
-                  width: 42,
-                  height: 42,
+                  width: 54,
+                  height: 54,
                   objectFit: 'contain'
               }}
           />
-            <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                height: 50
+              }}
+            >
               <h2
               style={{
                   margin:0,
-                  fontSize:20,
-                  fontWeight:800,
+                  fontSize:18,
+                  fontWeight:900,
+                  letterSpacing:-0.3,
                   background:'linear-gradient(90deg,#2563EB,#14B8A6)',
                   WebkitBackgroundClip:'text',
                   WebkitTextFillColor:'transparent'
@@ -115,16 +130,6 @@ const AdminSidebar = () => {
           >
               CuraLink
           </h2>
-              <p
-                style={{
-                    margin:0,
-                    fontSize:12,
-                    color:'#CBD5E1',
-                    fontWeight:500
-                }}
-            >
-                  Admin Portal
-              </p>
             </div>
           </div>
         )}
