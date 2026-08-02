@@ -88,16 +88,32 @@ const submitHandler = async (e) => {
 
         <div>
           <p className="mb-2">Hospital Name</p>
-          <input
+         <input
             type="text"
+            value={hospitalData.name}
+            onChange={(e) =>
+                setHospitalData({
+                ...hospitalData,
+                name: e.target.value,
+                })
+            }
             placeholder="Apollo Hospital"
             className="w-full border rounded-lg p-3"
-          />
+            />
         </div>
 
         <div>
           <p className="mb-2">Hospital Type</p>
-          <select className="w-full border rounded-lg p-3">
+          <select
+            value={hospitalData.hospitalType}
+            onChange={(e) =>
+                setHospitalData({
+                ...hospitalData,
+                hospitalType: e.target.value,
+                })
+            }
+            className="w-full border rounded-lg p-3"
+>
             <option>Private</option>
             <option>Government</option>
             <option>Multi-Speciality</option>
@@ -110,18 +126,32 @@ const submitHandler = async (e) => {
           <p className="mb-2">Opening Hours</p>
           <input
             type="text"
+            value={hospitalData.openingHours}
+            onChange={(e) =>
+                setHospitalData({
+                ...hospitalData,
+                openingHours: e.target.value,
+                })
+            }
             placeholder="24 Hours"
             className="w-full border rounded-lg p-3"
-          />
+            />
         </div>
 
         <div>
           <p className="mb-2">Number of Beds</p>
-          <input
+         <input
             type="number"
+            value={hospitalData.beds}
+            onChange={(e) =>
+                setHospitalData({
+                ...hospitalData,
+                beds: e.target.value,
+                })
+            }
             placeholder="250"
             className="w-full border rounded-lg p-3"
-          />
+            />
         </div>
 
       </div>
@@ -130,11 +160,18 @@ const submitHandler = async (e) => {
 
   <p className="mb-2">Description</p>
 
-  <textarea
-    rows="5"
-    placeholder="Write about the hospital..."
-    className="w-full border rounded-lg p-3 resize-none"
-  />
+ <textarea
+  rows="5"
+  value={hospitalData.description}
+  onChange={(e) =>
+    setHospitalData({
+      ...hospitalData,
+      description: e.target.value,
+    })
+  }
+  placeholder="Write about the hospital..."
+  className="w-full border rounded-lg p-3 resize-none"
+/>
 
 </div>
 
