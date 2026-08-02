@@ -84,74 +84,99 @@ const AdminSidebar = () => {
     }}>
 
       {/* Logo area */}
-      <div style={{
-        padding: collapsed ? '20px 16px' : '18px 24px',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex', alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'flex-start',
-        marginLeft: "auto",
-        gap: 10
-      }}>
-        {!collapsed && (
           <div
             style={{
+              padding: collapsed ? '16px' : '16px 18px',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
               display: 'flex',
               alignItems: 'center',
-              gap: 14,
-              flex: 1
+              justifyContent: collapsed ? 'center' : 'space-between'
             }}
           >
-            <img
-              src={assets.admin_logo}
-              alt="CuraLink"
+            {!collapsed && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  flex: 1
+                }}
+              >
+                <img
+                  src={assets.admin_logo}
+                  alt="CuraLink"
+                  style={{
+                    width: 38,
+                    height: 38,
+                    objectFit: 'contain',
+                    flexShrink: 0
+                  }}
+                />
+
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: 22,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                    letterSpacing: '-0.5px',
+                    background: 'linear-gradient(90deg,#2563EB,#14B8A6)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}
+                >
+                  CuraLink
+                </h2>
+              </div>
+            )}
+
+            <button
+              onClick={() => setCollapsed(!collapsed)}
               style={{
-                  width: 54,
-                  height: 54,
-                  objectFit: 'contain'
-              }}
-          />
-            <div
-              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.05)',
+                color: '#94A3B8',
                 display: 'flex',
                 alignItems: 'center',
-                height: 50
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: '.2s',
+                flexShrink: 0
               }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = 'rgba(255,255,255,.12)')
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = 'rgba(255,255,255,.05)')
+              }
             >
-              <h2
-              style={{
-                  margin:0,
-                  fontSize:18,
-                  fontWeight:900,
-                  letterSpacing:-0.3,
-                  background:'linear-gradient(90deg,#2563EB,#14B8A6)',
-                  WebkitBackgroundClip:'text',
-                  WebkitTextFillColor:'transparent'
-              }}
-          >
-              CuraLink
-          </h2>
-            </div>
+              <svg
+                width="15"
+                height="15"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                {collapsed ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 5l7 7-7 7"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                )}
+              </svg>
+            </button>
           </div>
-        )}
-
-        {/* Collapse toggle */}
-        <button onClick={() => setCollapsed(!collapsed)} style={{
-          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 8, width: 28, height: 28, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#94A3B8', flexShrink: 0, transition: 'background 0.2s'
-        }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-        >
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            {collapsed
-              ? <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              : <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            }
-          </svg>
-        </button>
-      </div>
 
       {/* Menu */}
       {aToken && (
