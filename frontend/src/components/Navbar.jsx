@@ -10,7 +10,7 @@ const navLinks = [
   { name: "Contact", path: "/contact" },
 ];
 
-const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || "https://doctor-appointment-8lnn.vercel.app";
+const ADMIN_URL = "http://localhost:5174/admin-dashboard";
 
 const Navbar = () => {
   const navigate = useNavigate();
