@@ -74,7 +74,8 @@ const AdminSidebar = () => {
   return (
     <div style={{
       height: '100vh', flexShrink: 0,
-      background: '#0F172A',
+      background:
+      'linear-gradient(180deg,#0F172A,#172554)',
       width: collapsed ? 68 : 240,
       minWidth: collapsed ? 68 : 240,
       transition: 'width 0.3s ease, min-width 0.3s ease',
@@ -92,18 +93,38 @@ const AdminSidebar = () => {
       }}>
         {!collapsed && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 10,
-              background: 'linear-gradient(135deg, #14B8A6, #6366F1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 16, fontWeight: 800, color: '#fff'
-            }}>M</div>
+            <img
+              src={assets.admin_logo}
+              alt="CuraLink"
+              style={{
+                  width: 42,
+                  height: 42,
+                  objectFit: 'contain'
+              }}
+          />
             <div>
-              <p style={{ fontSize: 15, margin: 0 }}>CuraLink</p>
-              <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>
+              <h2
+              style={{
+                  margin:0,
+                  fontSize:20,
+                  fontWeight:800,
+                  background:'linear-gradient(90deg,#2563EB,#14B8A6)',
+                  WebkitBackgroundClip:'text',
+                  WebkitTextFillColor:'transparent'
+              }}
+          >
+              CuraLink
+          </h2>
+              <p
+                style={{
+                    margin:0,
+                    fontSize:12,
+                    color:'#CBD5E1',
+                    fontWeight:500
+                }}
+            >
                   Admin Portal
               </p>
-              <p style={{ color: '#64748B', fontSize: 10, margin: 0 }}>Admin Panel</p>
             </div>
           </div>
         )}

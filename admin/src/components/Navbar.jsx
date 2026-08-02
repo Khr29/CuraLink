@@ -30,18 +30,55 @@ const Navbar = () => {
     }}>
 
       {/* Left */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+
+      {/* CuraLink Brand */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          cursor: 'pointer'
+        }}
+      >
         <img
           src={assets.admin_logo}
-          alt='Logo'
-          style={{ height: 32, cursor: 'pointer', transition: 'opacity 0.2s' }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          alt="CuraLink"
+          style={{
+            width: 56,
+            height: 56,
+            objectFit: 'contain'
+          }}
         />
 
-        <div style={{ width: 1, height: 20, background: '#E2E8F0' }} />
+        <div style={{ lineHeight: 1.1 }}>
+          <h2
+        style={{
+          margin: 0,
+          fontSize: 22,
+          fontWeight: 800,
+          background: 'linear-gradient(90deg,#2563EB,#14B8A6)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent'
+        }}
+      >
+        CuraLink
+      </h2>
 
-        {/* Role badge */}
+          <p
+            style={{
+              margin: 0,
+              fontSize: 12,
+              color: '#475569',
+              fontWeight: 500
+            }}
+          >
+            Admin Portal
+          </p>
+        </div>
+      </div>
+
+  {/* Role Badge */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 7,
           padding: '4px 12px', borderRadius: 99,
@@ -63,7 +100,7 @@ const Navbar = () => {
       </div>
 
       {/* Right */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 
         {/* Avatar */}
         <div style={{
