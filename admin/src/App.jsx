@@ -55,6 +55,7 @@
 
 // export default App
 
+
 import ProtectedRoute from './components/ProtectedRoute'
 import React, { useContext, Suspense, lazy } from 'react'
 import Login from './pages/Login'
@@ -71,6 +72,9 @@ const Dashboard = lazy(() => import('./pages/Admin/Dashboard'))
 const AllAppointments = lazy(() => import('./pages/Admin/AllAppointments'))
 const AddDoctor = lazy(() => import('./pages/Admin/AddDoctor'))
 const DoctorsList = lazy(() => import('./pages/Admin/DoctorsList'))
+
+const HospitalsList = lazy(() => import('./pages/Admin/HospitalsList'))
+const AddHospital = lazy(() => import('./pages/Admin/AddHospital'))
 
 // Lazy loaded Doctor Pages
 const DoctorDashboard = lazy(() => import('./pages/Doctor/DoctorDashboard'))
