@@ -1,173 +1,260 @@
 <div align="center">
 
-# 🩺 Medilink
-### Doctor Appointment Booking Platform
+# 🩺 CuraLink
+### Revolutionizing Healthcare Choices with Data
 
-[![React](https://img.shields.io/badge/React-Frontend-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-Backend-green?style=for-the-badge&logo=node.js)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb)](https://mongodb.com/)
-[![Razorpay](https://img.shields.io/badge/Razorpay-Payments-02042B?style=for-the-badge&logo=razorpay)](https://razorpay.com/)
-[![Cloudinary](https://img.shields.io/badge/Cloudinary-Media-3448C5?style=for-the-badge&logo=cloudinary)](https://cloudinary.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+<p align="center">
+An AI-powered healthcare platform that helps patients identify the right medical specialty, discover the best hospitals, securely manage health records, and make informed healthcare decisions.
+</p>
 
-<br/>
-
-> **Book · Manage · Heal**
->
-> A production-ready full-stack doctor appointment booking platform — where patients book instantly, doctors manage seamlessly, and admins oversee everything from one place.
-
-<br/>
-
-**[🚀 Live Demo – Patient Portal](https://your-vercel-url.vercel.app)** · **[⚙️ Admin Panel](https://your-admin-url.vercel.app)** · **[📦 Backend API](https://your-render-url.onrender.com)**
-
-<br/>
-
-[✨ Features](#-features) · [🏗️ Architecture](#️-architecture) · [🛠️ Tech Stack](#️-tech-stack) · [⚡ Quick Start](#-quick-start) · [📡 API Reference](#-api-reference) · [🔮 Roadmap](#-roadmap)
+![React](https://img.shields.io/badge/React-Frontend-61DAFB?style=for-the-badge&logo=react)
+![Node.js](https://img.shields.io/badge/Node.js-Backend-339933?style=for-the-badge&logo=node.js)
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb)
+![Express](https://img.shields.io/badge/Express.js-API-black?style=for-the-badge&logo=express)
+![JWT](https://img.shields.io/badge/JWT-Authentication-orange?style=for-the-badge)
+![Google Maps](https://img.shields.io/badge/Google_Maps-Location-4285F4?style=for-the-badge&logo=googlemaps)
+![Cloudinary](https://img.shields.io/badge/Cloudinary-Media-3448C5?style=for-the-badge&logo=cloudinary)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
 </div>
 
 ---
 
-## 🎯 What Is Medilink?
+# 📖 Overview
 
-Booking a doctor appointment shouldn't require a phone call. **Medilink** brings the entire experience online — patients find doctors, book slots, and pay securely in minutes. Doctors get a personal dashboard to manage their schedule and earnings. Admins control the entire platform from a single panel.
+Healthcare decisions should be simple, reliable, and data-driven.
 
-Built on the **MERN Stack** with **Razorpay payments** and **Cloudinary media storage**, Medilink is a complete, deployment-ready healthcare booking solution.
+**CuraLink** is an intelligent healthcare platform designed to help patients navigate the healthcare ecosystem through AI-powered recommendations, hospital specialty rankings, digital health records, and smart appointment management.
 
----
-
-## ✨ Features
-
-### 👤 Patient Portal
-- Secure registration & login with JWT
-- Browse & search doctors by specialty
-- Book appointments with available time slots
-- Online payment via Razorpay
-- View complete appointment history
-- Cancel appointments
-- Edit profile & upload profile photo
-
-### 🩺 Doctor Dashboard
-- Dedicated doctor login & profile
-- Earnings overview & analytics
-- View & manage all appointments
-- Access patient details per appointment
-- Update availability & profile info
-
-### 🛡️ Admin Panel
-- Platform-wide dashboard & analytics
-- Add, edit & manage doctor listings
-- Monitor all appointments across the platform
-- Track total system earnings
-- Real-time platform activity overview
+Instead of searching randomly for hospitals or specialists, CuraLink analyzes patient symptoms, recommends the appropriate medical specialty, ranks hospitals based on expertise, and securely stores medical information in one centralized platform.
 
 ---
 
-## 🏗️ Architecture
+# 🎯 Problem Statement
+
+Patients often struggle to:
+
+- Find the correct specialist
+- Choose the best hospital
+- Store medical reports safely
+- Access previous prescriptions
+- Compare hospitals objectively
+- Make informed healthcare decisions
+
+CuraLink solves these challenges using AI and data-driven recommendations.
+
+---
+
+# 🚀 Features
+
+## 👤 Patient Portal
+
+- Secure Registration & Login
+- AI Symptom Analysis
+- Smart Specialty Recommendation
+- Hospital Comparison
+- Doctor Search
+- Appointment Booking
+- Appointment History
+- Digital Medical Records
+- QR-based Health Identity
+- Profile Management
+
+---
+
+## 🩺 Doctor Portal
+
+- Doctor Authentication
+- Dashboard Analytics
+- Appointment Management
+- Patient Medical History
+- Digital Prescriptions
+- Availability Management
+- Profile Editing
+
+---
+
+## 🏥 Hospital & Admin Portal
+
+- Manage Doctors
+- Manage Departments
+- Hospital Analytics
+- Appointment Monitoring
+- User Management
+- Reports & Insights
+- Specialty Ranking Management
+
+---
+
+# 🤖 AI Features
+
+CuraLink includes intelligent healthcare assistance:
+
+- AI Symptom Analyzer
+- Symptom-to-Specialty Mapping
+- Hospital Recommendation Engine
+- Healthcare Decision Support
+- Future Disease Prediction (Planned)
+
+---
+
+# 🗺️ Google Maps Integration
+
+Patients can:
+
+- Locate nearby hospitals
+- View hospital locations
+- Get navigation directions
+- Compare distance
+- Search hospitals by specialty
+
+---
+
+# 🔐 Digital Health Identity
+
+Every patient receives a secure digital identity allowing:
+
+- Medical history storage
+- Previous prescriptions
+- Lab reports
+- Scan reports
+- Emergency information
+- QR Code Health Card
+
+---
+
+# 🏗️ System Architecture
 
 ```
-┌──────────────────────┐    ┌──────────────────────┐
-│   Patient Frontend   │    │    Admin Panel        │
-│   React + Tailwind   │    │   React + Tailwind    │
-└──────────┬───────────┘    └──────────┬────────────┘
-           │                           │
-           └──────────┬────────────────┘
-                      │ REST API (JWT Auth)
-           ┌──────────▼────────────────┐
-           │      Backend API          │
-           │   Node.js + Express.js    │
-           └──────────┬────────────────┘
-                      │
-        ┌─────────────┼──────────────┐
-        │             │              │
-┌───────▼──────┐ ┌────▼────┐ ┌──────▼──────┐
-│   MongoDB    │ │Razorpay │ │ Cloudinary  │
-│    Atlas     │ │Payments │ │   Media     │
-└──────────────┘ └─────────┘ └─────────────┘
-```
-
-### Design Principles
-- **3-App Architecture** — Patient frontend, Admin panel, and Backend are independently deployable
-- **Role-Based Access** — Separate auth flows for Patient, Doctor, and Admin
-- **Service Isolation** — Payments, media, and database are independent services
-- **Cloud-Native** — Built for Vercel + Render + MongoDB Atlas from day one
-
----
-
-## 📁 Project Structure
-
-```
-Medilink/
-│
-├── frontend/                        # Patient Website (React)
-│   └── src/
-│       ├── pages/                   # Home, Doctors, Appointments
-│       ├── components/              # Navbar, DoctorCard, etc.
-│       ├── context/                 # Global state management
-│       └── assets/
-│
-├── admin/                           # Admin + Doctor Panel (React)
-│   └── src/
-│       ├── pages/
-│       │   ├── admin/               # Dashboard, Doctors, Appointments
-│       │   └── doctor/              # Doctor dashboard, earnings
-│       ├── components/
-│       └── context/
-│
-└── backend/                         # Node.js API Server
-    └── src/
-        ├── controllers/             # Auth, Doctors, Appointments, Payments
-        ├── models/                  # User, Doctor, Appointment schemas
-        ├── routes/                  # API route definitions
-        ├── middlewares/             # JWT auth, role guards
-        └── config/                  # DB, Cloudinary, Razorpay config
+                     Patient
+                        │
+        ┌───────────────┴───────────────┐
+        │                               │
+ AI Symptom Analyzer            Hospital Search
+        │                               │
+        └───────────────┬───────────────┘
+                        │
+               Recommendation Engine
+                        │
+                Node.js REST API
+                        │
+     ┌────────────┬──────────────┬─────────────┐
+     │            │              │
+ MongoDB      Cloudinary     Google Maps
+     │            │              │
+     └────────────┴──────────────┘
 ```
 
 ---
 
-## 🛠️ Tech Stack
+# 💻 Technology Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Patient Frontend** | React.js, Tailwind CSS, React Router, Axios |
-| **Admin Panel** | React.js, Tailwind CSS, React Router, Axios |
-| **Backend** | Node.js, Express.js |
-| **Database** | MongoDB, Mongoose ODM |
-| **Authentication** | JWT (JSON Web Tokens) |
-| **Payments** | Razorpay Payment Gateway |
-| **Media Storage** | Cloudinary (CDN-backed) |
-| **Deployment** | Vercel (Frontend) + Render (Backend) + MongoDB Atlas |
+## Frontend
+
+- React.js
+- Tailwind CSS
+- React Router
+- Axios
+
+## Backend
+
+- Node.js
+- Express.js
+- JWT Authentication
+- REST API
+
+## Database
+
+- MongoDB
+- Mongoose
+
+## AI
+
+- Machine Learning
+- Symptom Recommendation Logic
+
+## APIs
+
+- Google Maps API
+- Cloudinary API
 
 ---
 
-## ⚡ Quick Start
+# 📂 Project Structure
 
-### Prerequisites
-- Node.js v18+
-- MongoDB Atlas account (free tier)
-- Razorpay account (test keys)
-- Cloudinary account (free tier)
+```
+CuraLink
 
-### 1. Clone the Repository
+frontend/
+admin/
+backend/
+
+frontend
+ ├── components
+ ├── pages
+ ├── assets
+ ├── hooks
+ ├── context
+
+backend
+ ├── controllers
+ ├── routes
+ ├── models
+ ├── middleware
+ ├── config
+ ├── utils
+
+admin
+ ├── pages
+ ├── components
+ ├── context
+```
+
+---
+
+# 🔑 User Roles
+
+### Patient
+
+- Search doctors
+- AI diagnosis assistance
+- Book appointments
+- View reports
+- Manage records
+
+### Doctor
+
+- Manage appointments
+- Issue prescriptions
+- View patient history
+
+### Admin
+
+- Manage platform
+- Add hospitals
+- Add doctors
+- View analytics
+
+---
+
+# ⚡ Installation
+
+## Clone Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/medilink.git
-cd medilink
+git clone https://github.com/Khr29/CuraLink.git
+cd CuraLink
 ```
 
-### 2. Backend Setup
+Backend
 
 ```bash
 cd backend
 npm install
-cp .env.example .env
-# Fill in your environment variables
 npm run dev
 ```
 
-Backend runs on `http://localhost:5000`
-
-### 3. Frontend Setup
+Frontend
 
 ```bash
 cd frontend
@@ -175,9 +262,7 @@ npm install
 npm run dev
 ```
 
-Patient portal runs on `http://localhost:5173`
-
-### 4. Admin Panel Setup
+Admin
 
 ```bash
 cd admin
@@ -185,177 +270,122 @@ npm install
 npm run dev
 ```
 
-Admin panel runs on `http://localhost:5174`
-
 ---
 
-## 🔧 Environment Variables
+# 🔧 Environment Variables
 
-### Backend (`backend/.env`)
+Backend
 
 ```env
-PORT=5000
-MONGODB_URI=mongodb+srv://...
-JWT_SECRET=your_jwt_secret
+PORT=
 
-# Cloudinary
-CLOUDINARY_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+MONGODB_URI=
 
-# Razorpay
-RAZORPAY_KEY_ID=your_key_id
-RAZORPAY_KEY_SECRET=your_key_secret
+JWT_SECRET=
 
-# Frontend
-CLIENT_URL=http://localhost:5173
-ADMIN_URL=http://localhost:5174
-```
+CLOUDINARY_NAME=
 
-### Frontend (`frontend/.env`)
+CLOUDINARY_API_KEY=
 
-```env
-VITE_BACKEND_URL=http://localhost:5000
-VITE_RAZORPAY_KEY_ID=your_razorpay_key
+CLOUDINARY_SECRET=
+
+GOOGLE_MAPS_API_KEY=
+
+OPENAI_API_KEY=
 ```
 
 ---
 
-## 📡 API Reference
+# 🔒 Security
 
-### Base URL
-```
-http://localhost:5000/api
-```
-
-### Auth Endpoints
-
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
-| `POST` | `/user/register` | Patient | Register new patient |
-| `POST` | `/user/login` | Patient | Patient login |
-| `POST` | `/doctor/login` | Doctor | Doctor login |
-| `POST` | `/admin/login` | Admin | Admin login |
-
-### Appointment Endpoints
-
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
-| `GET` | `/user/appointments` | Patient | Get my appointments |
-| `POST` | `/user/book-appointment` | Patient | Book an appointment |
-| `POST` | `/user/cancel-appointment` | Patient | Cancel appointment |
-| `GET` | `/doctor/appointments` | Doctor | Get doctor's appointments |
-| `GET` | `/admin/appointments` | Admin | Get all appointments |
-
-### Payment Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/user/payment-razorpay` | Initiate Razorpay payment |
-| `POST` | `/user/verify-razorpay` | Verify payment & confirm booking |
+- JWT Authentication
+- Password Hashing (bcrypt)
+- Protected APIs
+- Role-Based Authorization
+- Secure Cloud Storage
+- Input Validation
 
 ---
 
-## 💳 Payment Flow
+# 📊 Future Enhancements
 
-```
-Patient selects slot
-        ↓
-Razorpay checkout opens
-        ↓
-Payment processed securely
-        ↓
-Webhook verifies payment
-        ↓
-Appointment confirmed ✅
-```
-
----
-
-## ☁️ Media Handling
-
-All profile images (patients & doctors) are stored on **Cloudinary**:
-- Automatic optimization & compression
-- CDN-backed fast delivery globally
-- Secure upload with signed URLs
-- No server storage required
+- Video Consultation
+- AI Disease Prediction
+- Medical Chatbot
+- ABHA Integration
+- Electronic Health Records
+- Voice Assistant
+- Multi-language Support
+- Pharmacy Integration
+- Ambulance Tracking
+- Health Insurance Integration
 
 ---
 
-## 🔐 Security
+# 📷 Screenshots
 
-| Layer | Implementation |
-|-------|---------------|
-| Authentication | JWT tokens with expiry |
-| Role Guards | Middleware-based RBAC for Patient / Doctor / Admin |
-| Payment Security | Razorpay signature verification on every transaction |
-| Media Security | Cloudinary signed uploads |
-| Password Storage | Bcrypt hashing |
+## Home
+
+(Add Screenshot)
 
 ---
 
-## 🔮 Roadmap
+## AI Symptom Analysis
 
-- [x] JWT role-based authentication (Patient / Doctor / Admin)
-- [x] Doctor listing & appointment booking
-- [x] Razorpay payment integration
-- [x] Cloudinary profile image upload
-- [x] Admin & Doctor dashboards
-- [x] Appointment cancellation
-- [ ] 🎥 Video consultation (WebRTC)
-- [ ] 📧 Email notifications (booking confirmation, reminders)
-- [ ] ⭐ Doctor ratings & reviews
-- [ ] ⏰ Appointment reminders (SMS / Push)
-- [ ] 💬 Real-time chat (Socket.io)
-- [ ] 📱 Mobile app (React Native)
-- [ ] 🔍 Advanced doctor search & filters
+(Add Screenshot)
 
 ---
 
-## 💡 Key Engineering Decisions
+## Hospital Recommendation
 
-| Decision | Rationale |
-|----------|-----------|
-| 3-App structure | Patient, Admin, Backend independently deployable & scalable |
-| JWT over sessions | Stateless auth — works seamlessly across Vercel + Render |
-| Cloudinary for media | Eliminates server storage; CDN ensures fast global delivery |
-| Razorpay over Stripe | Better support for Indian payment ecosystem |
-| MongoDB Atlas | Managed cloud DB — zero ops overhead for MVP |
+(Add Screenshot)
 
 ---
 
-                                                   Home Page
+## Patient Dashboard
 
-<img width="1918" height="905" alt="Image" src="https://github.com/user-attachments/assets/2cbaceda-db06-4139-9003-4be8f332a149" />
-                                                                
-                                                  Book Appointment
+(Add Screenshot)
 
-<img width="1917" height="917" alt="Image" src="https://github.com/user-attachments/assets/5ead53ce-c14c-41c7-87e1-e2e84e146938" />
+---
 
-                                        Admin & Doctor Dashboard login & SingUp
+## Doctor Dashboard
 
-<img width="1918" height="911" alt="Image" src="https://github.com/user-attachments/assets/92f32964-79ee-4ced-8157-35d655cee20e" />
+(Add Screenshot)
 
-                                                   Admin Dashboard
+---
 
-<img width="1917" height="832" alt="Image" src="https://github.com/user-attachments/assets/9b49730a-3e67-4f64-bb96-0a52b8c03585" />
+## Admin Dashboard
 
-                                                    Doctor Dashboard
+(Add Screenshot)
 
-<img width="1911" height="846" alt="Image" src="https://github.com/user-attachments/assets/6cc3233e-568b-48e5-819c-0d50b4ed5d61" />
+---
 
-## 📄 License
+# 👨‍💻 Developed By
 
-This project is open source and available under the [MIT License](LICENSE).
+**Khaled Taha Ahmed Al Daghan**
+
+Computer Science Engineering Student
+
+Visvesvaraya Technological University (VTU)
+
+Bangalore, India
+
+---
+
+# ⭐ Support
+
+If you found this project helpful, consider giving it a ⭐ on GitHub.
+
+It helps the project reach more developers.
 
 ---
 
 <div align="center">
 
-**Built with ❤️ by Aneesh Yadav**
+## CuraLink
 
-*Full Stack Developer · MERN Stack · Node.js · React · MongoDB · Razorpay · Cloudinary*
+### Revolutionizing Healthcare Choices with Data
 
-⭐ **If this project helped you, give it a star!** ⭐
+Made with ❤️ by **Khaled Taha Ahmed Al Daghan**
 
 </div>
