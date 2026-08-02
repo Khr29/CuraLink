@@ -236,9 +236,6 @@ const loginAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log("ENV:", process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD);
-    console.log("INPUT:", email, password);
-
     if (
       email !== process.env.ADMIN_EMAIL ||
       password !== process.env.ADMIN_PASSWORD
