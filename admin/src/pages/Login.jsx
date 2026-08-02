@@ -230,7 +230,17 @@ const Login = () => {
 
         <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 360 }}>
           {/* Logo */}
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: 'linear-gradient(135deg, #14B8A6, #6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: '#fff', margin: '0 auto 24px' }}>M</div>
+          <img
+          src={assets.admin_logo}
+          alt="CuraLink"
+          style={{
+            width: 90,
+            height: 90,
+            objectFit: "contain",
+            margin: "0 auto 24px",
+            display: "block"
+          }}
+        />
 
           <h1 style={{ fontSize: 32, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2, margin: '0 0 16px' }}>
             CuraLink<br />
@@ -264,7 +274,17 @@ const Login = () => {
 
           {/* Mobile Logo */}
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ width: 54, height: 54, borderRadius: 14, background: 'linear-gradient(135deg, #14B8A6, #6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: '#fff', margin: '0 auto 14px' }}>M</div>
+            <img
+              src={assets.admin_logo}
+              alt="CuraLink"
+              style={{
+                width: 70,
+                height: 70,
+                objectFit: "contain",
+                margin: "0 auto 14px",
+                display: "block"
+              }}
+            />
             <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Welcome back</h2>
             <p style={{ fontSize: 14, color: '#64748B', marginTop: 6 }}>Sign in to your {state} account</p>
           </div>
