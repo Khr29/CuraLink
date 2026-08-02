@@ -118,6 +118,8 @@ const AdminContextProvider = (props) => {
     const [appointments,setAppointments] = useState([])
     const [dashData, setDashData] = useState(false)
 
+    const [hospitals, setHospitals] = useState([])
+
     const backendUrl = import.meta.env.VITE_BACKEND_URL
 
     // 🔥 common config (avoid repeat)
@@ -139,6 +141,69 @@ const AdminContextProvider = (props) => {
             toast.error(error.message)
         }
     }, [aToken])
+
+    
+    const getAllHospitals = useCallback(async () => {
+    try {
+
+        const { data } = await axios.get(
+            backendUrl + "/api/hospital/list",
+            config
+        )
+
+        if (data.success) {
+            setHospitals(data.hospitals)
+        } else {
+            toast.error(data.message)
+        }
+
+    } catch (error) {
+        toast.error(error.message)
+    }
+}, [aToken])
+
+
+const deleteHospital = async (hospitalId) => {
+    try {
+
+        const { data } = await axios.delete(
+            backendUrl + "/api/hospital/delete/" + hospitalId,
+            config
+        )
+
+        if (data.success) {
+            toast.success(data.message)
+            getAllHospitals()
+        } else {
+            toast.error(data.message)
+        }
+
+    } catch (error) {
+        toast.error(error.message)
+    }
+}
+
+
+const changeHospitalStatus = async (hospitalId) => {
+    try {
+
+        const { data } = await axios.patch(
+            backendUrl + "/api/hospital/status/" + hospitalId,
+            {},
+            config
+        )
+
+        if (data.success) {
+            toast.success(data.message)
+            getAllHospitals()
+        } else {
+            toast.error(data.message)
+        }
+
+    } catch (error) {
+        toast.error(error.message)
+    }
+}
 
 
     // ✅ CHANGE AVAILABILITY (optimistic UI 🚀)
@@ -246,13 +311,33 @@ const AdminContextProvider = (props) => {
 
 
     const value = {
-        aToken,setAToken,
-        backendUrl,
-        doctors,getAllDoctors,changeAvailability,
-        appointments,setAppointments,getAllAppointments,
-        cancelAppointment,
-        getDashData,dashData
-    }
+    aToken,
+    setAToken,
+
+    backendUrl,
+
+    // Doctors
+    doctors,
+    getAllDoctors,
+    changeAvailability,
+
+    // Hospitals
+    hospitals,
+    setHospitals,
+    getAllHospitals,
+    deleteHospital,
+    changeHospitalStatus,
+
+    // Appointments
+    appointments,
+    setAppointments,
+    getAllAppointments,
+    cancelAppointment,
+
+    // Dashboard
+    getDashData,
+    dashData,
+}
 
     return(
         <AdminContext.Provider value={value}>
