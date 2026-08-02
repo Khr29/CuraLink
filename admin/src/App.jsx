@@ -175,6 +175,40 @@ const App = () => {
         }
       />
 
+      <Route
+  path="/add-hospital"
+  element={
+    <ProtectedRoute token={aToken}>
+      <>
+        <Navbar />
+        <div className="flex">
+          <SideBar />
+          <div className="flex-1 p-4 sm:p-6 md:p-8">
+            <AddHospital />
+          </div>
+        </div>
+      </>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/hospital-list"
+  element={
+    <ProtectedRoute token={aToken}>
+      <>
+        <Navbar />
+        <div className="flex">
+          <SideBar />
+          <div className="flex-1 p-4 sm:p-6 md:p-8">
+            <HospitalsList />
+          </div>
+        </div>
+      </>
+    </ProtectedRoute>
+  }
+/>
+
     </Routes>
   </div>
 )
