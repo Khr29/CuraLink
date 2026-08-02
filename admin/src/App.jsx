@@ -54,6 +54,8 @@
 // }
 
 // export default App
+
+import ProtectedRoute from './components/ProtectedRoute'
 import React, { useContext, Suspense, lazy } from 'react'
 import Login from './pages/Login'
 import { ToastContainer } from 'react-toastify'
@@ -91,53 +93,87 @@ const App = () => {
   const isDoctor = !!dToken
   const isLoggedIn = isAdmin || isDoctor
 
-  return isLoggedIn ? (
-    <div className='min-h-screen bg-gradient-to-br from-[#f8f9fd] to-[#eef1ff]'>
+  return (
+  <div className='min-h-screen bg-gradient-to-br from-[#f8f9fd] to-[#eef1ff]'>
+    <ToastContainer />
 
-      <ToastContainer />
+    <Routes>
 
-      <Navbar />
+      {/* Login */}
+      <Route path="/" element={<Login />} />
 
-      <div className='flex'>
+      {/* Admin */}
+      <Route
+        path="/admin-dashboard"
+        element={
+          <ProtectedRoute token={aToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto h-[calc(100vh-70px)]">
+                  <Dashboard />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
 
-        <SideBar />
+      <Route
+        path="/all-appointments"
+        element={
+          <ProtectedRoute token={aToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <AllAppointments />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
 
-        <div className='flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto h-[calc(100vh-70px)]'>
-          <ErrorBoundary>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path='/' element={<></>} />
+      <Route
+        path="/add-doctor"
+        element={
+          <ProtectedRoute token={aToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <AddDoctor />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
 
-                {/* Admin Routes */}
-                {isAdmin && (
-                  <>
-                    <Route path='/admin-dashboard' element={<Dashboard />} />
-                    <Route path='/all-appointments' element={<AllAppointments />} />
-                    <Route path='/add-doctor' element={<AddDoctor />} />
-                    <Route path='/doctor-list' element={<DoctorsList />} />
-                  </>
-                )}
+      <Route
+        path="/doctor-list"
+        element={
+          <ProtectedRoute token={aToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <DoctorsList />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
 
-                {/* Doctor Routes */}
-                {isDoctor && (
-                  <>
-                    <Route path='/doctor-dashboard' element={<DoctorDashboard />} />
-                    <Route path='/doctor-appointments' element={<DoctorAppointment />} />
-                    <Route path='/doctor-profile' element={<DoctorProfile />} />
-                  </>
-                )}
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-      </div>
-    </div>
-  ) : (
-    <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-white'>
-      <ToastContainer />
-      <Login />
-    </div>
-  )
+    </Routes>
+  </div>
+)
 }
 
 export default App

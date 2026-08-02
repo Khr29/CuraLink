@@ -90,7 +90,10 @@ const Navbar = () => {
           {/* Right actions */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => (window.location.href = ADMIN_URL)}
+              onClick={() => {
+              localStorage.removeItem("aToken");
+              window.location.href = ADMIN_URL;
+            }}
               className="hidden md:inline-flex btn btn-ghost btn-sm text-xs"
             >
               Admin Panel
@@ -252,7 +255,10 @@ const Navbar = () => {
           )}
 
           <button
-            onClick={() => (window.location.href = ADMIN_URL)}
+            onClick={() => {
+            localStorage.removeItem("aToken");
+            window.location.href = ADMIN_URL;
+          }}
             className="btn btn-ghost w-full justify-center mt-2 text-sm"
           >
             Admin Panel
