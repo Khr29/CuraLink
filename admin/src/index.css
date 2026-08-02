@@ -1,17 +1,104 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 @import "tailwindcss";
 
+/* =========================
+   CuraLink Theme
+========================= */
+
 @theme {
-  --color-primary: #5F6FFF;
+  /* Brand */
+  --color-primary: #2563EB;
+  --color-secondary: #14B8A6;
+
+  /* Backgrounds */
+  --color-bg: #F8FAFC;
+  --color-card: #FFFFFF;
+
+  /* Text */
+  --color-text: #1E293B;
+  --color-text-light: #64748B;
+
+  /* Borders */
+  --color-border: #E2E8F0;
+
+  /* Status */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+
+  /* Sidebar */
+  --color-sidebar: #0F172A;
+}
+
+/* =========================
+   Global
+========================= */
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family: 'Outfit', sans-serif;
+}
+
+body{
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 ::-webkit-scrollbar{
-  @apply hidden
+  width:8px;
 }
 
-*{
-  font-family: Outfit;
+::-webkit-scrollbar-track{
+  background:#F1F5F9;
 }
-.input {
-  @apply w-full border px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary;
+
+::-webkit-scrollbar-thumb{
+  background:#CBD5E1;
+  border-radius:20px;
+}
+
+::-webkit-scrollbar-thumb:hover{
+  background:#94A3B8;
+}
+
+/* =========================
+   Reusable Inputs
+========================= */
+
+.input{
+  @apply w-full rounded-xl border px-4 py-3 outline-none transition-all duration-200;
+  border-color: var(--color-border);
+}
+
+.input:focus{
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+}
+
+/* =========================
+   Selection
+========================= */
+
+::selection{
+  background:#2563EB;
+  color:white;
+}
+
+/* =========================
+   Smooth UI
+========================= */
+
+button{
+  transition:all .25s ease;
+}
+
+img{
+  user-select:none;
+}
+
+a{
+  text-decoration:none;
+  color:inherit;
 }

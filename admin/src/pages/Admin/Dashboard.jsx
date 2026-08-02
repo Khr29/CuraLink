@@ -150,9 +150,9 @@ const Dashboard = () => {
   }, [cancelAppointment])
 
   const stats = useMemo(() => [
-    { label: 'Total Doctors', value: dashData?.doctors, icon: assets.doctor_icon, color: '#6366F1', bg: '#EEF2FF', trend: '+2 this week' },
+    { label: 'Total Doctors', value: dashData?.doctors, icon: assets.doctor_icon, color: '#2563EB', bg: '#EEF2FF', trend: '+2 this week' },
     { label: 'Appointments', value: dashData?.appointments, icon: assets.appointment_icon, color: '#14B8A6', bg: '#F0FDFA', trend: '+12 today' },
-    { label: 'Patients', value: dashData?.patients, icon: assets.patients_icon, color: '#F59E0B', bg: '#FFFBEB', trend: '+5 new' }
+    { label: 'Patients', value: dashData?.patients, icon: assets.patients_icon, color: '#0EA5E9', bg: '#F0F9FF', trend: '+5 new' }
   ], [dashData])
 
   return dashData && (
@@ -161,7 +161,7 @@ const Dashboard = () => {
       {/* Page Header */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0F172A', margin: 0 }}>Admin Dashboard</h1>
-        <p style={{ fontSize: 14, color: '#64748B', marginTop: 4 }}>Welcome back! Here's what's happening today.</p>
+        <p style={{ fontSize: 14, color: '#64748B', marginTop: 4 }}>Welcome to the CuraLink Administration Portal.</p>
       </div>
 
       {/* Stats Cards */}
@@ -169,13 +169,13 @@ const Dashboard = () => {
         {stats.map((item, i) => (
           <div key={i} style={{
             background: '#FFFFFF', borderRadius: 16, padding: '22px 24px',
-            border: '1px solid #F1F5F9',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            border: '1px solid #E2E8F0',
+            boxShadow:'0 8px 24px rgba(15,23,42,.06)',
             transition: 'box-shadow 0.2s, transform 0.2s',
             cursor: 'default'
           }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.10)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(0)' }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 12px 30px rgba(37,99,235,.12)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(15,23,42,.06)'; e.currentTarget.style.transform = 'translateY(0)' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -192,10 +192,10 @@ const Dashboard = () => {
       </div>
 
       {/* Latest Bookings */}
-      <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #F1F5F9', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+      <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,23,42,.06)', overflow: 'hidden' }}>
 
         {/* Table Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #F1F5F9', background: '#FAFAFA' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#14B8A6' }} />
             <p style={{ fontWeight: 600, color: '#0F172A', fontSize: 15, margin: 0 }}>Latest Bookings</p>
@@ -226,17 +226,17 @@ const Dashboard = () => {
                   </div>
                   <div>
                     {item.cancelled ? (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444', background: '#FEE2E2', padding: '4px 10px', borderRadius: 99 }}>Cancelled</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444', background: '#FFF1F2', padding: '4px 10px', borderRadius: 99 }}>Cancelled</span>
                     ) : item.isCompleted ? (
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', background: '#DCFCE7', padding: '4px 10px', borderRadius: 99 }}>Completed</span>
                     ) : (
                       <button onClick={() => handleCancel(item._id)} style={{
-                        background: '#FEE2E2', border: 'none', borderRadius: 8, padding: '6px 12px',
+                        background: '#FFF1F2', border: 'none', borderRadius: 8, padding: '6px 12px',
                         color: '#EF4444', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                         transition: 'background 0.2s'
                       }}
                         onMouseEnter={e => e.currentTarget.style.background = '#FECACA'}
-                        onMouseLeave={e => e.currentTarget.style.background = '#FEE2E2'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#FFF1F2'}
                       >
                         Cancel
                       </button>
@@ -247,7 +247,7 @@ const Dashboard = () => {
             })
           ) : (
             <div style={{ textAlign: 'center', padding: '48px 0', color: '#94A3B8' }}>
-              <p style={{ fontSize: 14 }}>No recent bookings found</p>
+              <p style={{ fontSize: 14 }}>No appointments available today.</p>
             </div>
           )}
         </div>
