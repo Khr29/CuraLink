@@ -45,13 +45,28 @@ const Navbar = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
 
           {/* Logo */}
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
-            aria-label="Go to homepage"
+         <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-3 focus:outline-none"
+          aria-label="Go to homepage"
+        >
+          <img
+            src={assets.logo}
+            alt="CuraLink"
+            className="h-10 w-10 object-contain"
+          />
+
+          <h1
+            className="text-3xl font-extrabold tracking-tight"
+            style={{
+              background: "linear-gradient(90deg,#2563EB,#14B8A6)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
           >
-            <img src={assets.logo} alt="CuraLink" className="h-8 w-auto" />
-          </button>
+            CuraLink
+          </h1>
+        </button>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-1" aria-label="Primary navigation">
