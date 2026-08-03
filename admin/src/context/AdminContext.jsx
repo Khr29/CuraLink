@@ -147,7 +147,7 @@ const AdminContextProvider = (props) => {
     try {
 
         const { data } = await axios.get(
-            backendUrl + "/api/hospital/list",
+            backendUrl + "/api/admin/all-hospitals",
             config
         )
 
@@ -167,7 +167,7 @@ const deleteHospital = async (hospitalId) => {
     try {
 
         const { data } = await axios.delete(
-            backendUrl + "/api/hospital/delete/" + hospitalId,
+            backendUrl + "/api/admin/delete-hospital/" + hospitalId,
             config
         )
 
@@ -188,7 +188,7 @@ const changeHospitalStatus = async (hospitalId) => {
     try {
 
         const { data } = await axios.patch(
-            backendUrl + "/api/hospital/status/" + hospitalId,
+           backendUrl + "/api/admin/hospital-status/" + hospitalId,
             {},
             config
         )
