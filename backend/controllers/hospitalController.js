@@ -6,16 +6,17 @@ import { v2 as cloudinary } from "cloudinary";
 // =============================
 const addHospital = async (req, res) => {
   try {
-    console.log("========== REQUEST ==========");
-    console.log("BODY:", req.body);
-    console.log("FILE:", req.file);
-    console.log("FILES:", req.files);
-    console.log("=============================");
-
     const hospitalData = req.body;
 
     hospitalData.active = hospitalData.active === "true";
     hospitalData.beds = Number(hospitalData.beds);
+
+    if (!req.files?.image?.length) {
+      return res.json({
+        success: false,
+        message: "Hospital image is required",
+      });
+    }
 
     // Upload main image
     const imageFile = req.files.image[0];
@@ -47,7 +48,7 @@ const addHospital = async (req, res) => {
     // Upload gallery images
     const galleryUrls = [];
 
-    if (req.files.galleryImages) {
+    if (req.files?.galleryImages?.length) {
       for (const file of req.files.galleryImages) {
         const upload = await cloudinary.uploader.upload(file.path, {
           resource_type: "image",
