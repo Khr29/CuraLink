@@ -12,6 +12,7 @@ const Doctors = lazy(() => import('./pages/Doctors'))
 const Hospitals = lazy(() => import('./pages/Hospitals'))
 const HospitalDetails = lazy(() => import('./pages/HospitalDetails'))
 
+
 const Login = lazy(() => import('./pages/Login'))
 const About = lazy(() => import('./pages/About'))
 const Contact = lazy(() => import('./pages/Contact'))
