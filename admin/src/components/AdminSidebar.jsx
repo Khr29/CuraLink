@@ -65,11 +65,47 @@ const AdminSidebar = () => {
   const [collapsed, setCollapsed] = useState(false)
 
   const menuItems = useMemo(() => [
-    { name: 'Dashboard', path: '/admin-dashboard', icon: assets.home_icon },
-    { name: 'Appointments', path: '/all-appointments', icon: assets.appointment_icon },
-    { name: 'Add Doctor', path: '/add-doctor', icon: assets.add_icon },
-    { name: 'Doctor List', path: '/doctor-list', icon: assets.people_icon }
-  ], [])
+      {
+        name: 'Dashboard',
+        path: '/admin-dashboard',
+        icon: assets.home_icon
+      },
+
+      {
+        name: 'Appointments',
+        path: '/all-appointments',
+        icon: assets.appointment_icon
+      },
+
+      {
+        name: 'Add Doctor',
+        path: '/add-doctor',
+        icon: assets.add_icon
+      },
+
+      {
+        name: 'Doctor List',
+        path: '/doctor-list',
+        icon: assets.people_icon
+      },
+
+      // -------------------------
+      // Hospital Management
+      // -------------------------
+
+      {
+        name: 'Add Hospital',
+        path: '/add-hospital',
+        icon: assets.add_icon
+      },
+
+      {
+        name: 'Hospital List',
+        path: '/hospital-list',
+        icon: assets.people_icon
+      }
+
+    ], [])
 
   return (
     <div style={{
