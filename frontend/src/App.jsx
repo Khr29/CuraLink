@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy loaded components
+const Hospitals = lazy(() => import('./pages/Hospitals'))
 const Home = lazy(() => import('./pages/Home'))
 const Doctors = lazy(() => import('./pages/Doctors'))
 const Login = lazy(() => import('./pages/Login'))
@@ -36,6 +37,7 @@ const App = () => {
               <Route path='/' element={<Home />} />
               <Route path='/doctors' element={<Doctors />} />
               <Route path='/doctors/:speciality' element={<Doctors />} />   
+              <Route path='/hospitals' element={<Hospitals />} />
               <Route path='/login' element={<Login />} />
               <Route path='/about' element={<About />} />
               <Route path='/contact' element={<Contact />} />
