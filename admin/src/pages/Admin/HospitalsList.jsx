@@ -1,5 +1,17 @@
-import React, { useContext, useEffect, useCallback, useMemo } from 'react'
+import React, { useContext, useEffect, useCallback, useMemo, useState } from 'react'
 import { AdminContext } from '../../context/AdminContext'
+import { 
+  Building2, 
+  MapPin, 
+  Mail, 
+  Phone, 
+  Trash2, 
+  Star, 
+  CheckCircle2, 
+  XCircle, 
+  Activity, 
+  Building 
+} from 'lucide-react'
 
 const HospitalsList = () => {
   const {
@@ -10,10 +22,14 @@ const HospitalsList = () => {
     deleteHospital
   } = useContext(AdminContext)
 
+  // Fetch hospitals
   useEffect(() => {
-    if (aToken) getAllHospitals()
+    if (aToken) {
+      getAllHospitals()
+    }
   }, [aToken, getAllHospitals])
 
+  // Stable handlers
   const handleStatusChange = useCallback((id) => {
     changeHospitalStatus(id)
   }, [changeHospitalStatus])
@@ -22,234 +38,417 @@ const HospitalsList = () => {
     deleteHospital(id)
   }, [deleteHospital])
 
+  // Memoized hospital card list rendering
   const renderedHospitals = useMemo(() => {
-    return hospitals?.map((item) => {
-      const isActive = item.active ?? item.available ?? false
-      const city = item.address?.city || item.city || ''
-      const state = item.address?.state || item.state || ''
-      const locationText = [city, state].filter(Boolean).join(', ') || 'Location N/A'
-      const deptCount = item.departments?.length || 0
-      const facilityCount = item.facilities?.length || 0
-      const rating = item.rating || 4.5
-
-      return (
-        <div
-          key={item._id}
-          style={{
-            background: '#FFFFFF',
-            borderRadius: 20,
-            border: '1px solid #F1F5F9',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-            overflow: 'hidden',
-            transition: 'box-shadow 0.25s, transform 0.25s',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 12px 32px rgba(20,184,166,0.14)'
-            e.currentTarget.style.transform = 'translateY(-4px)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)'
-            e.currentTarget.style.transform = 'translateY(0)'
-          }}
-        >
-          {/* Hospital Image Container */}
-          <div style={{ overflow: 'hidden', height: 200, background: '#F0FDFA', position: 'relative' }}>
-            <img
-              src={item.image}
-              alt={item.name}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                transition: 'transform 0.5s ease'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            />
-
-            {/* Delete Button Overlay */}
-            <button
-              onClick={() => handleDelete(item._id)}
-              title="Delete Hospital"
-              style={{
-                position: 'absolute',
-                top: 10,
-                left: 10,
-                width: 30,
-                height: 30,
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.9)',
-                backdropFilter: 'blur(4px)',
-                border: '1px solid #FECDD3',
-                color: '#EF4444',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#EF4444'
-                e.currentTarget.style.color = '#FFFFFF'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)'
-                e.currentTarget.style.color = '#EF4444'
-              }}
-            >
-              🗑️
-            </button>
-
-            {/* Rating Tag */}
-            <div style={{
-              position: 'absolute',
-              top: 10,
-              right: 10,
-              background: 'rgba(15, 23, 42, 0.75)',
-              backdropFilter: 'blur(4px)',
-              color: '#FFD700',
-              fontSize: 11,
-              fontWeight: 700,
-              padding: '4px 8px',
-              borderRadius: 99,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4
-            }}>
-              <span>★</span>
-              <span style={{ color: '#FFFFFF' }}>{rating}</span>
-            </div>
-          </div>
-
-          {/* Content Body */}
-          <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div>
-              <p style={{ fontWeight: 700, color: '#0F172A', fontSize: 15, margin: 0 }}>{item.name}</p>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#6366F1',
-                  background: '#EEF2FF',
-                  padding: '3px 10px',
-                  borderRadius: 99
-                }}>
-                  {item.hospitalType || 'Hospital'}
-                </span>
-                
-                <span style={{ fontSize: 12, color: '#64748B', fontWeight: 500 }}>
-                  📍 {locationText}
-                </span>
-              </div>
-            </div>
-
-            {/* Contact Info */}
-            <div style={{ fontSize: 12, color: '#64748B', display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {item.email && <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>✉️ {item.email}</div>}
-              {item.phone && <div>📞 {item.phone}</div>}
-            </div>
-
-            {/* Departments & Facilities Badge Count */}
-            <div style={{ display: 'flex', gap: 8, fontSize: 11, fontWeight: 600, color: '#475569' }}>
-              <span style={{ background: '#F1F5F9', padding: '4px 8px', borderRadius: 6 }}>
-                🩺 {deptCount} Depts
-              </span>
-              <span style={{ background: '#F1F5F9', padding: '4px 8px', borderRadius: 6 }}>
-                🏢 {facilityCount} Facilities
-              </span>
-            </div>
-
-            {/* Status Toggle Box */}
-           <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 14px',
-              borderRadius: 12,
-              marginTop: 'auto',
-              background: isActive ? '#F0FDF4' : '#FFF1F2',
-              border: `1px solid ${isActive ? '#BBF7D0' : '#FECDD3'}`
-            }}
-          >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, flex: 1 }}>
-                <div style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: isActive ? '#22C55E' : '#EF4444'
-                }} />
-                <span style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: isActive ? '#16A34A' : '#DC2626'
-                }}>
-                  {isActive ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-
-              {/* Toggle Switch */}
-              <div
-                onClick={() => handleStatusChange(item._id)}
-                style={{
-                  width: 44,
-                  height: 24,
-                  borderRadius: 99,
-                  cursor: 'pointer',
-                  background: isActive ? '#22C55E' : '#CBD5E1',
-                  padding: 3,
-                  display: 'flex',
-                  alignItems: 'center',
-                  transition: 'background 0.25s ease'
-                }}
-              >
-                <div style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: '50%',
-                  background: '#FFFFFF',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                  transform: isActive ? 'translateX(20px)' : 'translateX(0px)',
-                  transition: 'transform 0.25s ease'
-                }} />
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )
-    })
+    return hospitals?.map((item) => (
+      <HospitalCard 
+        key={item._id} 
+        item={item} 
+        onStatusChange={handleStatusChange} 
+        onDelete={handleDelete} 
+      />
+    ))
   }, [hospitals, handleStatusChange, handleDelete])
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', padding: '28px 24px' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-
-        {/* Header */}
-        <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0F172A', margin: 0 }}>All Hospitals</h1>
-            <p style={{ fontSize: 14, color: '#64748B', marginTop: 4 }}>Manage registered hospitals and their status</p>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)',
+        padding: '36px 24px'
+      }}
+    >
+      <div style={{ maxWidth: 1320, margin: '0 auto' }}>
+        
+        {/* PAGE HEADER */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 32,
+            flexWrap: 'wrap',
+            gap: 16
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 16,
+                background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 20px rgba(37,99,235,0.25)'
+              }}
+            >
+              <Building2 size={26} color="#FFFFFF" />
+            </div>
+            <div>
+              <h1
+                style={{
+                  fontSize: 26,
+                  fontWeight: 800,
+                  color: '#0F172A',
+                  letterSpacing: '-0.02em',
+                  margin: 0
+                }}
+              >
+                All Hospitals
+              </h1>
+              <p style={{ fontSize: 14, color: '#64748B', marginTop: 3 }}>
+                Manage registered hospitals, network status, and directory listings.
+              </p>
+            </div>
           </div>
-          <span style={{ background: '#F0FDF4', color: '#16A34A', fontWeight: 700, fontSize: 13, padding: '6px 14px', borderRadius: 99 }}>
-            {hospitals?.length || 0} Hospitals
-          </span>
+
+          {/* HOSPITAL COUNTER BADGE */}
+          <div
+            style={{
+              background: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              padding: '10px 20px',
+              borderRadius: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              boxShadow: '0 4px 12px rgba(15,23,42,0.03)'
+            }}
+          >
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#14B8A6' }} />
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>
+              Total Hospitals: <span style={{ color: '#2563EB' }}>{hospitals?.length || 0}</span>
+            </span>
+          </div>
         </div>
 
-        {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
-          {hospitals?.length > 0 ? renderedHospitals : (
-            <p style={{ color: '#94A3B8', gridColumn: '1/-1', textAlign: 'center', padding: '60px 0' }}>
-              No hospitals found
+        {/* HOSPITALS GRID CONTAINER */}
+        {hospitals?.length > 0 ? (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 20
+            }}
+          >
+            {renderedHospitals}
+          </div>
+        ) : (
+          /* EMPTY STATE CARD */
+          <div
+            style={{
+              background: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: 24,
+              padding: '60px 24px',
+              textAlign: 'center',
+              boxShadow: '0 8px 24px rgba(15,23,42,0.04)'
+            }}
+          >
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 20,
+                background: '#EFF6FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px'
+              }}
+            >
+              <Building2 size={32} color="#2563EB" />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>
+              No Hospitals Found
+            </h3>
+            <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
+              There are currently no registered hospitals available in the network.
             </p>
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
+
+// CURALINK DESIGN SYSTEM HOSPITAL CARD COMPONENT
+const HospitalCard = ({ item, onStatusChange, onDelete }) => {
+  const [hovered, setHovered] = useState(false)
+  const [deleteHovered, setDeleteHovered] = useState(false)
+
+  // Derived properties from backend data
+  const isActive = item.active ?? item.available ?? false
+  const city = item.address?.city || item.city || ''
+  const state = item.address?.state || item.state || ''
+  const locationText = [city, state].filter(Boolean).join(', ') || 'Location N/A'
+  const deptCount = item.departments?.length || 0
+  const facilityCount = item.facilities?.length || 0
+  const rating = item.rating || 4.5
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: 24,
+        overflow: 'hidden',
+        boxShadow: hovered ? '0 12px 32px rgba(15,23,42,0.08)' : '0 8px 24px rgba(15,23,42,0.04)',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      {/* CARD TOP IMAGE */}
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: 210,
+          background: 'linear-gradient(135deg, #EFF6FF, #E0F2FE)',
+          overflow: 'hidden'
+        }}
+      >
+        <img
+          src={item.image}
+          alt={item.name}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transform: hovered ? 'scale(1.06)' : 'scale(1)',
+            transition: 'transform 0.5s ease'
+          }}
+        />
+
+        {/* DELETE ACTION BUTTON */}
+        <button
+          onClick={() => onDelete(item._id)}
+          onMouseEnter={() => setDeleteHovered(true)}
+          onMouseLeave={() => setDeleteHovered(false)}
+          title="Delete Hospital"
+          style={{
+            position: 'absolute',
+            top: 12,
+            left: 12,
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: deleteHovered ? '#EF4444' : 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(8px)',
+            border: deleteHovered ? '1px solid #EF4444' : '1px solid rgba(226,232,240,0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            transition: 'all 0.2s ease',
+            zIndex: 2
+          }}
+        >
+          <Trash2 size={16} color={deleteHovered ? '#FFFFFF' : '#EF4444'} />
+        </button>
+
+        {/* RATING BADGE */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            padding: '5px 10px',
+            borderRadius: 99,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}
+        >
+          <Star size={12} color="#FBBF24" fill="#FBBF24" />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#FFFFFF', paddingTop: 1 }}>
+            {rating}
+          </span>
+        </div>
+      </div>
+
+      {/* CARD DETAILS */}
+      <div
+        style={{
+          padding: '20px',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16
+        }}
+      >
+        <div>
+          <h3
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: '#0F172A',
+              margin: '0 0 8px 0',
+              letterSpacing: '-0.01em',
+              lineHeight: 1.3
+            }}
+          >
+            {item.name}
+          </h3>
+
+          {/* TAGS (TYPE & LOCATION) */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                background: '#EEF2FF',
+                padding: '4px 10px',
+                borderRadius: 99
+              }}
+            >
+              <Activity size={12} color="#4F46E5" />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5' }}>
+                {item.hospitalType || 'Hospital'}
+              </span>
+            </div>
+            
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                background: '#F1F5F9',
+                padding: '4px 10px',
+                borderRadius: 99
+              }}
+            >
+              <MapPin size={12} color="#64748B" />
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B' }}>
+                {locationText}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* CONTACT INFO */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {item.email && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Mail size={14} color="#94A3B8" />
+              <span style={{ fontSize: 13, color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {item.email}
+              </span>
+            </div>
+          )}
+          {item.phone && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Phone size={14} color="#94A3B8" />
+              <span style={{ fontSize: 13, color: '#475569' }}>
+                {item.phone}
+              </span>
+            </div>
           )}
         </div>
 
+        {/* DEPARTMENTS & FACILITIES */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+          <div style={{ flex: 1, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, padding: '10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+             <Building size={16} color="#64748B" />
+             <div>
+               <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', lineHeight: 1 }}>{deptCount}</div>
+               <div style={{ fontSize: 11, color: '#64748B', marginTop: 3 }}>Depts</div>
+             </div>
+          </div>
+          <div style={{ flex: 1, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, padding: '10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+             <Activity size={16} color="#64748B" />
+             <div>
+               <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', lineHeight: 1 }}>{facilityCount}</div>
+               <div style={{ fontSize: 11, color: '#64748B', marginTop: 3 }}>Facilities</div>
+             </div>
+          </div>
+        </div>
+
+        {/* STATUS TOGGLE CONTROL */}
+        <div
+          style={{
+            marginTop: 4,
+            padding: '12px 14px',
+            borderRadius: 16,
+            background: isActive ? '#F0FDF4' : '#FEF2F2',
+            border: `1px solid ${isActive ? '#DCFCE7' : '#FEE2E2'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            transition: 'all 0.25s ease'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isActive ? (
+              <CheckCircle2 size={16} color="#16A34A" />
+            ) : (
+              <XCircle size={16} color="#DC2626" />
+            )}
+            <span
+              style={{
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: isActive ? '#15803D' : '#B91C1C'
+              }}
+            >
+              {isActive ? 'Active Status' : 'Inactive Status'}
+            </span>
+          </div>
+
+          {/* TOGGLE SWITCH INPUT */}
+          <label
+            style={{
+              position: 'relative',
+              display: 'inline-block',
+              width: 44,
+              height: 24,
+              cursor: 'pointer'
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={() => onStatusChange(item._id)}
+              style={{ opacity: 0, width: 0, height: 0 }}
+            />
+            <span
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: isActive ? '#16A34A' : '#CBD5E1',
+                borderRadius: 99,
+                transition: '0.25s ease',
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  height: 18,
+                  width: 18,
+                  left: isActive ? 23 : 3,
+                  bottom: 3,
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '50%',
+                  transition: '0.25s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+              />
+            </span>
+          </label>
+        </div>
       </div>
     </div>
   )

@@ -1,205 +1,21 @@
-
-
-// import React, { useState, useContext, useCallback } from 'react'
-// import { assets } from '../../assets/assets'
-// import { AdminContext } from '../../context/AdminContext'
-// import { toast } from 'react-toastify'
-// import axios from 'axios'
-
-// const AddDoctor = () => {
-
-//   const [docImg, setDocImg] = useState(null)
-//   const [name, setName] = useState('')
-//   const [email, setEmail] = useState('')
-//   const [password, setPassword] = useState('')
-//   const [experience, setExperience] = useState('1 Year')
-//   const [fees, setFees] = useState('')
-//   const [about, setAbout] = useState('')
-//   const [speciality, setSpeciality] = useState('General physician')
-//   const [degree, setDegree] = useState('')
-//   const [address1, setAddress1] = useState('')
-//   const [address2, setAddress2] = useState('')
-
-//   const { backendUrl, aToken } = useContext(AdminContext)
-
-//   // 🔥 optimized submit
-//   const onSubmitHandler = useCallback(async (event) => {
-//     event.preventDefault()
-
-//     if (!docImg) {
-//       return toast.error('Image not selected')
-//     }
-
-//     try {
-//       const formData = new FormData()
-
-//       formData.append('image', docImg)
-//       formData.append('name', name.trim())
-//       formData.append('email', email.trim())
-//       formData.append('password', password)
-//       formData.append('experience', experience)
-//       formData.append('fees', fees)
-//       formData.append('about', about.trim())
-//       formData.append('speciality', speciality)
-//       formData.append('degree', degree.trim())
-//       formData.append('address', JSON.stringify({
-//         line1: address1.trim(),
-//         line2: address2.trim()
-//       }))
-
-//       const { data } = await axios.post(
-//         `${backendUrl}/api/admin/add-doctor`,
-//         formData,
-//         { headers: { aToken } }
-//       )
-
-//       if (data.success) {
-//         toast.success(data.message)
-
-//         // 🔥 reset form clean way
-//         setDocImg(null)
-//         setName('')
-//         setEmail('')
-//         setPassword('')
-//         setExperience('1 Year')
-//         setFees('')
-//         setAbout('')
-//         setSpeciality('General physician')
-//         setDegree('')
-//         setAddress1('')
-//         setAddress2('')
-//       } else {
-//         toast.error(data.message)
-//       }
-
-//     } catch (error) {
-//       console.error(error)
-//       toast.error(error.message)
-//     }
-
-//   }, [docImg, name, email, password, experience, fees, about, speciality, degree, address1, address2, backendUrl, aToken])
-
-//   return (
-//     <div className='w-full px-2 sm:px-4 md:px-6 py-4'>
-
-//       <form onSubmit={onSubmitHandler} className='max-w-5xl mx-auto'>
-
-//         <h2 className='text-xl sm:text-2xl font-semibold mb-4'>Add Doctor</h2>
-
-//         <div className='bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border overflow-y-auto'>
-
-//           {/* Image Upload */}
-//           <div className='flex items-center gap-4 mb-6'>
-//             <label htmlFor='doc-img' className='cursor-pointer'>
-//               <img
-//                 className='w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border'
-//                 src={docImg ? URL.createObjectURL(docImg) : assets.upload_area}
-//                 alt=''
-//               />
-//             </label>
-//             <input
-//               type='file'
-//               id='doc-img'
-//               hidden
-//               onChange={(e) => setDocImg(e.target.files[0])}
-//             />
-//             <p className='text-sm text-gray-500'>
-//               Upload doctor <br /> picture
-//             </p>
-//           </div>
-
-//           {/* Form Grid */}
-//           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-
-//             {/* LEFT */}
-//             <div className='flex flex-col gap-4'>
-
-//               <Input label="Doctor Name" value={name} onChange={setName} />
-//               <Input label="Email" type="email" value={email} onChange={setEmail} />
-//               <Input label="Password" type="password" value={password} onChange={setPassword} />
-
-//               <div>
-//                 <p className='text-sm'>Experience</p>
-//                 <select value={experience} onChange={(e) => setExperience(e.target.value)} className='input'>
-//                   {[...Array(10)].map((_, i) => (
-//                     <option key={i} value={`${i + 1} Year`}>{i + 1} Year</option>
-//                   ))}
-//                 </select>
-//               </div>
-
-//               <Input label="Fees" type="number" value={fees} onChange={setFees} />
-
-//               <div>
-//                 <p className='text-sm'>About Doctor</p>
-//                 <textarea
-//                   value={about}
-//                   onChange={(e) => setAbout(e.target.value)}
-//                   rows={4}
-//                   className='input'
-//                   placeholder='Write about doctor'
-//                 />
-//               </div>
-//             </div>
-
-//             {/* RIGHT */}
-//             <div className='flex flex-col gap-4'>
-
-//               <div>
-//                 <p className='text-sm'>Speciality</p>
-//                 <select value={speciality} onChange={(e) => setSpeciality(e.target.value)} className='input'>
-//                   <option>General physician</option>
-//                   <option>Gynecologist</option>
-//                   <option>Dermatologist</option>
-//                   <option>Pediatricians</option>
-//                   <option>Neurologist</option>
-//                   <option>Gastroenterologist</option>
-//                 </select>
-//               </div>
-
-//               <Input label="Education" value={degree} onChange={setDegree} />
-
-//               <Input label="Address Line 1" value={address1} onChange={setAddress1} />
-//               <Input label="Address Line 2" value={address2} onChange={setAddress2} />
-
-//               {/* Button */}
-//               <button
-//                 type='submit'
-//                 className='mt-2 bg-primary text-white py-2.5 rounded-lg hover:bg-primary/90 transition'
-//               >
-//                 Add Doctor
-//               </button>
-
-//             </div>
-
-//           </div>
-
-//         </div>
-
-//       </form>
-//     </div>
-//   )
-// }
-
-// // 🔥 Reusable Input Component (clean + fast)
-// const Input = ({ label, value, onChange, type = "text" }) => (
-//   <div>
-//     <p className='text-sm'>{label}</p>
-//     <input
-//       type={type}
-//       value={value}
-//       onChange={(e) => onChange(e.target.value)}
-//       className='input'
-//       required
-//     />
-//   </div>
-// )
-
-// export default React.memo(AddDoctor)
 import React, { useState, useContext, useCallback } from 'react'
-import { assets } from '../../assets/assets'
-import { AdminContext } from '../../context/AdminContext'
-import { toast } from 'react-toastify'
 import axios from 'axios'
+import { toast } from 'react-toastify'
+import { AdminContext } from '../../context/AdminContext'
+import { assets } from '../../assets/assets'
+import {
+  User,
+  Mail,
+  Lock,
+  Stethoscope,
+  GraduationCap,
+  Briefcase,
+  IndianRupee,
+  MapPin,
+  FileText,
+  UploadCloud,
+  UserPlus
+} from 'lucide-react'
 
 const AddDoctor = () => {
   const [docImg, setDocImg] = useState(null)
@@ -216,183 +32,545 @@ const AddDoctor = () => {
 
   const { backendUrl, aToken } = useContext(AdminContext)
 
-  const onSubmitHandler = useCallback(async (event) => {
-    event.preventDefault()
-    if (!docImg) return toast.error('Image not selected')
-    try {
-      const formData = new FormData()
-      formData.append('image', docImg)
-      formData.append('name', name.trim())
-      formData.append('email', email.trim())
-      formData.append('password', password)
-      formData.append('experience', experience)
-      formData.append('fees', fees)
-      formData.append('about', about.trim())
-      formData.append('speciality', speciality)
-      formData.append('degree', degree.trim())
-      formData.append('address', JSON.stringify({ line1: address1.trim(), line2: address2.trim() }))
+  const onSubmitHandler = useCallback(
+    async (event) => {
+      event.preventDefault()
 
-      const { data } = await axios.post(`${backendUrl}/api/admin/add-doctor`, formData, { headers: { aToken } })
-
-      if (data.success) {
-        toast.success(data.message)
-        setDocImg(null); setName(''); setEmail(''); setPassword('')
-        setExperience('1 Year'); setFees(''); setAbout('')
-        setSpeciality('General physician'); setDegree('')
-        setAddress1(''); setAddress2('')
-      } else {
-        toast.error(data.message)
+      if (!docImg) {
+        return toast.error('Image not selected')
       }
-    } catch (error) {
-      console.error(error)
-      toast.error(error.message)
-    }
-  }, [docImg, name, email, password, experience, fees, about, speciality, degree, address1, address2, backendUrl, aToken])
 
-  const inputStyle = {
-    width: '100%', background: '#F8FAFC', border: '1.5px solid #E2E8F0',
-    borderRadius: 10, padding: '10px 14px', fontSize: 13.5,
-    color: '#0F172A', outline: 'none', fontFamily: 'Inter, sans-serif',
-    transition: 'border-color 0.2s, box-shadow 0.2s', boxSizing: 'border-box'
-  }
+      try {
+        const formData = new FormData()
 
-  const labelStyle = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6, display: 'block', letterSpacing: '0.02em' }
+        formData.append('image', docImg)
+        formData.append('name', name.trim())
+        formData.append('email', email.trim())
+        formData.append('password', password)
+        formData.append('experience', experience)
+        formData.append('fees', fees)
+        formData.append('about', about.trim())
+        formData.append('speciality', speciality)
+        formData.append('degree', degree.trim())
+        formData.append(
+          'address',
+          JSON.stringify({
+            line1: address1.trim(),
+            line2: address2.trim()
+          })
+        )
+
+        const { data } = await axios.post(
+          `${backendUrl}/api/admin/add-doctor`,
+          formData,
+          { headers: { aToken } }
+        )
+
+        if (data.success) {
+          toast.success(data.message)
+
+          setDocImg(null)
+          setName('')
+          setEmail('')
+          setPassword('')
+          setExperience('1 Year')
+          setFees('')
+          setAbout('')
+          setSpeciality('General physician')
+          setDegree('')
+          setAddress1('')
+          setAddress2('')
+        } else {
+          toast.error(data.message)
+        }
+      } catch (error) {
+        console.error(error)
+        toast.error(error.message)
+      }
+    },
+    [
+      docImg,
+      name,
+      email,
+      password,
+      experience,
+      fees,
+      about,
+      speciality,
+      degree,
+      address1,
+      address2,
+      backendUrl,
+      aToken
+    ]
+  )
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', padding: '28px 24px' }}>
-      <form onSubmit={onSubmitHandler} style={{ maxWidth: 900, margin: '0 auto' }}>
-
-        {/* Page Header */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0F172A', margin: 0 }}>Add New Doctor</h1>
-          <p style={{ fontSize: 14, color: '#64748B', marginTop: 4 }}>Fill in the details to register a new doctor on the platform</p>
-        </div>
-
-        <div style={{ background: '#FFFFFF', borderRadius: 20, border: '1px solid #F1F5F9', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '32px' }}>
-
-          {/* Image Upload */}
-          <div style={{ marginBottom: 32, display: 'flex', alignItems: 'center', gap: 20 }}>
-            <label htmlFor='doc-img' style={{ cursor: 'pointer', position: 'relative' }}>
-              <div style={{
-                width: 88, height: 88, borderRadius: '50%', overflow: 'hidden',
-                border: '3px solid #E2E8F0', background: '#F0FDFA',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'border-color 0.2s'
-              }}>
-                <img
-                  src={docImg ? URL.createObjectURL(docImg) : assets.upload_area}
-                  alt='Doctor'
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </div>
-              <div style={{
-                position: 'absolute', bottom: 2, right: 2, width: 24, height: 24,
-                background: 'linear-gradient(135deg, #14B8A6, #6366F1)',
-                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '2px solid #fff'
-              }}>
-                <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#fff" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-            </label>
-            <input type='file' id='doc-img' hidden onChange={(e) => setDocImg(e.target.files[0])} />
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)',
+        padding: '36px 24px'
+      }}
+    >
+      <form onSubmit={onSubmitHandler} style={{ maxWidth: 1320, margin: '0 auto' }}>
+        
+        {/* PAGE HEADER */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 16,
+                background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 20px rgba(37,99,235,0.25)'
+              }}
+            >
+              <UserPlus size={26} color="#FFFFFF" />
+            </div>
             <div>
-              <p style={{ fontWeight: 600, color: '#0F172A', fontSize: 14, margin: 0 }}>Doctor Photo</p>
-              <p style={{ color: '#94A3B8', fontSize: 12, marginTop: 4 }}>Upload a clear profile picture. JPG or PNG.</p>
+              <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', margin: 0 }}>
+                Add New Doctor
+              </h1>
+              <p style={{ fontSize: 14, color: '#64748B', marginTop: 3 }}>
+                Register a new doctor into CuraLink.
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Divider */}
-          <div style={{ borderTop: '1px solid #F1F5F9', marginBottom: 28 }} />
-
-          {/* Form Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 32px' }}>
-
-            {/* LEFT */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <FormField label="Doctor Name" value={name} onChange={setName} inputStyle={inputStyle} labelStyle={labelStyle} placeholder="Dr. Full Name" />
-              <FormField label="Email Address" type="email" value={email} onChange={setEmail} inputStyle={inputStyle} labelStyle={labelStyle} placeholder="doctor@email.com" />
-              <FormField label="Password" type="password" value={password} onChange={setPassword} inputStyle={inputStyle} labelStyle={labelStyle} placeholder="••••••••" />
-
-              <div>
-                <label style={labelStyle}>Experience</label>
-                <select value={experience} onChange={(e) => setExperience(e.target.value)} style={inputStyle}>
-                  {[...Array(10)].map((_, i) => (
-                    <option key={i} value={`${i + 1} Year`}>{i + 1} Year</option>
-                  ))}
-                </select>
+        {/* GRID LAYOUT - 2 COLUMNS ON DESKTOP */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(580px, 1fr))', gap: 28 }}>
+          
+          {/* LEFT COLUMN */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+            
+            {/* CARD 1: BASIC INFORMATION */}
+            <DashboardCard title="Basic Information" icon={User}>
+              
+              {/* Doctor Photo Upload Area */}
+              <div style={{ marginBottom: 24 }}>
+                <label style={labelStyle}>Doctor Photo</label>
+                <div style={{ position: 'relative' }}>
+                  <label
+                    htmlFor="doc-img"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '24px 16px',
+                      borderRadius: 20,
+                      border: '2px dashed #CBD5E1',
+                      background: '#F8FAFC',
+                      cursor: 'pointer',
+                      transition: 'all 0.25s ease',
+                      textAlign: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#2563EB'
+                      e.currentTarget.style.background = '#EFF6FF'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#CBD5E1'
+                      e.currentTarget.style.background = '#F8FAFC'
+                    }}
+                  >
+                    {docImg ? (
+                      <div style={{ position: 'relative', width: '100%', height: 160, borderRadius: 14, overflow: 'hidden' }}>
+                        <img
+                          src={URL.createObjectURL(docImg)}
+                          alt="Doctor Preview"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'rgba(15,23,42,0.3)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#FFF',
+                            fontWeight: 600,
+                            fontSize: 13
+                          }}
+                        >
+                          Click to Replace Image
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div
+                          style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 14,
+                            background: '#E0F2FE',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: 12
+                          }}
+                        >
+                          <UploadCloud size={24} color="#14B8A6" />
+                        </div>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: '#0F172A', margin: 0 }}>
+                          Click or drag doctor photo here
+                        </p>
+                        <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>
+                          Supports PNG, JPG or WEBP (Max 5MB)
+                        </p>
+                      </>
+                    )}
+                  </label>
+                  <input
+                    type="file"
+                    id="doc-img"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => setDocImg(e.target.files[0])}
+                  />
+                </div>
               </div>
 
-              <FormField label="Consultation Fees (₹)" type="number" value={fees} onChange={setFees} inputStyle={inputStyle} labelStyle={labelStyle} placeholder="500" />
+              {/* Name & Speciality */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
+                <InputField
+                  label="Doctor Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Dr. John Doe"
+                  icon={User}
+                  required
+                />
+                <div>
+                  <label style={labelStyle}>Speciality</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <div style={{ position: 'absolute', left: 14, pointerEvents: 'none', color: '#94A3B8' }}>
+                      <Stethoscope size={18} />
+                    </div>
+                    <select
+                      value={speciality}
+                      onChange={(e) => setSpeciality(e.target.value)}
+                      style={{ ...inputStyle, paddingLeft: 42 }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#2563EB'
+                        e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.12)'
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#CBD5E1'
+                        e.target.style.boxShadow = 'none'
+                      }}
+                    >
+                      <option value="General physician">General physician</option>
+                      <option value="Gynecologist">Gynecologist</option>
+                      <option value="Dermatologist">Dermatologist</option>
+                      <option value="Pediatricians">Pediatricians</option>
+                      <option value="Neurologist">Neurologist</option>
+                      <option value="Gastroenterologist">Gastroenterologist</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
 
+              {/* Education & Experience */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
+                <InputField
+                  label="Education / Degree"
+                  value={degree}
+                  onChange={(e) => setDegree(e.target.value)}
+                  placeholder="MBBS, MD"
+                  icon={GraduationCap}
+                  required
+                />
+                <div>
+                  <label style={labelStyle}>Experience</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <div style={{ position: 'absolute', left: 14, pointerEvents: 'none', color: '#94A3B8' }}>
+                      <Briefcase size={18} />
+                    </div>
+                    <select
+                      value={experience}
+                      onChange={(e) => setExperience(e.target.value)}
+                      style={{ ...inputStyle, paddingLeft: 42 }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#2563EB'
+                        e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.12)'
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#CBD5E1'
+                        e.target.style.boxShadow = 'none'
+                      }}
+                    >
+                      {[...Array(10)].map((_, i) => (
+                        <option key={i} value={`${i + 1} Year`}>
+                          {i + 1} Year
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Consultation Fees */}
               <div>
-                <label style={labelStyle}>About Doctor</label>
+                <InputField
+                  label="Consultation Fees"
+                  type="number"
+                  value={fees}
+                  onChange={(e) => setFees(e.target.value)}
+                  placeholder="500"
+                  icon={IndianRupee}
+                  required
+                />
+              </div>
+
+            </DashboardCard>
+
+            {/* CARD 2: CONTACT INFORMATION */}
+            <DashboardCard title="Contact Information" icon={Mail}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+                <InputField
+                  label="Email Address"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="doctor@email.com"
+                  icon={Mail}
+                  required
+                />
+                <InputField
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  icon={Lock}
+                  required
+                />
+              </div>
+            </DashboardCard>
+
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+            
+            {/* CARD 3: ADDRESS */}
+            <DashboardCard title="Address" icon={MapPin}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <InputField
+                  label="Address Line 1"
+                  value={address1}
+                  onChange={(e) => setAddress1(e.target.value)}
+                  placeholder="Street, Area..."
+                  icon={MapPin}
+                  required
+                />
+                <InputField
+                  label="Address Line 2"
+                  value={address2}
+                  onChange={(e) => setAddress2(e.target.value)}
+                  placeholder="Landmark, City..."
+                  icon={MapPin}
+                  required
+                />
+              </div>
+            </DashboardCard>
+
+            {/* CARD 4: ABOUT DOCTOR */}
+            <DashboardCard title="About Doctor" icon={FileText}>
+              <div>
+                <label style={labelStyle}>Biography / Detail</label>
                 <textarea
                   value={about}
                   onChange={(e) => setAbout(e.target.value)}
-                  rows={4}
-                  placeholder="Brief description about the doctor's expertise..."
-                  style={{ ...inputStyle, resize: 'vertical' }}
-                  onFocus={e => { e.target.style.borderColor = '#14B8A6'; e.target.style.boxShadow = '0 0 0 3px rgba(20,184,166,0.12)' }}
-                  onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none' }}
+                  rows={6}
+                  placeholder="Write a detailed description about the doctor's experience, background, and medical practice..."
+                  style={{
+                    ...inputStyle,
+                    resize: 'vertical',
+                    height: 'auto',
+                    padding: '14px'
+                  }}
+                  required
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#2563EB'
+                    e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.12)'
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#CBD5E1'
+                    e.target.style.boxShadow = 'none'
+                  }}
                 />
               </div>
-            </div>
+            </DashboardCard>
 
-            {/* RIGHT */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-
-              <div>
-                <label style={labelStyle}>Speciality</label>
-                <select value={speciality} onChange={(e) => setSpeciality(e.target.value)} style={inputStyle}>
-                  <option>General physician</option>
-                  <option>Gynecologist</option>
-                  <option>Dermatologist</option>
-                  <option>Pediatricians</option>
-                  <option>Neurologist</option>
-                  <option>Gastroenterologist</option>
-                </select>
-              </div>
-
-              <FormField label="Education / Degree" value={degree} onChange={setDegree} inputStyle={inputStyle} labelStyle={labelStyle} placeholder="MBBS, MD..." />
-              <FormField label="Address Line 1" value={address1} onChange={setAddress1} inputStyle={inputStyle} labelStyle={labelStyle} placeholder="Street / Clinic Name" />
-              <FormField label="Address Line 2" value={address2} onChange={setAddress2} inputStyle={inputStyle} labelStyle={labelStyle} placeholder="City, State" />
-
-              {/* Submit */}
-              <button type='submit' style={{
-                marginTop: 'auto', padding: '13px 24px',
-                background: 'linear-gradient(135deg, #14B8A6, #6366F1)',
-                color: '#FFFFFF', border: 'none', borderRadius: 12,
-                fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(20,184,166,0.35)',
-                transition: 'opacity 0.2s, transform 0.2s',
-                fontFamily: 'Inter, sans-serif'
+            {/* CARD 5: SUBMIT BUTTON */}
+            <div
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                borderRadius: 24,
+                padding: 24,
+                boxShadow: '0 8px 24px rgba(15,23,42,.05)'
               }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = '0.92'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              <button
+                type="submit"
+                style={{
+                  width: '100%',
+                  height: 56,
+                  borderRadius: 16,
+                  background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  cursor: 'pointer',
+                  boxShadow: '0 10px 30px rgba(37,99,235,0.25)',
+                  transition: 'all 0.25s ease',
+                  fontFamily: 'Inter, sans-serif'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '0.95'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '1'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
               >
-                + Add Doctor
+                👨‍⚕️ Register Doctor
               </button>
             </div>
+
           </div>
+
         </div>
       </form>
     </div>
   )
 }
 
-const FormField = ({ label, value, onChange, type = 'text', inputStyle, labelStyle, placeholder }) => (
+// REUSABLE DASHBOARD CARD COMPONENT
+const DashboardCard = ({ title, icon: Icon, children }) => {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: 24,
+        padding: '28px 32px',
+        boxShadow: hovered ? '0 12px 32px rgba(15,23,42,0.08)' : '0 8px 24px rgba(15,23,42,0.04)',
+        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+        transition: 'all 0.25s ease'
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        {Icon && (
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 10,
+              background: '#EFF6FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <Icon size={18} color="#2563EB" />
+          </div>
+        )}
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', margin: 0, letterSpacing: '-0.01em' }}>
+          {title}
+        </h2>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+// REUSABLE FORM INPUT COMPONENT
+const InputField = ({
+  label,
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+  required = false,
+  step
+}) => (
   <div>
     <label style={labelStyle}>{label}</label>
-    <input
-      type={type} value={value} placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value)}
-      style={inputStyle} required
-      onFocus={e => { e.target.style.borderColor = '#14B8A6'; e.target.style.boxShadow = '0 0 0 3px rgba(20,184,166,0.12)'; e.target.style.background = '#FFFFFF' }}
-      onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none'; e.target.style.background = '#F8FAFC' }}
-    />
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      {Icon && (
+        <div style={{ position: 'absolute', left: 14, pointerEvents: 'none', color: '#94A3B8' }}>
+          <Icon size={18} />
+        </div>
+      )}
+      <input
+        type={type}
+        value={value}
+        step={step}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        style={{
+          ...inputStyle,
+          paddingLeft: Icon ? 42 : 14
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#2563EB'
+          e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.12)'
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = '#CBD5E1'
+          e.target.style.boxShadow = 'none'
+        }}
+      />
+    </div>
   </div>
 )
+
+// SHARED INPUT & LABEL STYLES
+const labelStyle = {
+  fontSize: 12.5,
+  fontWeight: 600,
+  color: '#475569',
+  marginBottom: 6,
+  display: 'block',
+  letterSpacing: '0.01em'
+}
+
+const inputStyle = {
+  width: '100%',
+  height: 48,
+  background: '#FFFFFF',
+  border: '1.5px solid #CBD5E1',
+  borderRadius: 14,
+  padding: '0 14px',
+  fontSize: 13.5,
+  color: '#0F172A',
+  outline: 'none',
+  fontFamily: 'Inter, sans-serif',
+  transition: 'all 0.2s ease',
+  boxSizing: 'border-box'
+}
 
 export default React.memo(AddDoctor)

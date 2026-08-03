@@ -96,122 +96,322 @@
 // }
 
 // export default React.memo(DoctorsList)
-import React, { useContext, useEffect, useCallback, useMemo } from 'react'
+import React, { useContext, useEffect, useCallback, useMemo, useState } from 'react'
 import { AdminContext } from '../../context/AdminContext'
+import { Users, Stethoscope, CheckCircle2, XCircle } from 'lucide-react'
 
 const DoctorsList = () => {
   const { doctors, aToken, getAllDoctors, changeAvailability } = useContext(AdminContext)
 
+  // Fetch doctors
   useEffect(() => {
-    if (aToken) getAllDoctors()
+    if (aToken) {
+      getAllDoctors()
+    }
   }, [aToken, getAllDoctors])
 
-  const handleAvailability = useCallback((id) => {
-    changeAvailability(id)
-  }, [changeAvailability])
+  // Stable availability toggle handler
+  const handleAvailability = useCallback(
+    (id) => {
+      changeAvailability(id)
+    },
+    [changeAvailability]
+  )
 
+  // Memoized doctor card list rendering
   const renderedDoctors = useMemo(() => {
     return doctors?.map((item) => (
-      <div key={item._id} style={{
-        background: '#FFFFFF', borderRadius: 16,
-        border: '1px solid #F1F5F9',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-        overflow: 'hidden', transition: 'box-shadow 0.25s, transform 0.25s',
-        display: 'flex', flexDirection: 'column'
-      }}
-        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 12px 32px rgba(20,184,166,0.14)'; e.currentTarget.style.transform = 'translateY(-4px)' }}
-        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(0)' }}
-      >
-        {/* Image */}
-        <div style={{ overflow: 'hidden', height: 200, background: '#F0FDFA' }}>
-          <img src={item.image} alt={item.name} style={{
-            width: '100%', height: '100%', objectFit: 'cover',
-            transition: 'transform 0.5s ease'
-          }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-          />
-        </div>
-
-        {/* Content */}
-        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <p style={{ fontWeight: 700, color: '#0F172A', fontSize: 15, margin: 0 }}>{item.name}</p>
-            <span style={{
-              display: 'inline-block', marginTop: 6,
-              fontSize: 11, fontWeight: 600, color: '#6366F1',
-              background: '#EEF2FF', padding: '3px 10px', borderRadius: 99
-            }}>
-              {item.speciality}
-            </span>
-          </div>
-
-          {/* Availability Toggle */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '10px 14px', borderRadius: 10,
-            background: item.available ? '#F0FDF4' : '#FFF1F2',
-            border: `1px solid ${item.available ? '#BBF7D0' : '#FECDD3'}`
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <div style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: item.available ? '#22C55E' : '#EF4444'
-              }} />
-              <span style={{
-                fontSize: 12, fontWeight: 600,
-                color: item.available ? '#16A34A' : '#DC2626'
-              }}>
-                {item.available ? 'Available' : 'Not Available'}
-              </span>
-            </div>
-
-            {/* Toggle Switch */}
-            <div
-              onClick={() => handleAvailability(item._id)}
-              style={{
-                width: 40, height: 22, borderRadius: 99, cursor: 'pointer',
-                background: item.available ? '#22C55E' : '#CBD5E1',
-                position: 'relative', transition: 'background 0.25s'
-              }}
-            >
-              <div style={{
-                position: 'absolute', top: 3,
-                left: item.available ? 20 : 3,
-                width: 16, height: 16, borderRadius: '50%',
-                background: '#FFFFFF',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                transition: 'left 0.25s'
-              }} />
-            </div>
-          </div>
-        </div>
-      </div>
+      <DoctorCard key={item._id} item={item} onToggleAvailability={handleAvailability} />
     ))
   }, [doctors, handleAvailability])
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', padding: '28px 24px' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-
-        {/* Header */}
-        <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0F172A', margin: 0 }}>All Doctors</h1>
-            <p style={{ fontSize: 14, color: '#64748B', marginTop: 4 }}>Manage doctor profiles and availability</p>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)',
+        padding: '36px 24px'
+      }}
+    >
+      <div style={{ maxWidth: 1320, margin: '0 auto' }}>
+        
+        {/* PAGE HEADER */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 32,
+            flexWrap: 'wrap',
+            gap: 16
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 16,
+                background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 20px rgba(37,99,235,0.25)'
+              }}
+            >
+              <Users size={26} color="#FFFFFF" />
+            </div>
+            <div>
+              <h1
+                style={{
+                  fontSize: 26,
+                  fontWeight: 800,
+                  color: '#0F172A',
+                  letterSpacing: '-0.02em',
+                  margin: 0
+                }}
+              >
+                All Doctors
+              </h1>
+              <p style={{ fontSize: 14, color: '#64748B', marginTop: 3 }}>
+                View doctor profiles and manage real-time availability status.
+              </p>
+            </div>
           </div>
-          <span style={{ background: '#F0FDF4', color: '#16A34A', fontWeight: 700, fontSize: 13, padding: '6px 14px', borderRadius: 99 }}>
-            {doctors?.length || 0} Doctors
-          </span>
+
+          {/* DOCTOR COUNTER BADGE */}
+          <div
+            style={{
+              background: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              padding: '10px 20px',
+              borderRadius: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              boxShadow: '0 4px 12px rgba(15,23,42,0.03)'
+            }}
+          >
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#14B8A6' }} />
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>
+              Total Doctors: <span style={{ color: '#2563EB' }}>{doctors?.length || 0}</span>
+            </span>
+          </div>
         </div>
 
-        {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
-          {doctors?.length > 0 ? renderedDoctors : (
-            <p style={{ color: '#94A3B8', gridColumn: '1/-1', textAlign: 'center', padding: '60px 0' }}>
-              No doctors found
+        {/* DOCTORS GRID CONTAINER */}
+        {doctors?.length > 0 ? (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
+              gap: 24
+            }}
+          >
+            {renderedDoctors}
+          </div>
+        ) : (
+          /* EMPTY STATE CARD */
+          <div
+            style={{
+              background: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: 24,
+              padding: '60px 24px',
+              textAlign: 'center',
+              boxShadow: '0 8px 24px rgba(15,23,42,0.04)'
+            }}
+          >
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 20,
+                background: '#EFF6FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px'
+              }}
+            >
+              <Users size={32} color="#2563EB" />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>
+              No Doctors Found
+            </h3>
+            <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
+              There are currently no registered doctors available in the system.
             </p>
-          )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
+
+// CURALINK DESIGN SYSTEM DOCTOR CARD COMPONENT
+const DoctorCard = ({ item, onToggleAvailability }) => {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: 24,
+        overflow: 'hidden',
+        boxShadow: hovered ? '0 12px 32px rgba(15,23,42,0.08)' : '0 8px 24px rgba(15,23,42,0.04)',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      {/* CARD TOP IMAGE */}
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: 210,
+          background: 'linear-gradient(135deg, #EFF6FF, #E0F2FE)',
+          overflow: 'hidden'
+        }}
+      >
+        <img
+          src={item.image}
+          alt={item.name}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transform: hovered ? 'scale(1.06)' : 'scale(1)',
+            transition: 'transform 0.5s ease'
+          }}
+        />
+
+        {/* SPECIALITY BADGE OVERLAY */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 12,
+            left: 12,
+            background: 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(8px)',
+            padding: '5px 12px',
+            borderRadius: 99,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            border: '1px solid rgba(226,232,240,0.8)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+          }}
+        >
+          <Stethoscope size={13} color="#2563EB" />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>
+            {item.speciality}
+          </span>
+        </div>
+      </div>
+
+      {/* CARD DETAILS */}
+      <div
+        style={{
+          padding: '20px',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}
+      >
+        <div>
+          <h3
+            style={{
+              fontSize: 17,
+              fontWeight: 700,
+              color: '#0F172A',
+              margin: 0,
+              letterSpacing: '-0.01em'
+            }}
+          >
+            {item.name}
+          </h3>
+        </div>
+
+        {/* AVAILABILITY TOGGLE CONTROL */}
+        <div
+          style={{
+            marginTop: 18,
+            padding: '12px 14px',
+            borderRadius: 16,
+            background: item.available ? '#F0FDF4' : '#FEF2F2',
+            border: `1px solid ${item.available ? '#DCFCE7' : '#FEE2E2'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            transition: 'all 0.25s ease'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {item.available ? (
+              <CheckCircle2 size={16} color="#16A34A" />
+            ) : (
+              <XCircle size={16} color="#DC2626" />
+            )}
+            <span
+              style={{
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: item.available ? '#15803D' : '#B91C1C'
+              }}
+            >
+              {item.available ? 'Available' : 'Not Available'}
+            </span>
+          </div>
+
+          {/* TOGGLE SWITCH INPUT */}
+          <label
+            style={{
+              position: 'relative',
+              display: 'inline-block',
+              width: 44,
+              height: 24,
+              cursor: 'pointer'
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={item.available}
+              onChange={() => onToggleAvailability(item._id)}
+              style={{ opacity: 0, width: 0, height: 0 }}
+            />
+            <span
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: item.available ? '#16A34A' : '#CBD5E1',
+                borderRadius: 99,
+                transition: '0.25s ease',
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  height: 18,
+                  width: 18,
+                  left: item.available ? 23 : 3,
+                  bottom: 3,
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '50%',
+                  transition: '0.25s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+              />
+            </span>
+          </label>
         </div>
       </div>
     </div>
