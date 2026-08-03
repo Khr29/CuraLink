@@ -1,4 +1,5 @@
 import hospitalModel from "../models/hospitalModel.js";
+import doctorModel from "../models/doctorModel.js";
 import { v2 as cloudinary } from "cloudinary";
 
 // =============================
@@ -116,9 +117,15 @@ const getHospitalById = async (req, res) => {
       });
     }
 
+    // Get all doctors belonging to this hospital
+    const doctors = await doctorModel
+      .find({ hospitalId: id })
+      .select("-password");
+
     res.json({
       success: true,
       hospital,
+      doctors,
     });
   } catch (error) {
     console.log(error);
