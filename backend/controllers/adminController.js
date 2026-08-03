@@ -172,6 +172,7 @@ const addDoctor = async (req, res) => {
       about,
       fees,
       address,
+      hospitalId,
     } = req.body;
     const imageFile = req.file;
 
@@ -184,7 +185,8 @@ const addDoctor = async (req, res) => {
       !experience ||
       !about ||
       !fees ||
-      !address
+      !address ||
+      !hospitalId
     ) {
       return res.json({ success: false, message: "Missing Details" });
     }
@@ -219,6 +221,10 @@ const addDoctor = async (req, res) => {
       about,
       fees,
       address: JSON.parse(address),
+
+      // Hospital Relationship
+      hospitalId,
+
       date: Date.now(),
     };
 
