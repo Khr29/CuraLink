@@ -13,6 +13,7 @@ const AppContextProvider = (props) => {
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL
       const [doctors, setDoctors] = useState([])
+      const [hospitals, setHospitals] = useState([])
       const [token, setToken] = useState(localStorage.getItem('token')? localStorage.getItem('token'): false)
       const [userData, setUserData] = useState(false)
 
@@ -28,6 +29,23 @@ const AppContextProvider = (props) => {
             toast.error(error.message)
         }
     }
+
+    const getHospitalsData = async () => {
+    try {
+
+        const { data } = await axios.get(
+            backendUrl + "/api/hospital/list"
+        )
+
+        if (data.success) {
+            setHospitals(data.hospitals)
+        }
+
+    } catch (error) {
+        console.log(error)
+        toast.error(error.message)
+    }
+}
 
     const loadUserProfileData = async () => {
         try {
@@ -46,14 +64,28 @@ const AppContextProvider = (props) => {
     }
 
       const value = {
-        doctors,getDoctorsData,
-         currencySymbol,
-        setToken,token,
-        backendUrl,userData,setUserData,
-        loadUserProfileData
-    }
+
+    doctors,
+    getDoctorsData,
+
+    hospitals,
+    getHospitalsData,
+
+    currencySymbol,
+
+    setToken,
+    token,
+
+    backendUrl,
+
+    userData,
+    setUserData,
+
+    loadUserProfileData
+}
     useEffect(()=> {
         getDoctorsData()
+        getHospitalsData()
     },[])
 
     useEffect(() => {

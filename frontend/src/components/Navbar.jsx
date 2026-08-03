@@ -6,6 +6,7 @@ import { AppContext } from "../context/AppContext";
 const navLinks = [
   { name: "Home", path: "/" },
   { name: "All Doctors", path: "/doctors" },
+  { name: "Hospitals", path: "/hospitals" },
   { name: "About", path: "/about" },
   { name: "Contact", path: "/contact" },
 ];
