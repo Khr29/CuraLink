@@ -1,4 +1,9 @@
-import React, { useState, useContext, useCallback } from 'react'
+import React, {
+  useState,
+  useContext,
+  useCallback,
+  useEffect
+} from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { AdminContext } from '../../context/AdminContext'
@@ -14,7 +19,8 @@ import {
   MapPin,
   FileText,
   UploadCloud,
-  UserPlus
+  UserPlus,
+  Building2
 } from 'lucide-react'
 
 const AddDoctor = () => {
@@ -26,11 +32,23 @@ const AddDoctor = () => {
   const [fees, setFees] = useState('')
   const [about, setAbout] = useState('')
   const [speciality, setSpeciality] = useState('General physician')
+  const [hospitalId, setHospitalId] = useState('')
   const [degree, setDegree] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
 
-  const { backendUrl, aToken } = useContext(AdminContext)
+  const {
+  backendUrl,
+  aToken,
+  hospitals,
+  getAllHospitals
+} = useContext(AdminContext)
+
+useEffect(() => {
+  if (aToken) {
+    getAllHospitals()
+  }
+}, [aToken, getAllHospitals])
 
   const onSubmitHandler = useCallback(
     async (event) => {
@@ -51,6 +69,7 @@ const AddDoctor = () => {
         formData.append('fees', fees)
         formData.append('about', about.trim())
         formData.append('speciality', speciality)
+        formData.append('hospitalId', hospitalId)
         formData.append('degree', degree.trim())
         formData.append(
           'address',
@@ -77,6 +96,7 @@ const AddDoctor = () => {
           setFees('')
           setAbout('')
           setSpeciality('General physician')
+          setHospitalId('')
           setDegree('')
           setAddress1('')
           setAddress2('')
@@ -97,6 +117,7 @@ const AddDoctor = () => {
       fees,
       about,
       speciality,
+      hospitalId,
       degree,
       address1,
       address2,
@@ -277,6 +298,51 @@ const AddDoctor = () => {
                   </div>
                 </div>
               </div>
+
+              <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Hospital</label>
+
+              <div
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 14,
+                    color: '#94A3B8'
+                  }}
+                >
+                  <Building2 size={18} />
+                </div>
+
+                <select
+                  required
+                  value={hospitalId}
+                  onChange={(e) => setHospitalId(e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    paddingLeft: 42
+                  }}
+                >
+                  <option value="">
+                    Select Hospital
+                  </option>
+
+                  {hospitals.map((hospital) => (
+                    <option
+                      key={hospital._id}
+                      value={hospital._id}
+                    >
+                      {hospital.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
               {/* Education & Experience */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
