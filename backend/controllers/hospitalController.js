@@ -1,4 +1,5 @@
 import hospitalModel from "../models/hospitalModel.js";
+import { v2 as cloudinary } from "cloudinary";
 
 // =============================
 // Add Hospital
@@ -12,6 +13,15 @@ const addHospital = async (req, res) => {
     console.log("=============================");
 
     const hospitalData = req.body;
+
+    // Upload main image
+    const imageFile = req.files.image[0];
+
+    const imageUpload = await cloudinary.uploader.upload(imageFile.path, {
+      resource_type: "image",
+    });
+
+    hospitalData.image = imageUpload.secure_url;
 
     hospitalData.address = JSON.parse(hospitalData.address);
     hospitalData.location = JSON.parse(hospitalData.location);
@@ -34,6 +44,21 @@ const addHospital = async (req, res) => {
 
     hospitalData.image = image;
     // Create hospital
+    // Upload gallery images
+    const galleryUrls = [];
+
+    if (req.files.galleryImages) {
+      for (const file of req.files.galleryImages) {
+        const upload = await cloudinary.uploader.upload(file.path, {
+          resource_type: "image",
+        });
+
+        galleryUrls.push(upload.secure_url);
+      }
+    }
+
+    hospitalData.galleryImages = galleryUrls;
+
     const hospital = new hospitalModel(hospitalData);
 
     await hospital.save();
