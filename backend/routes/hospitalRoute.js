@@ -7,11 +7,19 @@ import {
   deleteHospital,
   changeHospitalStatus,
 } from "../controllers/hospitalController.js";
+import upload from "../middlewares/multer.js";
 
 const hospitalRouter = express.Router();
 
 // Add Hospital
-hospitalRouter.post("/add", addHospital);
+hospitalRouter.post(
+  "/add",
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "galleryImages", maxCount: 10 },
+  ]),
+  addHospital,
+);
 
 // Get All Hospitals
 hospitalRouter.get("/list", getAllHospitals);

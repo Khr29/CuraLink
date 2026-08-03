@@ -5,7 +5,18 @@ import hospitalModel from "../models/hospitalModel.js";
 // =============================
 const addHospital = async (req, res) => {
   try {
+    console.log("========== REQUEST ==========");
+    console.log("BODY:", req.body);
+    console.log("FILE:", req.file);
+    console.log("FILES:", req.files);
+    console.log("=============================");
+
     const hospitalData = req.body;
+
+    hospitalData.address = JSON.parse(hospitalData.address);
+    hospitalData.location = JSON.parse(hospitalData.location);
+    hospitalData.departments = JSON.parse(hospitalData.departments);
+    hospitalData.facilities = JSON.parse(hospitalData.facilities);
 
     // Check if hospital already exists
     const exists = await hospitalModel.findOne({
@@ -19,6 +30,9 @@ const addHospital = async (req, res) => {
       });
     }
 
+    const image = req.files.image[0].path;
+
+    hospitalData.image = image;
     // Create hospital
     const hospital = new hospitalModel(hospitalData);
 
