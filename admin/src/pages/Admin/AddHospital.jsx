@@ -184,9 +184,9 @@ const AddHospital = () => {
       formData.append('facilities', JSON.stringify(hospitalData.facilities))
 
       const { data } = await axios.post(
-        `${backendUrl}/api/admin/add-hospital`,
+        `${backendUrl}/api/hospital/add`,
         formData,
-        { headers: { aToken } }
+        { headers: { atoken: aToken } }
       )
 
       if (data.success) {
