@@ -14,6 +14,9 @@ const addHospital = async (req, res) => {
 
     const hospitalData = req.body;
 
+    hospitalData.active = hospitalData.active === "true";
+    hospitalData.beds = Number(hospitalData.beds);
+
     // Upload main image
     const imageFile = req.files.image[0];
 
@@ -40,9 +43,6 @@ const addHospital = async (req, res) => {
       });
     }
 
-    const image = req.files.image[0].path;
-
-    hospitalData.image = image;
     // Create hospital
     // Upload gallery images
     const galleryUrls = [];
@@ -57,7 +57,7 @@ const addHospital = async (req, res) => {
       }
     }
 
-    hospitalData.galleryImages = galleryUrls;
+    hospitalData.gallery = galleryUrls;
 
     const hospital = new hospitalModel(hospitalData);
 
