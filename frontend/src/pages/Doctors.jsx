@@ -45,8 +45,10 @@ const DoctorCard = React.memo(({ item, onClick }) => (
           </svg>
           <span className="text-xs font-semibold text-text-secondary">4.8</span>
         </div>
-        <button className="text-[11px] font-semibold text-primary bg-primary-light px-2.5 py-1 rounded-full hover:bg-primary hover:text-white transition-all duration-200">
-          Book Now
+        <button
+  className="btn btn-primary btn-sm"
+>
+          View Profile
         </button>
       </div>
     </div>
