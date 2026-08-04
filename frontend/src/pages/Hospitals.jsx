@@ -1,6 +1,17 @@
-import React, { useContext } from "react";
+import React, { useContext, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+
+const hospitalTypes = [
+  "Private",
+  "Government",
+  "Multi-Speciality",
+  "Children's Hospital",
+  "Cardiac Hospital",
+  "Cancer Hospital",
+  "Orthopedic Hospital",
+  "Neurology Hospital",
+];
 
 const HospitalCard = ({ item }) => {
   const navigate = useNavigate();
@@ -81,53 +92,167 @@ const HospitalCard = ({ item }) => {
 };
 
 const Hospitals = () => {
+
   const { hospitals } = useContext(AppContext);
 
+  const [showFilter, setShowFilter] = useState(false);
+
+  const [selectedType, setSelectedType] = useState("");
+
+  const filteredHospitals = useMemo(() => {
+
+    if (!selectedType) return hospitals;
+
+    return hospitals.filter(
+      (hospital) => hospital.hospitalType === selectedType
+    );
+
+  }, [hospitals, selectedType]);
+
+  const toggleFilter = useCallback(() => {
+    setShowFilter((prev) => !prev);
+  }, []);
+
   return (
+
     <div className="py-8 animate-fade-in">
 
       {/* Header */}
+
       <div className="mb-8">
+
         <h1 className="section-title">
-          Hospitals
+
+          All Hospitals
+
         </h1>
 
         <p className="text-text-muted mt-2">
-          {hospitals.length} hospital
-          {hospitals.length !== 1 ? "s" : ""} available
+
+          {filteredHospitals.length} hospital
+          {filteredHospitals.length !== 1 ? "s" : ""} available
+
         </p>
+
       </div>
 
-      {/* Empty State */}
-      {hospitals.length === 0 ? (
-        <div className="text-center py-20">
+      <div className="flex flex-col sm:flex-row gap-6">
 
-          <h2 className="text-2xl font-semibold">
-            No Hospitals Found
-          </h2>
+        {/* Sidebar */}
 
-          <p className="text-gray-500 mt-2">
-            There are currently no hospitals available.
-          </p>
+        <aside className="sm:w-56 flex-shrink-0">
 
-        </div>
-      ) : (
+          <button
+            onClick={toggleFilter}
+            className={`sm:hidden flex items-center gap-2 btn btn-sm mb-4 ${
+              showFilter ? "btn-primary" : "btn-ghost"
+            }`}
+          >
+            {showFilter ? "Hide" : "Show"} Filters
+          </button>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div
+            className={`${
+              showFilter ? "flex" : "hidden sm:flex"
+            } flex-col gap-1`}
+          >
 
-          {hospitals.map((hospital) => (
-            <HospitalCard
-              key={hospital._id}
-              item={hospital}
-            />
-          ))}
+            <div className="profile-section mb-2">
 
-        </div>
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
 
-      )}
+                Hospital Type
+
+              </p>
+
+              <div className="flex flex-col gap-1.5">
+
+                <button
+                  onClick={() => setSelectedType("")}
+                  className={`filter-pill ${
+                    selectedType === "" ? "active" : ""
+                  }`}
+                >
+                  All Hospitals
+                </button>
+
+                {hospitalTypes.map((type) => (
+
+                  <button
+                    key={type}
+                    onClick={() => setSelectedType(type)}
+                    className={`filter-pill ${
+                      selectedType === type ? "active" : ""
+                    }`}
+                  >
+                    {type}
+                  </button>
+
+                ))}
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </aside>
+
+        {/* Hospital Grid */}
+
+        <main className="flex-1 min-w-0">
+
+          {filteredHospitals.length === 0 ? (
+
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+
+            <div className="text-5xl mb-4">
+              🏥
+            </div>
+
+            <h3 className="text-lg font-bold text-text-primary mb-2">
+              No Hospitals Found
+            </h3>
+
+            <p className="text-text-muted text-sm mb-6">
+              We couldn't find any hospitals for{" "}
+              <strong>{selectedType}</strong>. Try a different hospital type.
+            </p>
+
+            <button
+              onClick={() => setSelectedType("")}
+              className="btn btn-primary"
+            >
+              View All Hospitals
+            </button>
+
+          </div>
+
+          ) : (
+
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+              {filteredHospitals.map((hospital) => (
+
+                <HospitalCard
+                  key={hospital._id}
+                  item={hospital}
+                />
+
+              ))}
+
+            </div>
+
+          )}
+
+        </main>
+
+      </div>
 
     </div>
+
   );
+
 };
 
 export default Hospitals;
