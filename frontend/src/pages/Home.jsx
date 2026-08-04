@@ -8,7 +8,10 @@ const Stats = lazy(() => import("../components/Stats"));
 const HowItWorks = lazy(() => import("../components/HowItWorks"));
 const Banner = lazy(() => import("../components/Banner"));
 
-/* ─── Why Choose Us ─────────────────────────────────────── */
+/* ─── Why Choose Us ─────────────────────────────────────────
+   Palette restrained to the site's own 3-tone system:
+   primary blue, teal/cyan accent, one soft green note.
+   No unrelated hues (violet/amber/pink removed). ───────────── */
 const WHY = [
   {
     icon: (
@@ -16,7 +19,7 @@ const WHY = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15" />
       </svg>
     ),
-    color: "text-sky-600 bg-sky-50",
+    color: "text-primary bg-primary-light",
     title: "Hospital Comparison",
     desc: "Compare hospitals side by side on ratings, departments, and location before you decide.",
   },
@@ -36,7 +39,7 @@ const WHY = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
       </svg>
     ),
-    color: "text-violet-600 bg-violet-50",
+    color: "text-primary bg-primary-light",
     title: "Digital Health Records",
     desc: "All your prescriptions, records, and appointment history stored securely in one place.",
   },
@@ -46,7 +49,7 @@ const WHY = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
       </svg>
     ),
-    color: "text-amber-600 bg-amber-50",
+    color: "text-teal-600 bg-teal-50",
     title: "AI Recommendations",
     desc: "Get smart suggestions for doctors and hospitals based on your needs and history.",
   },
@@ -57,7 +60,7 @@ const WHY = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
       </svg>
     ),
-    color: "text-pink-600 bg-pink-50",
+    color: "text-emerald-600 bg-emerald-50",
     title: "Nearby Hospitals",
     desc: "Find trusted hospitals close to you, ranked by distance and department availability.",
   },
@@ -67,15 +70,15 @@ const WHY = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
-    color: "text-green-600 bg-green-50",
+    color: "text-primary bg-primary-light",
     title: "Instant Booking",
     desc: "Book appointments in under 60 seconds. No waiting, no phone calls.",
   },
 ];
 
 const WhyChooseUs = () => (
-  <section className="py-16 px-4 bg-gradient-section">
-    <div className="text-center mb-12">
+  <section className="py-20 md:py-24 px-4 bg-gradient-section">
+    <div className="text-center mb-14">
       <span className="section-tag">Why CuraLink</span>
       <h2 className="section-title">Healthcare Made Simple</h2>
       <p className="section-subtitle mx-auto">
@@ -102,7 +105,7 @@ const TESTIMONIALS = [
     name: "Priya Sharma",
     role: "Software Engineer, Bangalore",
     avatar: "PS",
-    color: "bg-teal-500",
+    color: "bg-primary",
     rating: 5,
     text: "CuraLink made it so easy to find a dermatologist near me. Booked in 2 minutes and got instant confirmation. The doctor was excellent!",
   },
@@ -110,7 +113,7 @@ const TESTIMONIALS = [
     name: "Rahul Mehta",
     role: "Business Owner, Mumbai",
     avatar: "RM",
-    color: "bg-sky-500",
+    color: "bg-teal-500",
     rating: 5,
     text: "I was skeptical at first, but the platform is fantastic. Verified doctors, transparent pricing, and super easy to use. Highly recommend!",
   },
@@ -118,15 +121,15 @@ const TESTIMONIALS = [
     name: "Ananya Patel",
     role: "Teacher, Ahmedabad",
     avatar: "AP",
-    color: "bg-violet-500",
+    color: "bg-emerald-500",
     rating: 5,
     text: "Booked a pediatrician appointment for my daughter. The process was seamless and the doctor was very experienced. 10/10 experience.",
   },
 ];
 
 const Testimonials = () => (
-  <section className="py-16 px-4">
-    <div className="text-center mb-12">
+  <section className="py-20 md:py-24 px-4">
+    <div className="text-center mb-14">
       <span className="section-tag">Patient Stories</span>
       <h2 className="section-title">What Our Patients Say</h2>
       <p className="section-subtitle mx-auto">
@@ -171,7 +174,7 @@ const FAQS = [
 const FAQ = () => {
   const [open, setOpen] = useState(null);
   return (
-    <section className="py-16 px-4 bg-gradient-section">
+    <section className="py-20 md:py-24 px-4 bg-gradient-section">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
           <span className="section-tag">FAQ</span>
