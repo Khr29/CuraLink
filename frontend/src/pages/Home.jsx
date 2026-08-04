@@ -2,11 +2,24 @@ import React, { lazy, Suspense, useState } from "react";
 import Header from "../components/Header";
 
 const SpecialityMenu = lazy(() => import("../components/SpecialityMenu"));
+const FeaturedHospitals = lazy(() => import("../components/FeaturedHospitals"));
 const TopDoctors = lazy(() => import("../components/TopDoctors"));
+const Stats = lazy(() => import("../components/Stats"));
+const HowItWorks = lazy(() => import("../components/HowItWorks"));
 const Banner = lazy(() => import("../components/Banner"));
 
 /* ─── Why Choose Us ─────────────────────────────────────── */
 const WHY = [
+  {
+    icon: (
+      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15" />
+      </svg>
+    ),
+    color: "text-sky-600 bg-sky-50",
+    title: "Hospital Comparison",
+    desc: "Compare hospitals side by side on ratings, departments, and location before you decide.",
+  },
   {
     icon: (
       <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -15,17 +28,7 @@ const WHY = [
     ),
     color: "text-teal-600 bg-teal-50",
     title: "Verified Doctors",
-    desc: "All doctors on our platform are thoroughly vetted, licensed, and background-checked for your safety.",
-  },
-  {
-    icon: (
-      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    color: "text-sky-600 bg-sky-50",
-    title: "Instant Booking",
-    desc: "Book appointments in under 60 seconds. No waiting, no phone calls — just seamless scheduling.",
+    desc: "Every doctor on our platform is licensed and background-checked for your safety.",
   },
   {
     icon: (
@@ -34,38 +37,39 @@ const WHY = [
       </svg>
     ),
     color: "text-violet-600 bg-violet-50",
-    title: "Secure & Private",
-    desc: "Your medical data is encrypted and safe. We comply with healthcare privacy standards.",
+    title: "Digital Health Records",
+    desc: "All your prescriptions, records, and appointment history stored securely in one place.",
   },
   {
     icon: (
       <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75" />
-      </svg>
-    ),
-    color: "text-green-600 bg-green-50",
-    title: "Affordable Care",
-    desc: "Transparent pricing with no hidden fees. Compare doctors and choose what fits your budget.",
-  },
-  {
-    icon: (
-      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
-      </svg>
-    ),
-    color: "text-pink-600 bg-pink-50",
-    title: "24/7 Support",
-    desc: "Our healthcare support team is available around the clock to help with any concerns.",
-  },
-  {
-    icon: (
-      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
       </svg>
     ),
     color: "text-amber-600 bg-amber-50",
-    title: "Health Records",
-    desc: "All your prescriptions, records, and appointment history in one secure, organized place.",
+    title: "AI Recommendations",
+    desc: "Get smart suggestions for doctors and hospitals based on your needs and history.",
+  },
+  {
+    icon: (
+      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+      </svg>
+    ),
+    color: "text-pink-600 bg-pink-50",
+    title: "Nearby Hospitals",
+    desc: "Find trusted hospitals close to you, ranked by distance and department availability.",
+  },
+  {
+    icon: (
+      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: "text-green-600 bg-green-50",
+    title: "Instant Booking",
+    desc: "Book appointments in under 60 seconds. No waiting, no phone calls.",
   },
 ];
 
@@ -132,7 +136,6 @@ const Testimonials = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {TESTIMONIALS.map((t, i) => (
         <div key={t.name} className="testimonial-card animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
-          {/* Stars */}
           <div className="flex gap-1 mb-4">
             {Array.from({ length: t.rating }).map((_, s) => (
               <svg key={s} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -140,11 +143,7 @@ const Testimonials = () => (
               </svg>
             ))}
           </div>
-
-          {/* Quote */}
           <p className="text-text-secondary text-sm leading-relaxed mb-6">"{t.text}"</p>
-
-          {/* Author */}
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 ${t.color} rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}>
               {t.avatar}
@@ -222,8 +221,11 @@ const Home = () => (
     <div className="flex flex-col gap-4">
       <Header />
       <SpecialityMenu />
+      <FeaturedHospitals />
       <TopDoctors />
       <WhyChooseUs />
+      <Stats />
+      <HowItWorks />
       <Testimonials />
       <FAQ />
       <Banner />
