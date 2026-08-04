@@ -2,15 +2,19 @@ import React, { useContext, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 
-const hospitalTypes = [
-  "Private",
-  "Government",
-  "Multi-Speciality",
-  "Children's Hospital",
-  "Cardiac Hospital",
-  "Cancer Hospital",
-  "Orthopedic Hospital",
-  "Neurology Hospital",
+const departments = [
+  "Cardiology",
+  "Neurology",
+  "Orthopedics",
+  "Pediatrics",
+  "Oncology",
+  "Dermatology",
+  "General Medicine",
+  "ENT",
+  "Urology",
+  "Ophthalmology",
+  "Gastroenterology",
+  "Pulmonology",
 ];
 
 const HospitalCard = ({ item }) => {
@@ -41,7 +45,7 @@ const HospitalCard = ({ item }) => {
           </span>
         </div>
 
-        {/* Hospital Type */}
+        {/* Departments */}
         <div className="absolute top-3 right-3">
           <span className="badge badge-slate">
             {item.hospitalType}
@@ -97,17 +101,17 @@ const Hospitals = () => {
 
   const [showFilter, setShowFilter] = useState(false);
 
-  const [selectedType, setSelectedType] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
   const filteredHospitals = useMemo(() => {
 
-    if (!selectedType) return hospitals;
+  if (!selectedDepartment) return hospitals;
 
-    return hospitals.filter(
-      (hospital) => hospital.hospitalType === selectedType
-    );
+  return hospitals.filter((hospital) =>
+    hospital.departments?.includes(selectedDepartment)
+  );
 
-  }, [hospitals, selectedType]);
+}, [hospitals, selectedDepartment]);
 
   const toggleFilter = useCallback(() => {
     setShowFilter((prev) => !prev);
@@ -161,28 +165,28 @@ const Hospitals = () => {
 
               <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
 
-                Hospital Type
+                Departments
 
               </p>
 
               <div className="flex flex-col gap-1.5">
 
                 <button
-                  onClick={() => setSelectedType("")}
+                  onClick={() => setSelectedDepartment("")}
                   className={`filter-pill ${
-                    selectedType === "" ? "active" : ""
+                    selectedDepartment === "" ? "active" : ""
                   }`}
                 >
                   All Hospitals
                 </button>
 
-                {hospitalTypes.map((type) => (
+                {departments.map((type) => (
 
                   <button
                     key={type}
-                    onClick={() => setSelectedType(type)}
+                    onClick={() => setSelectedDepartment(type)}
                     className={`filter-pill ${
-                      selectedType === type ? "active" : ""
+                      selectedDepartment === type ? "active" : ""
                     }`}
                   >
                     {type}
@@ -216,11 +220,11 @@ const Hospitals = () => {
 
             <p className="text-text-muted text-sm mb-6">
               We couldn't find any hospitals for{" "}
-              <strong>{selectedType}</strong>. Try a different hospital type.
+              <strong>{selectedDepartment}</strong>. Try a different departments.
             </p>
 
             <button
-              onClick={() => setSelectedType("")}
+              onClick={() => setSelectedDepartment("")}
               className="btn btn-primary"
             >
               View All Hospitals
