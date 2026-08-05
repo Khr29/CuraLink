@@ -100,7 +100,7 @@ const Login = () => {
 
   const { backendUrl, token, setToken } = useContext(AppContext)
 
-  const [state, setState] = useState('Sign Up')
+  const [state, setState] = useState('Login')
 
   const [formData, setFormData] = useState({
     name: '',

@@ -73,9 +73,17 @@ app.use(compression()); // Compress responses
 app.use(morgan("dev")); // HTTP request logger
 app.use(express.json({ limit: "10kb" })); // prevent large payload attacks
 app.use(express.urlencoded({ extended: true }));
+// A literal "*" origin is invalid alongside credentials: true (the CORS
+// spec forbids sending credentials to a wildcard origin). Use an explicit
+// allowlist from CORS_ORIGIN in production; fall back to reflecting the
+// request's own origin for local development against any dev-server port.
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
+  : true;
+
 app.use(
   cors({
-    origin: "*", // production me specific origin use karo
+    origin: allowedOrigins,
     credentials: true,
   }),
 );

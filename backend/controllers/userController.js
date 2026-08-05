@@ -11,7 +11,8 @@ import { sendEmail } from "../utils/email.js";
 
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, password } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
 
     if (!name || !password || !email) {
       return res.json({ success: false, message: "Missing Details" });
@@ -21,6 +22,14 @@ const registerUser = async (req, res) => {
     }
     if (password.length < 8) {
       return res.json({ success: false, message: "Enter a Strong password" });
+    }
+
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser) {
+      return res.json({
+        success: false,
+        message: "An account with this email already exists. Please log in instead.",
+      });
     }
 
     //hasing
@@ -93,10 +102,20 @@ const registerUser = async (req, res) => {
     }
 
     //create token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
     res.json({ success: true, token });
   } catch (error) {
     console.log(error);
+    // Race-condition fallback: two simultaneous registrations with the same
+    // email can both pass the findOne check above before either saves.
+    if (error.code === 11000) {
+      return res.json({
+        success: false,
+        message: "An account with this email already exists. Please log in instead.",
+      });
+    }
     res.json({ success: false, message: error.message });
   }
 };
@@ -105,7 +124,13 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
+    const { password } = req.body;
+
+    if (!email || !password) {
+      return res.json({ success: false, message: "Missing Details" });
+    }
+
     const user = await userModel.findOne({ email });
     if (!user) {
       return res.json({ success: false, message: "User does not exist" });
@@ -114,7 +139,9 @@ const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "7d",
+      });
       res.json({ success: true, token });
     } else {
       res.json({ success: false, message: "Invalid Credentials" });
