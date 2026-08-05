@@ -135,16 +135,19 @@
 import React, { useContext, useEffect, useCallback, useMemo, useState } from 'react'
 import { AdminContext } from '../../context/AdminContext'
 import { AppContext } from '../../context/AppContext'
-import { 
-  LayoutDashboard, 
-  Stethoscope, 
-  CalendarDays, 
-  Users, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
+import PageHero from '../../components/PageHero'
+import StatCard from '../../components/StatCard'
+import EmptyState from '../../components/EmptyState'
+import { SkeletonStatGrid, SkeletonRow } from '../../components/Skeleton'
+import {
+  LayoutDashboard,
+  Stethoscope,
+  CalendarDays,
+  Users,
+  Clock,
+  CheckCircle2,
+  XCircle,
   Ban,
-  TrendingUp,
   ListFilter
 } from 'lucide-react'
 
@@ -164,38 +167,26 @@ const Dashboard = () => {
     cancelAppointment(id)
   }, [cancelAppointment])
 
-  // Stats cards configuration
+  // Stats cards configuration — same real dashData values as before,
+  // presentation only (fabricated "trend" figures removed).
   const stats = useMemo(() => [
-    { 
-      label: 'Total Doctors', 
-      value: dashData?.doctors ?? 0, 
-      icon: Stethoscope, 
-      gradient: 'linear-gradient(135deg, #2563EB, #3B82F6)',
-      iconBg: '#EFF6FF',
-      iconColor: '#2563EB',
-      trend: '+2 this week' 
-    },
-    { 
-      label: 'Appointments', 
-      value: dashData?.appointments ?? 0, 
-      icon: CalendarDays, 
-      gradient: 'linear-gradient(135deg, #14B8A6, #0D9488)',
-      iconBg: '#F0FDFA',
-      iconColor: '#14B8A6',
-      trend: '+12 today' 
-    },
-    { 
-      label: 'Total Patients', 
-      value: dashData?.patients ?? 0, 
-      icon: Users, 
-      gradient: 'linear-gradient(135deg, #6366F1, #4F46E5)',
-      iconBg: '#EEF2FF',
-      iconColor: '#6366F1',
-      trend: '+5 new' 
-    }
+    { label: 'Total Doctors', value: dashData?.doctors ?? 0, icon: Stethoscope, accent: { bg: '#EFF6FF', color: '#2563EB' } },
+    { label: 'Appointments', value: dashData?.appointments ?? 0, icon: CalendarDays, accent: { bg: '#F0FDFA', color: '#14B8A6' } },
+    { label: 'Total Patients', value: dashData?.patients ?? 0, icon: Users, accent: { bg: '#F0FDF4', color: '#22C55E' } }
   ], [dashData])
 
-  if (!dashData) return null
+  const statusBadge = (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', gap: 8,
+      background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
+      padding: '8px 16px', borderRadius: 99, backdropFilter: 'blur(6px)'
+    }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#5EEAD4' }} />
+      <span style={{ fontSize: 12.5, fontWeight: 700, color: '#FFFFFF' }}>
+        System Status: <span style={{ color: '#5EEAD4' }}>Live</span>
+      </span>
+    </div>
+  )
 
   return (
     <div
@@ -204,86 +195,34 @@ const Dashboard = () => {
         background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)',
         padding: '36px 24px'
       }}
+      className="curalink-fade-in"
     >
       <div style={{ maxWidth: 1320, margin: '0 auto' }}>
-        
-        {/* PAGE HEADER */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 32,
-            flexWrap: 'wrap',
-            gap: 16
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: 16,
-                background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 8px 20px rgba(37,99,235,0.25)'
-              }}
-            >
-              <LayoutDashboard size={26} color="#FFFFFF" />
-            </div>
-            <div>
-              <h1
-                style={{
-                  fontSize: 26,
-                  fontWeight: 800,
-                  color: '#0F172A',
-                  letterSpacing: '-0.02em',
-                  margin: 0
-                }}
-              >
-                Admin Dashboard
-              </h1>
-              <p style={{ fontSize: 14, color: '#64748B', marginTop: 3 }}>
-                Welcome to the CuraLink administrative and activity overview.
-              </p>
-            </div>
-          </div>
 
-          {/* STATUS INDICATOR BADGE */}
-          <div
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              padding: '10px 20px',
-              borderRadius: 16,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              boxShadow: '0 4px 12px rgba(15,23,42,0.03)'
-            }}
-          >
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E' }} />
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>
-              System Status: <span style={{ color: '#16A34A' }}>Live</span>
-            </span>
-          </div>
-        </div>
+        <PageHero
+          icon={LayoutDashboard}
+          title="Admin Dashboard"
+          description="Welcome to the CuraLink administrative and activity overview."
+          action={statusBadge}
+        />
 
         {/* STATS METRICS GRID */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: 24,
-            marginBottom: 32
-          }}
-        >
-          {stats.map((item, index) => (
-            <StatCard key={index} item={item} />
-          ))}
-        </div>
+        {!dashData ? (
+          <div style={{ marginBottom: 32 }}><SkeletonStatGrid count={3} /></div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: 24,
+              marginBottom: 32
+            }}
+          >
+            {stats.map((item, index) => (
+              <StatCard key={index} icon={item.icon} label={item.label} value={item.value} accent={item.accent} />
+            ))}
+          </div>
+        )}
 
         {/* LATEST BOOKINGS SECTION */}
         <div
@@ -334,13 +273,15 @@ const Dashboard = () => {
                 borderRadius: 99
               }}
             >
-              {dashData.latestAppointments?.length || 0} Recent
+              {dashData?.latestAppointments?.length || 0} Recent
             </span>
           </div>
 
           {/* APPOINTMENT LIST CONTAINER */}
           <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-            {dashData.latestAppointments?.length > 0 ? (
+            {!dashData ? (
+              <>{Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}</>
+            ) : dashData.latestAppointments?.length > 0 ? (
               dashData.latestAppointments.map((item, index) => (
                 <BookingRow
                   key={item._id || index}
@@ -350,99 +291,15 @@ const Dashboard = () => {
                 />
               ))
             ) : (
-              /* EMPTY STATE */
-              <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-                <div
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 16,
-                    background: '#EFF6FF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 16px'
-                  }}
-                >
-                  <CalendarDays size={28} color="#2563EB" />
-                </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', margin: '0 0 4px' }}>
-                  No Recent Bookings
-                </h3>
-                <p style={{ fontSize: 13, color: '#64748B', margin: 0 }}>
-                  There are no recent appointment records available at this time.
-                </p>
-              </div>
+              <EmptyState
+                icon={CalendarDays}
+                title="No Recent Bookings"
+                subtitle="There are no recent appointment records available at this time."
+              />
             )}
           </div>
         </div>
 
-      </div>
-    </div>
-  )
-}
-
-// CURALINK METRIC STAT CARD COMPONENT
-const StatCard = ({ item }) => {
-  const [hovered, setHovered] = useState(false)
-  const IconComponent = item.icon
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: '#FFFFFF',
-        borderRadius: 24,
-        padding: '24px',
-        border: '1px solid #E2E8F0',
-        boxShadow: hovered ? '0 12px 32px rgba(15,23,42,0.08)' : '0 8px 24px rgba(15,23,42,0.04)',
-        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between'
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div
-          style={{
-            width: 50,
-            height: 50,
-            borderRadius: 16,
-            background: item.iconBg,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <IconComponent size={24} color={item.iconColor} />
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            fontSize: 11.5,
-            fontWeight: 700,
-            color: '#15803D',
-            background: '#F0FDF4',
-            padding: '4px 10px',
-            borderRadius: 99
-          }}
-        >
-          <TrendingUp size={12} />
-          <span>{item.trend}</span>
-        </div>
-      </div>
-
-      <div>
-        <p style={{ fontSize: 32, fontWeight: 800, color: '#0F172A', lineHeight: 1, margin: 0, letterSpacing: '-0.02em' }}>
-          {item.value}
-        </p>
-        <p style={{ fontSize: 13.5, fontWeight: 600, color: '#64748B', marginTop: 6, margin: '6px 0 0' }}>
-          {item.label}
-        </p>
       </div>
     </div>
   )

@@ -12,6 +12,9 @@ import {
   Activity, 
   Building 
 } from 'lucide-react'
+import PageHero from '../../components/PageHero'
+import EmptyState from '../../components/EmptyState'
+import { SkeletonCard } from '../../components/Skeleton'
 
 const HospitalsList = () => {
   const {
@@ -21,11 +24,12 @@ const HospitalsList = () => {
     changeHospitalStatus,
     deleteHospital
   } = useContext(AdminContext)
+  const [loading, setLoading] = useState(true)
 
   // Fetch hospitals
   useEffect(() => {
     if (aToken) {
-      getAllHospitals()
+      getAllHospitals().finally(() => setLoading(false))
     }
   }, [aToken, getAllHospitals])
 
@@ -52,6 +56,7 @@ const HospitalsList = () => {
 
   return (
     <div
+      className="curalink-fade-in"
       style={{
         minHeight: '100vh',
         background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)',
@@ -59,73 +64,45 @@ const HospitalsList = () => {
       }}
     >
       <div style={{ maxWidth: 1320, margin: '0 auto' }}>
-        
-        {/* PAGE HEADER */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 32,
-            flexWrap: 'wrap',
-            gap: 16
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+
+        <PageHero
+          icon={Building2}
+          title="All Hospitals"
+          description="Manage registered hospitals, network status, and directory listings."
+          action={
             <div
               style={{
-                width: 52,
-                height: 52,
+                background: 'rgba(255,255,255,0.12)',
+                border: '1px solid rgba(255,255,255,0.25)',
+                backdropFilter: 'blur(8px)',
+                padding: '10px 20px',
                 borderRadius: 16,
-                background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 8px 20px rgba(37,99,235,0.25)'
+                gap: 10
               }}
             >
-              <Building2 size={26} color="#FFFFFF" />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#14B8A6' }} />
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: '#FFFFFF' }}>
+                Total Hospitals: {hospitals?.length || 0}
+              </span>
             </div>
-            <div>
-              <h1
-                style={{
-                  fontSize: 26,
-                  fontWeight: 800,
-                  color: '#0F172A',
-                  letterSpacing: '-0.02em',
-                  margin: 0
-                }}
-              >
-                All Hospitals
-              </h1>
-              <p style={{ fontSize: 14, color: '#64748B', marginTop: 3 }}>
-                Manage registered hospitals, network status, and directory listings.
-              </p>
-            </div>
-          </div>
-
-          {/* HOSPITAL COUNTER BADGE */}
-          <div
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              padding: '10px 20px',
-              borderRadius: 16,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              boxShadow: '0 4px 12px rgba(15,23,42,0.03)'
-            }}
-          >
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#14B8A6' }} />
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>
-              Total Hospitals: <span style={{ color: '#2563EB' }}>{hospitals?.length || 0}</span>
-            </span>
-          </div>
-        </div>
+          }
+        />
 
         {/* HOSPITALS GRID CONTAINER */}
-        {hospitals?.length > 0 ? (
+        {loading ? (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 380px))',
+              justifyContent: 'start',
+              gap: 24
+            }}
+          >
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : hospitals?.length > 0 ? (
           <div
             style={{
               display: 'grid',
@@ -137,37 +114,19 @@ const HospitalsList = () => {
             {renderedHospitals}
           </div>
         ) : (
-          /* EMPTY STATE CARD */
           <div
             style={{
               background: '#FFFFFF',
               border: '1px solid #E2E8F0',
               borderRadius: 24,
-              padding: '60px 24px',
-              textAlign: 'center',
               boxShadow: '0 8px 24px rgba(15,23,42,0.04)'
             }}
           >
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 20,
-                background: '#EFF6FF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 16px'
-              }}
-            >
-              <Building2 size={32} color="#2563EB" />
-            </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>
-              No Hospitals Found
-            </h3>
-            <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
-              There are currently no registered hospitals available in the network.
-            </p>
+            <EmptyState
+              icon={Building2}
+              title="No Hospitals Found"
+              subtitle="There are currently no registered hospitals available in the network."
+            />
           </div>
         )}
 

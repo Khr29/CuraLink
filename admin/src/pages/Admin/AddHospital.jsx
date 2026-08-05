@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { AdminContext } from '../../context/AdminContext'
-import { assets } from '../../assets/assets'
+import PageHero from '../../components/PageHero'
 import {
   Building2,
   Phone,
@@ -206,30 +206,14 @@ const AddHospital = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '36px 24px' }}>
+    <div className="curalink-fade-in" style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '36px 24px' }}>
       <form onSubmit={submitHandler} style={{ maxWidth: 1320, margin: '0 auto' }}>
 
-        {/* PAGE HEADER */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 16,
-              background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 8px 20px rgba(37,99,235,0.25)'
-            }}>
-              <Building2 size={26} color="#FFFFFF" />
-            </div>
-            <div>
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', margin: 0 }}>
-                Add New Hospital
-              </h1>
-              <p style={{ fontSize: 14, color: '#64748B', marginTop: 3 }}>
-                Register a new hospital into CuraLink.
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHero
+          icon={Building2}
+          title="Add New Hospital"
+          description="Register a new hospital into CuraLink."
+        />
 
         {/* GRID LAYOUT - 2 COLUMNS ON DESKTOP */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(580px, 1fr))', gap: 28 }}>

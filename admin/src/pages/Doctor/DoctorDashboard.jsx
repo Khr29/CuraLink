@@ -21,6 +21,8 @@ import {
   XCircle,
   Sparkles
 } from 'lucide-react'
+import StatCard from '../../components/StatCard'
+import EmptyState from '../../components/EmptyState'
 
 // ─── Shared visual primitives (mirrors the language already used across
 // Dashboard.jsx / HospitalsList.jsx / ReviewsList.jsx: white rounded-24
@@ -30,37 +32,8 @@ import {
 const PageLoader = () => (
   <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
     <div style={{ width: 44, height: 44, border: '3px solid #E2E8F0', borderTopColor: '#14B8A6', borderRadius: '50%', animation: 'curalink-spin .7s linear infinite' }} />
-    <style>{'@keyframes curalink-spin { to { transform: rotate(360deg); } }'}</style>
   </div>
 )
-
-const StatCard = (props) => {
-  const StatIcon = props.icon
-  const { label, value, accent } = props
-  const [hovered, setHovered] = useState(false)
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: '#FFFFFF', borderRadius: 20, padding: '20px 22px',
-        border: '1px solid #E2E8F0',
-        boxShadow: hovered ? '0 12px 32px rgba(15,23,42,0.08)' : '0 8px 24px rgba(15,23,42,0.04)',
-        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-        transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)'
-      }}
-    >
-      <div style={{
-        width: 42, height: 42, borderRadius: 12, marginBottom: 14,
-        background: accent.bg, display: 'flex', alignItems: 'center', justifyContent: 'center'
-      }}>
-        <StatIcon size={20} color={accent.color} />
-      </div>
-      <p style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', lineHeight: 1, margin: 0, letterSpacing: '-0.01em' }}>{value}</p>
-      <p style={{ fontSize: 12.5, color: '#64748B', marginTop: 6, fontWeight: 500 }}>{label}</p>
-    </div>
-  )
-}
 
 const QuickAction = (props) => {
   const ActionIcon = props.icon
@@ -92,23 +65,6 @@ const QuickAction = (props) => {
       </div>
       <ArrowRight size={16} color="#94A3B8" style={{ flexShrink: 0, transform: hovered ? 'translateX(2px)' : 'none', transition: 'transform 0.2s' }} />
     </button>
-  )
-}
-
-const EmptyState = (props) => {
-  const EmptyIcon = props.icon
-  const { title, subtitle } = props
-  return (
-  <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-    <div style={{
-      width: 56, height: 56, borderRadius: 16, background: '#EFF6FF',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
-    }}>
-      <EmptyIcon size={26} color="#2563EB" />
-    </div>
-    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', margin: '0 0 4px' }}>{title}</h3>
-    <p style={{ fontSize: 13, color: '#64748B', margin: 0 }}>{subtitle}</p>
-  </div>
   )
 }
 
@@ -202,7 +158,7 @@ const DoctorDashboard = () => {
   if (!dashData || !profileData) return <PageLoader />
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '32px 24px 48px' }}>
+    <div className="curalink-fade-in" style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '32px 24px 48px' }}>
       <div style={{ maxWidth: 1320, margin: '0 auto' }}>
 
         {/* ══════════ HERO WELCOME CARD ══════════ */}
@@ -291,7 +247,7 @@ const DoctorDashboard = () => {
             </div>
 
             {todaysAppointments.length === 0 ? (
-              <EmptyState icon={CalendarClock} title="No appointments today" subtitle="Enjoy the calm — new bookings will show up here." />
+              <EmptyState compact icon={CalendarClock} title="No appointments today" subtitle="Enjoy the calm — new bookings will show up here." />
             ) : (
               <div style={{ maxHeight: 420, overflowY: 'auto' }}>
                 {todaysAppointments.map((item) => (
@@ -357,7 +313,7 @@ const DoctorDashboard = () => {
           </div>
 
           {reviews.length === 0 ? (
-            <EmptyState icon={MessageSquare} title="No reviews yet" subtitle="Reviews from your patients will appear here once submitted." />
+            <EmptyState compact icon={MessageSquare} title="No reviews yet" subtitle="Reviews from your patients will appear here once submitted." />
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 1, background: '#F1F5F9' }}>
               {reviews.map((review) => (

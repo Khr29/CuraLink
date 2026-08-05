@@ -11,14 +11,18 @@ import {
   Building2,
   Send
 } from 'lucide-react'
+import PageHero from '../../components/PageHero'
+import EmptyState from '../../components/EmptyState'
+import { SkeletonRow } from '../../components/Skeleton'
 
 const ReviewsList = () => {
   const { aToken, reviews, getAllReviews, toggleReviewVisibility, replyToReview, deleteReview } =
     useContext(AdminContext)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (aToken) {
-      getAllReviews()
+      getAllReviews().finally(() => setLoading(false))
     }
   }, [aToken, getAllReviews])
 
@@ -33,40 +37,29 @@ const ReviewsList = () => {
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '36px 24px' }}>
+    <div className="curalink-fade-in" style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '36px 24px' }}>
       <div style={{ maxWidth: 1320, margin: '0 auto' }}>
 
-        {/* PAGE HEADER */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 16,
-              background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 8px 20px rgba(37,99,235,0.25)'
-            }}>
-              <MessageSquare size={26} color="#FFFFFF" />
+        <PageHero
+          icon={MessageSquare}
+          title="Reviews"
+          description="Moderate patient reviews for doctors and hospitals."
+          action={
+            <div style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', backdropFilter: 'blur(8px)', padding: '10px 20px', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#14B8A6' }} />
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: '#FFFFFF' }}>
+                Total Reviews: {reviews?.length || 0}
+              </span>
             </div>
-            <div>
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', margin: 0 }}>
-                Reviews
-              </h1>
-              <p style={{ fontSize: 14, color: '#64748B', marginTop: 3 }}>
-                Moderate patient reviews for doctors and hospitals.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', padding: '10px 20px', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 4px 12px rgba(15,23,42,0.03)' }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563EB' }} />
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>
-              Total Reviews: <span style={{ color: '#2563EB' }}>{reviews?.length || 0}</span>
-            </span>
-          </div>
-        </div>
+          }
+        />
 
         {/* REVIEWS LIST */}
-        {reviews?.length > 0 ? (
+        {loading ? (
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 20, overflow: 'hidden' }}>
+            {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+          </div>
+        ) : reviews?.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {reviews.map((review) => (
               <ReviewRow
@@ -79,14 +72,12 @@ const ReviewsList = () => {
             ))}
           </div>
         ) : (
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 24, padding: '60px 24px', textAlign: 'center', boxShadow: '0 8px 24px rgba(15,23,42,0.04)' }}>
-            <div style={{ width: 64, height: 64, borderRadius: 20, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <MessageSquare size={32} color="#2563EB" />
-            </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>No Reviews Yet</h3>
-            <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
-              Patient reviews will appear here once they start rating doctors and hospitals.
-            </p>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 24, boxShadow: '0 8px 24px rgba(15,23,42,0.04)' }}>
+            <EmptyState
+              icon={MessageSquare}
+              title="No Reviews Yet"
+              subtitle="Patient reviews will appear here once they start rating doctors and hospitals."
+            />
           </div>
         )}
       </div>

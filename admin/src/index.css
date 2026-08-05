@@ -102,3 +102,32 @@ a{
   text-decoration:none;
   color:inherit;
 }
+
+/* =========================
+   Premium loading / motion
+   (shared by Skeleton.jsx and page-level fade-ins)
+========================= */
+
+@keyframes curalink-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.curalink-skeleton {
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 37%, #F1F5F9 63%);
+  background-size: 800px 100%;
+  animation: curalink-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes curalink-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.curalink-fade-in {
+  animation: curalink-fade-in 0.4s ease both;
+}
+
+@keyframes curalink-spin {
+  to { transform: rotate(360deg); }
+}

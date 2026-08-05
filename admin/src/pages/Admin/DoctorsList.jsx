@@ -99,14 +99,18 @@
 import React, { useContext, useEffect, useCallback, useMemo, useState } from 'react'
 import { AdminContext } from '../../context/AdminContext'
 import { Users, Stethoscope, CheckCircle2, XCircle, Star } from 'lucide-react'
+import PageHero from '../../components/PageHero'
+import EmptyState from '../../components/EmptyState'
+import { SkeletonCard } from '../../components/Skeleton'
 
 const DoctorsList = () => {
   const { doctors, aToken, getAllDoctors, changeAvailability } = useContext(AdminContext)
+  const [loading, setLoading] = useState(true)
 
   // Fetch doctors
   useEffect(() => {
     if (aToken) {
-      getAllDoctors()
+      getAllDoctors().finally(() => setLoading(false))
     }
   }, [aToken, getAllDoctors])
 
@@ -127,6 +131,7 @@ const DoctorsList = () => {
 
   return (
     <div
+      className="curalink-fade-in"
       style={{
         minHeight: '100vh',
         background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)',
@@ -134,73 +139,44 @@ const DoctorsList = () => {
       }}
     >
       <div style={{ maxWidth: 1320, margin: '0 auto' }}>
-        
-        {/* PAGE HEADER */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 32,
-            flexWrap: 'wrap',
-            gap: 16
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+
+        <PageHero
+          icon={Users}
+          title="All Doctors"
+          description="View doctor profiles and manage real-time availability status."
+          action={
             <div
               style={{
-                width: 52,
-                height: 52,
+                background: 'rgba(255,255,255,0.12)',
+                border: '1px solid rgba(255,255,255,0.25)',
+                backdropFilter: 'blur(8px)',
+                padding: '10px 20px',
                 borderRadius: 16,
-                background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 8px 20px rgba(37,99,235,0.25)'
+                gap: 10
               }}
             >
-              <Users size={26} color="#FFFFFF" />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#14B8A6' }} />
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: '#FFFFFF' }}>
+                Total Doctors: {doctors?.length || 0}
+              </span>
             </div>
-            <div>
-              <h1
-                style={{
-                  fontSize: 26,
-                  fontWeight: 800,
-                  color: '#0F172A',
-                  letterSpacing: '-0.02em',
-                  margin: 0
-                }}
-              >
-                All Doctors
-              </h1>
-              <p style={{ fontSize: 14, color: '#64748B', marginTop: 3 }}>
-                View doctor profiles and manage real-time availability status.
-              </p>
-            </div>
-          </div>
-
-          {/* DOCTOR COUNTER BADGE */}
-          <div
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              padding: '10px 20px',
-              borderRadius: 16,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              boxShadow: '0 4px 12px rgba(15,23,42,0.03)'
-            }}
-          >
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#14B8A6' }} />
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>
-              Total Doctors: <span style={{ color: '#2563EB' }}>{doctors?.length || 0}</span>
-            </span>
-          </div>
-        </div>
+          }
+        />
 
         {/* DOCTORS GRID CONTAINER */}
-        {doctors?.length > 0 ? (
+        {loading ? (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
+              gap: 24
+            }}
+          >
+            {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : doctors?.length > 0 ? (
           <div
             style={{
               display: 'grid',
@@ -211,37 +187,19 @@ const DoctorsList = () => {
             {renderedDoctors}
           </div>
         ) : (
-          /* EMPTY STATE CARD */
           <div
             style={{
               background: '#FFFFFF',
               border: '1px solid #E2E8F0',
               borderRadius: 24,
-              padding: '60px 24px',
-              textAlign: 'center',
               boxShadow: '0 8px 24px rgba(15,23,42,0.04)'
             }}
           >
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 20,
-                background: '#EFF6FF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 16px'
-              }}
-            >
-              <Users size={32} color="#2563EB" />
-            </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>
-              No Doctors Found
-            </h3>
-            <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
-              There are currently no registered doctors available in the system.
-            </p>
+            <EmptyState
+              icon={Users}
+              title="No Doctors Found"
+              subtitle="There are currently no registered doctors available in the system."
+            />
           </div>
         )}
 
