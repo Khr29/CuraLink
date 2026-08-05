@@ -26,7 +26,7 @@ import EmptyState from '../../components/EmptyState'
 import RatingDistribution from '../../components/RatingDistribution'
 
 // ─── Shared visual primitives (mirrors the language already used across
-// Dashboard.jsx / HospitalsList.jsx / ReviewsList.jsx: white rounded-24
+// Dashboard.jsx / HospitalsList.jsx / DoctorReviews.jsx: white rounded-24
 // cards, #E2E8F0 borders, blue→teal gradient icon badges, soft lift on
 // hover) so this page reads as part of the same system, not a new one. ───
 

@@ -6,6 +6,9 @@ import { assets } from "../assets/assets";
 import StarRating from "../components/StarRating";
 import ReviewList from "../components/ReviewList";
 import RatingDistribution from "../components/RatingDistribution";
+import WriteReviewCTA from "../components/WriteReviewCTA";
+import ReviewForm from "../components/ReviewForm";
+import useReviewEligibility from "../hooks/useReviewEligibility";
 
 const HospitalDetails = () => {
   const { hospitalId } = useParams();
@@ -16,6 +19,10 @@ const HospitalDetails = () => {
   const [hospital, setHospital] = useState(null);
   const [doctors, setDoctors] = useState([]);
   const [reviewStats, setReviewStats] = useState(null);
+  const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0);
+  const [reviewModalAppointmentId, setReviewModalAppointmentId] = useState(null);
+
+  const reviewEligibility = useReviewEligibility("hospital", hospitalId);
 
   const getHospital = async () => {
     try {
@@ -30,6 +37,13 @@ const HospitalDetails = () => {
     } catch (error) {
       console.log(error);
     }
+  };
+
+  const handleReviewSuccess = () => {
+    setReviewModalAppointmentId(null);
+    setReviewsRefreshKey((k) => k + 1);
+    reviewEligibility.refresh();
+    getHospital();
   };
 
   useEffect(() => {
@@ -301,7 +315,16 @@ const HospitalDetails = () => {
 
       {/* Reviews */}
       <div className="profile-section mb-8">
-        <h2 className="text-lg font-bold text-text-primary mb-6">Patient Reviews</h2>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+          <h2 className="text-lg font-bold text-text-primary">Patient Reviews</h2>
+          {reviewStats && reviewStats.total > 0 && (
+            <WriteReviewCTA
+              eligibility={reviewEligibility}
+              onOpenModal={setReviewModalAppointmentId}
+              targetLabel="hospital"
+            />
+          )}
+        </div>
         {reviewStats && reviewStats.total > 0 && (
           <div className="pb-6 mb-6 border-b border-slate-100">
             <RatingDistribution
@@ -311,8 +334,25 @@ const HospitalDetails = () => {
             />
           </div>
         )}
-        <ReviewList targetType="hospital" targetId={hospitalId} onStats={setReviewStats} />
+        <ReviewList
+          targetType="hospital"
+          targetId={hospitalId}
+          refreshKey={reviewsRefreshKey}
+          onStats={setReviewStats}
+          eligibility={reviewEligibility}
+          onWriteReview={setReviewModalAppointmentId}
+        />
       </div>
+
+      <ReviewForm
+        open={!!reviewModalAppointmentId}
+        onClose={() => setReviewModalAppointmentId(null)}
+        targetType="hospital"
+        targetId={hospitalId}
+        targetName={hospital.name}
+        appointmentId={reviewModalAppointmentId}
+        onSuccess={handleReviewSuccess}
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useCallback, useMemo } from 'react'
-import { AdminContext } from '../../context/AdminContext'
+import { AdminContext } from '../context/AdminContext'
 import {
   MessageSquare,
   Star,
@@ -7,16 +7,14 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  Stethoscope,
-  Building2,
   Send,
   Search,
   ThumbsUp
 } from 'lucide-react'
-import PageHero from '../../components/PageHero'
-import EmptyState from '../../components/EmptyState'
-import StatCard from '../../components/StatCard'
-import { SkeletonRow } from '../../components/Skeleton'
+import PageHero from './PageHero'
+import EmptyState from './EmptyState'
+import StatCard from './StatCard'
+import { SkeletonRow } from './Skeleton'
 
 const selectStyle = {
   height: 40, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 12,
@@ -24,12 +22,16 @@ const selectStyle = {
   fontFamily: 'Inter, sans-serif', cursor: 'pointer'
 }
 
-const ReviewsList = () => {
+// Shared moderation panel rendered by DoctorReviews.jsx and HospitalReviews.jsx.
+// `reviewType` ('doctor' | 'hospital') is applied as a hard filter up front —
+// each page only ever sees and acts on reviews for its own target type, so
+// Doctor Reviews and Hospital Reviews never mix.
+const ReviewsPanel = ({ reviewType, icon, title, description, targetLabel }) => {
   const { aToken, reviews, getAllReviews, toggleReviewVisibility, replyToReview, deleteReview } =
     useContext(AdminContext)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState('all')
+  const [targetFilter, setTargetFilter] = useState('all')
   const [ratingFilter, setRatingFilter] = useState('all')
   const [sortOrder, setSortOrder] = useState('newest')
 
@@ -49,28 +51,42 @@ const ReviewsList = () => {
     [deleteReview]
   )
 
+  const typeField = reviewType === 'doctor' ? 'doctorId' : 'hospitalId'
+
+  const typedReviews = useMemo(
+    () => (reviews || []).filter((r) => Boolean(r[typeField])),
+    [reviews, typeField]
+  )
+
+  const targetOptions = useMemo(() => {
+    const seen = new Map()
+    typedReviews.forEach((r) => {
+      const target = r[typeField]
+      if (target?._id && !seen.has(target._id)) seen.set(target._id, target.name)
+    })
+    return Array.from(seen, ([id, name]) => ({ id, name }))
+  }, [typedReviews, typeField])
+
   const stats = useMemo(() => {
-    const list = reviews || []
-    const visible = list.filter((r) => r.isVisible)
+    const visible = typedReviews.filter((r) => r.isVisible)
     const avg = visible.length > 0
       ? visible.reduce((sum, r) => sum + r.rating, 0) / visible.length
       : 0
     return {
-      total: list.length,
+      total: typedReviews.length,
       avg,
       visible: visible.length,
-      hidden: list.length - visible.length
+      hidden: typedReviews.length - visible.length
     }
-  }, [reviews])
+  }, [typedReviews])
 
-  const visibleReviews = useMemo(() => {
+  const filteredReviews = useMemo(() => {
     const query = search.trim().toLowerCase()
-    let list = (reviews || []).filter((review) => {
-      if (typeFilter === 'doctor' && !review.doctorId) return false
-      if (typeFilter === 'hospital' && !review.hospitalId) return false
+    let list = typedReviews.filter((review) => {
+      if (targetFilter !== 'all' && review[typeField]?._id !== targetFilter) return false
       if (ratingFilter !== 'all' && review.rating !== Number(ratingFilter)) return false
       if (query) {
-        const target = review.doctorId || review.hospitalId
+        const target = review[typeField]
         const haystack = `${review.userId?.name || ''} ${target?.name || ''} ${review.title || ''} ${review.comment || ''}`.toLowerCase()
         if (!haystack.includes(query)) return false
       }
@@ -81,21 +97,21 @@ const ReviewsList = () => {
       return sortOrder === 'newest' ? -diff : diff
     })
     return list
-  }, [reviews, search, typeFilter, ratingFilter, sortOrder])
+  }, [typedReviews, search, targetFilter, ratingFilter, sortOrder, typeField])
 
   return (
     <div className="curalink-fade-in" style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '36px 24px' }}>
       <div style={{ maxWidth: 1320, margin: '0 auto' }}>
 
         <PageHero
-          icon={MessageSquare}
-          title="Reviews"
-          description="Moderate patient reviews for doctors and hospitals."
+          icon={icon}
+          title={title}
+          description={description}
           action={
             <div style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', backdropFilter: 'blur(8px)', padding: '10px 20px', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#14B8A6' }} />
               <span style={{ fontSize: 13.5, fontWeight: 700, color: '#FFFFFF' }}>
-                Total Reviews: {reviews?.length || 0}
+                Total {title}: {typedReviews.length}
               </span>
             </div>
           }
@@ -120,14 +136,15 @@ const ReviewsList = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by patient, doctor, hospital, or keyword..."
+              placeholder={`Search by patient, ${targetLabel.toLowerCase()}, or keyword...`}
               style={{ ...selectStyle, width: '100%', paddingLeft: 36, cursor: 'text' }}
             />
           </div>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} style={selectStyle}>
-            <option value="all">All Types</option>
-            <option value="doctor">Doctor Reviews</option>
-            <option value="hospital">Hospital Reviews</option>
+          <select value={targetFilter} onChange={(e) => setTargetFilter(e.target.value)} style={selectStyle}>
+            <option value="all">All {targetLabel}s</option>
+            {targetOptions.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
           </select>
           <select value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value)} style={selectStyle}>
             <option value="all">All Ratings</option>
@@ -146,12 +163,14 @@ const ReviewsList = () => {
           <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 20, overflow: 'hidden' }}>
             {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
           </div>
-        ) : visibleReviews.length > 0 ? (
+        ) : filteredReviews.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {visibleReviews.map((review) => (
+            {filteredReviews.map((review) => (
               <ReviewRow
                 key={review._id}
                 review={review}
+                target={review[typeField]}
+                targetLabel={targetLabel}
                 onToggleVisibility={handleToggleVisibility}
                 onReply={replyToReview}
                 onDelete={handleDelete}
@@ -161,12 +180,12 @@ const ReviewsList = () => {
         ) : (
           <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 24, boxShadow: '0 8px 24px rgba(15,23,42,0.04)' }}>
             <EmptyState
-              icon={MessageSquare}
-              title={reviews?.length > 0 ? 'No Matching Reviews' : 'No Reviews Yet'}
+              icon={icon}
+              title={typedReviews.length > 0 ? 'No Matching Reviews' : `No ${title} Yet`}
               subtitle={
-                reviews?.length > 0
+                typedReviews.length > 0
                   ? 'Try adjusting your search or filters.'
-                  : 'Patient reviews will appear here once they start rating doctors and hospitals.'
+                  : `Patient reviews for ${targetLabel.toLowerCase()}s will appear here once submitted.`
               }
             />
           </div>
@@ -176,13 +195,9 @@ const ReviewsList = () => {
   )
 }
 
-const ReviewRow = ({ review, onToggleVisibility, onReply, onDelete }) => {
+const ReviewRow = ({ review, target, targetLabel, onToggleVisibility, onReply, onDelete }) => {
   const [replyOpen, setReplyOpen] = useState(false)
   const [replyText, setReplyText] = useState(review.adminReply || '')
-
-  const target = review.doctorId || review.hospitalId
-  const targetType = review.doctorId ? 'Doctor' : 'Hospital'
-  const TargetIcon = review.doctorId ? Stethoscope : Building2
 
   const submitReply = () => {
     onReply(review._id, replyText)
@@ -217,7 +232,7 @@ const ReviewRow = ({ review, onToggleVisibility, onReply, onDelete }) => {
                 </span>
               )}
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', padding: '2px 8px', borderRadius: 99 }}>
-                <TargetIcon size={11} /> {targetType}: {target?.name || 'Unknown'}
+                {targetLabel}: {target?.name || 'Unknown'}
               </span>
             </div>
 
@@ -270,7 +285,7 @@ const ReviewRow = ({ review, onToggleVisibility, onReply, onDelete }) => {
           </button>
           <button
             onClick={() => onToggleVisibility(review._id)}
-            title={review.isVisible ? 'Hide review' : 'Show review'}
+            title={review.isVisible ? 'Hide review' : 'Approve & show review'}
             style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           >
             {review.isVisible ? <Eye size={15} color="#16A34A" /> : <EyeOff size={15} color="#94A3B8" />}
@@ -288,4 +303,4 @@ const ReviewRow = ({ review, onToggleVisibility, onReply, onDelete }) => {
   )
 }
 
-export default React.memo(ReviewsList)
+export default React.memo(ReviewsPanel)

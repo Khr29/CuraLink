@@ -110,8 +110,14 @@ const AdminSidebar = () => {
       // -------------------------
 
       {
-        name: 'Reviews',
-        path: '/reviews',
+        name: 'Doctor Reviews',
+        path: '/doctor-reviews',
+        icon: assets.list_icon
+      },
+
+      {
+        name: 'Hospital Reviews',
+        path: '/hospital-reviews',
         icon: assets.list_icon
       }
 

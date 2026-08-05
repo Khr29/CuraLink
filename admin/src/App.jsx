@@ -75,7 +75,8 @@ const DoctorsList = lazy(() => import('./pages/Admin/DoctorsList'))
 
 const HospitalsList = lazy(() => import('./pages/Admin/HospitalsList'))
 const AddHospital = lazy(() => import('./pages/Admin/AddHospital'))
-const ReviewsList = lazy(() => import('./pages/Admin/ReviewsList'))
+const DoctorReviews = lazy(() => import('./pages/Admin/DoctorReviews'))
+const HospitalReviews = lazy(() => import('./pages/Admin/HospitalReviews'))
 
 // Lazy loaded Doctor Pages
 const DoctorDashboard = lazy(() => import('./pages/Doctor/DoctorDashboard'))
@@ -211,7 +212,7 @@ const App = () => {
 />
 
 <Route
-  path="/reviews"
+  path="/doctor-reviews"
   element={
     <ProtectedRoute token={aToken}>
       <>
@@ -219,7 +220,24 @@ const App = () => {
         <div className="flex">
           <SideBar />
           <div className="flex-1 p-4 sm:p-6 md:p-8">
-            <ReviewsList />
+            <DoctorReviews />
+          </div>
+        </div>
+      </>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/hospital-reviews"
+  element={
+    <ProtectedRoute token={aToken}>
+      <>
+        <Navbar />
+        <div className="flex">
+          <SideBar />
+          <div className="flex-1 p-4 sm:p-6 md:p-8">
+            <HospitalReviews />
           </div>
         </div>
       </>

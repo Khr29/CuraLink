@@ -44,7 +44,12 @@ const StarRating = ({ rating = 0, size = "md", interactive = false, value = 0, o
   const fillPercent = (clamped / 5) * 100;
 
   return (
-    <span className={`relative inline-flex ${sizeClass}`} style={{ lineHeight: 0 }}>
+    // Note: no width class here — the wrapper must size itself to the
+    // background star row's natural width (5 stars + gaps), not a single
+    // star's width, otherwise the absolute-positioned filled overlay below
+    // (which clips via `inset-0` + a % width relative to this wrapper)
+    // collapses to one star wide and the sibling rating text overlaps it.
+    <span className="relative inline-flex" style={{ lineHeight: 0 }}>
       {/* Empty stars (background) */}
       <span className="flex gap-0.5 text-slate-200">
         {[1, 2, 3, 4, 5].map((i) => (

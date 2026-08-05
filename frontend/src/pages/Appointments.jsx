@@ -6,6 +6,9 @@ import RelatedDoctor from "../components/RelatedDoctor";
 import StarRating from "../components/StarRating";
 import ReviewList from "../components/ReviewList";
 import RatingDistribution from "../components/RatingDistribution";
+import WriteReviewCTA from "../components/WriteReviewCTA";
+import ReviewForm from "../components/ReviewForm";
+import useReviewEligibility from "../hooks/useReviewEligibility";
 import { toast } from "react-toastify";
 import axios from "axios";
 
@@ -22,6 +25,17 @@ const Appointments = () => {
   const [slotTime, setSlotTime] = useState("");
   const [booking, setBooking] = useState(false);
   const [reviewStats, setReviewStats] = useState(null);
+  const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0);
+  const [reviewModalAppointmentId, setReviewModalAppointmentId] = useState(null);
+
+  const reviewEligibility = useReviewEligibility("doctor", docId);
+
+  const handleReviewSuccess = useCallback(() => {
+    setReviewModalAppointmentId(null);
+    setReviewsRefreshKey((k) => k + 1);
+    reviewEligibility.refresh();
+    getDoctorsData();
+  }, [reviewEligibility, getDoctorsData]);
 
   const fetchDocInfo = useCallback(() => {
     const doctor = doctors.find((doc) => doc._id === docId);
@@ -30,34 +44,40 @@ const Appointments = () => {
 
   const getAvailableSlots = useCallback(() => {
     if (!docInfo) return;
-    const slots = [];
+    const days = [];
     const today = new Date();
     for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(today);
-      currentDate.setDate(today.getDate() + i);
-      const endTime = new Date(currentDate);
+      // `date` is the calendar day this box represents — kept separate from
+      // the slot-generation cursor below so the day label always renders
+      // even when that day happens to produce zero bookable time slots
+      // (e.g. "today" after the clinic's last slot has already passed).
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+
+      const cursor = new Date(date);
+      const endTime = new Date(date);
       endTime.setHours(21, 0, 0, 0);
       if (i === 0) {
-        currentDate.setHours(currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10);
-        currentDate.setMinutes(currentDate.getMinutes() > 30 ? 30 : 0);
+        cursor.setHours(cursor.getHours() > 10 ? cursor.getHours() + 1 : 10);
+        cursor.setMinutes(cursor.getMinutes() > 30 ? 30 : 0);
       } else {
-        currentDate.setHours(10);
-        currentDate.setMinutes(0);
+        cursor.setHours(10);
+        cursor.setMinutes(0);
       }
       const timeSlots = [];
-      while (currentDate < endTime) {
-        const formattedTime = currentDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-        const day = currentDate.getDate();
-        const month = currentDate.getMonth() + 1;
-        const year = currentDate.getFullYear();
+      while (cursor < endTime) {
+        const formattedTime = cursor.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const day = cursor.getDate();
+        const month = cursor.getMonth() + 1;
+        const year = cursor.getFullYear();
         const slotDate = `${day}_${month}_${year}`;
         const isAvailable = !docInfo.slots_booked?.[slotDate]?.includes(formattedTime);
-        if (isAvailable) timeSlots.push({ datetime: new Date(currentDate), time: formattedTime });
-        currentDate.setMinutes(currentDate.getMinutes() + 30);
+        if (isAvailable) timeSlots.push({ datetime: new Date(cursor), time: formattedTime });
+        cursor.setMinutes(cursor.getMinutes() + 30);
       }
-      slots.push(timeSlots);
+      days.push({ date, slots: timeSlots });
     }
-    setDocSlots(slots);
+    setDocSlots(days);
   }, [docInfo]);
 
   const bookAppointment = useCallback(async () => {
@@ -71,7 +91,7 @@ const Appointments = () => {
     }
     setBooking(true);
     try {
-      const date = docSlots[slotIndex][0].datetime;
+      const date = docSlots[slotIndex].date;
       const slotDate = `${date.getDate()}_${date.getMonth() + 1}_${date.getFullYear()}`;
       const { data } = await axios.post(
         `${backendUrl}/api/user/book-appointment`,
@@ -191,23 +211,23 @@ const Appointments = () => {
         {/* Day selector */}
         <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Choose Day</p>
         <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 mb-6">
-          {docSlots.map((item, index) => (
+          {docSlots.map((day, index) => (
             <button
               key={index}
               onClick={() => { setSlotIndex(index); setSlotTime(""); }}
               className={`slot-day flex-shrink-0 ${slotIndex === index ? "active" : ""}`}
             >
-              <p className="text-xs font-bold">{item[0] && daysOfWeek[item[0].datetime.getDay()]}</p>
-              <p className="text-lg font-extrabold mt-0.5">{item[0] && item[0].datetime.getDate()}</p>
+              <p className="text-xs font-bold">{daysOfWeek[day.date.getDay()]}</p>
+              <p className="text-lg font-extrabold mt-0.5">{day.date.getDate()}</p>
             </button>
           ))}
         </div>
 
         {/* Time selector */}
         <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Choose Time</p>
-        {docSlots[slotIndex]?.length > 0 ? (
+        {docSlots[slotIndex]?.slots.length > 0 ? (
           <div className="flex flex-wrap gap-2 mb-6">
-            {docSlots[slotIndex].map((item, index) => (
+            {docSlots[slotIndex].slots.map((item, index) => (
               <button
                 key={index}
                 onClick={() => setSlotTime(item.time)}
@@ -250,7 +270,16 @@ const Appointments = () => {
 
       {/* Reviews */}
       <div className="profile-section mb-8">
-        <h2 className="text-lg font-bold text-text-primary mb-6">Patient Reviews</h2>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+          <h2 className="text-lg font-bold text-text-primary">Patient Reviews</h2>
+          {reviewStats && reviewStats.total > 0 && (
+            <WriteReviewCTA
+              eligibility={reviewEligibility}
+              onOpenModal={setReviewModalAppointmentId}
+              targetLabel="doctor"
+            />
+          )}
+        </div>
         {reviewStats && reviewStats.total > 0 && (
           <div className="pb-6 mb-6 border-b border-slate-100">
             <RatingDistribution
@@ -260,10 +289,27 @@ const Appointments = () => {
             />
           </div>
         )}
-        <ReviewList targetType="doctor" targetId={docId} onStats={setReviewStats} />
+        <ReviewList
+          targetType="doctor"
+          targetId={docId}
+          refreshKey={reviewsRefreshKey}
+          onStats={setReviewStats}
+          eligibility={reviewEligibility}
+          onWriteReview={setReviewModalAppointmentId}
+        />
       </div>
 
       <RelatedDoctor docId={docId} speciality={docInfo.speciality} />
+
+      <ReviewForm
+        open={!!reviewModalAppointmentId}
+        onClose={() => setReviewModalAppointmentId(null)}
+        targetType="doctor"
+        targetId={docId}
+        targetName={docInfo.name}
+        appointmentId={reviewModalAppointmentId}
+        onSuccess={handleReviewSuccess}
+      />
     </div>
   );
 };

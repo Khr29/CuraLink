@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { AppContext } from "../context/AppContext";
 import StarRating from "./StarRating";
+import WriteReviewCTA from "./WriteReviewCTA";
 
 const timeAgo = (dateString) => {
   const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
@@ -26,7 +27,9 @@ const LIMIT = 5;
 // (e.g. right after the user submits a new review elsewhere on the page).
 // `onStats` (optional) is called with { total, distribution } after each
 // fetch, so a parent can render a <RatingDistribution> without a second call.
-const ReviewList = ({ targetType, targetId, refreshKey, onStats }) => {
+// `eligibility` + `onWriteReview` (optional) drive the "Write the First
+// Review" call-to-action shown when the list is empty.
+const ReviewList = ({ targetType, targetId, refreshKey, onStats, eligibility, onWriteReview }) => {
   const { backendUrl } = useContext(AppContext);
 
   const [reviews, setReviews] = useState([]);
@@ -75,9 +78,19 @@ const ReviewList = ({ targetType, targetId, refreshKey, onStats }) => {
 
   if (!loading && reviews.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 text-center">
-        <div className="text-4xl mb-2">📝</div>
-        <p className="text-text-muted text-sm">No reviews yet. Be the first to share your experience.</p>
+      <div className="flex flex-col items-center justify-center py-14 text-center">
+        <div className="text-5xl mb-3">📝</div>
+        <h3 className="text-base font-bold text-text-primary mb-1">No reviews yet</h3>
+        <p className="text-text-muted text-sm mb-6">Be the first to share your experience.</p>
+        {eligibility && (
+          <WriteReviewCTA
+            eligibility={eligibility}
+            onOpenModal={onWriteReview}
+            size="large"
+            label="⭐ Write the First Review"
+            targetLabel={targetType}
+          />
+        )}
       </div>
     );
   }
