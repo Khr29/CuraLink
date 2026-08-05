@@ -2,15 +2,21 @@ import mongoose from "mongoose";
 
 const doctorSchema = new mongoose.Schema(
   {
+    // ==========================
+    // Basic Information
+    // ==========================
     name: {
       type: String,
       required: true,
+      trim: true,
     },
 
     email: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
+      lowercase: true,
     },
 
     password: {
@@ -23,6 +29,9 @@ const doctorSchema = new mongoose.Schema(
       required: true,
     },
 
+    // ==========================
+    // Professional Information
+    // ==========================
     speciality: {
       type: String,
       required: true,
@@ -43,51 +52,87 @@ const doctorSchema = new mongoose.Schema(
       required: true,
     },
 
-    available: {
-      type: Boolean,
-      default: true,
-    },
-
     fees: {
       type: Number,
       required: true,
     },
 
+    // ==========================
+    // Availability
+    // ==========================
+    available: {
+      type: Boolean,
+      default: true,
+    },
+
+    // ==========================
+    // Address
+    // ==========================
     address: {
       type: Object,
       required: true,
     },
 
-    // ============================
+    // ==========================
     // Hospital Relationship
-    // ============================
+    // ==========================
     hospitalId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "hospital",
       required: true,
     },
 
+    // ==========================
+    // Registration Date
+    // ==========================
     date: {
       type: Number,
       required: true,
     },
 
+    // ==========================
+    // Appointment Slots
+    // ==========================
     slots_booked: {
       type: Object,
       default: {},
     },
+
+    // ==========================
+    // Review System
+    // ==========================
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+
+    totalReviews: {
+      type: Number,
+      default: 0,
+    },
   },
   {
+    timestamps: true,
     minimize: false,
   }
 );
 
+// ==========================
 // Indexes
+// ==========================
+
 doctorSchema.index({ speciality: 1 });
+
 doctorSchema.index({ available: 1 });
+
 doctorSchema.index({ hospitalId: 1 });
 
+doctorSchema.index({ averageRating: -1 });
+
 const doctorModel =
-  mongoose.models.doctor || mongoose.model("doctor", doctorSchema);
+  mongoose.models.doctor ||
+  mongoose.model("doctor", doctorSchema);
 
 export default doctorModel;

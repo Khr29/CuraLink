@@ -74,26 +74,26 @@ const SpecialityMenu = () => {
           key={item.speciality}
           to={`/doctors/${item.speciality}`}
           onClick={handleScrollTop}
-          className="group flex flex-col items-center text-center gap-3 min-w-[136px] sm:min-w-[152px]
-                     flex-shrink-0 bg-white border border-slate-100 rounded-2xl px-4 py-6
+          className="group flex flex-col items-center text-center gap-4 min-w-[168px] sm:min-w-[188px]
+                     flex-shrink-0 bg-white border border-slate-100 rounded-2xl px-5 py-8
                      shadow-[0_4px_16px_rgba(15,23,42,0.05)]
-                     hover:shadow-[0_16px_40px_rgba(37,99,235,0.10)]
-                     hover:border-blue-100 hover:-translate-y-1
+                     hover:shadow-[0_18px_44px_rgba(37,99,235,0.12)]
+                     hover:border-blue-100 hover:-translate-y-1.5
                      transition-all duration-300 animate-slide-up"
           style={{ animationDelay: `${idx * 0.06}s` }}
           aria-label={`Browse ${item.speciality} doctors`}
         >
           <div
-            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl ${color.bg} ring-1 ${color.ring}
+            className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ${color.bg} ring-1 ${color.ring}
                         flex items-center justify-center transition-transform duration-300
                         group-hover:scale-105`}
           >
-            <span className={`w-7 h-7 sm:w-8 sm:h-8 ${color.icon}`}>
+            <span className={`w-10 h-10 sm:w-12 sm:h-12 ${color.icon}`}>
               {icon}
             </span>
           </div>
 
-          <p className="text-xs sm:text-sm font-semibold text-text-secondary leading-tight transition-colors duration-200 group-hover:text-primary">
+          <p className="text-sm sm:text-base font-bold text-text-primary leading-tight transition-colors duration-200 group-hover:text-primary">
             {item.speciality}
           </p>
         </Link>
@@ -119,7 +119,7 @@ const SpecialityMenu = () => {
 
       {/* Scrollable cards */}
       <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
-        <div className="flex sm:justify-center gap-5 sm:gap-6 pb-4 min-w-max sm:min-w-0 sm:flex-wrap">
+        <div className="flex sm:justify-center gap-6 sm:gap-7 pb-4 min-w-max sm:min-w-0 sm:flex-wrap">
           {cards}
         </div>
       </div>

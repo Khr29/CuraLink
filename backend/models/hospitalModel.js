@@ -2,32 +2,34 @@ import mongoose from "mongoose";
 
 const hospitalSchema = new mongoose.Schema(
   {
+    // ==========================
     // Basic Information
+    // ==========================
     name: {
       type: String,
       required: true,
       trim: true,
     },
 
-    // Main image (used in hospital cards)
+    // Main image (Hospital Card)
     image: {
       type: String,
       required: true,
     },
 
-    // Small logo
+    // Small Logo
     logo: {
       type: String,
       default: "",
     },
 
-    // Cover banner
+    // Cover Banner
     banner: {
       type: String,
       default: "",
     },
 
-    // Gallery images
+    // Gallery Images
     gallery: [
       {
         type: String,
@@ -39,11 +41,15 @@ const hospitalSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Contact
+    // ==========================
+    // Contact Information
+    // ==========================
     email: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
+      lowercase: true,
     },
 
     phone: {
@@ -56,7 +62,9 @@ const hospitalSchema = new mongoose.Schema(
       default: "",
     },
 
+    // ==========================
     // Address
+    // ==========================
     address: {
       line1: String,
       line2: String,
@@ -69,14 +77,18 @@ const hospitalSchema = new mongoose.Schema(
       pincode: String,
     },
 
-    // Google Maps Location
+    // ==========================
+    // Google Maps
+    // ==========================
     location: {
       latitude: Number,
       longitude: Number,
       mapsUrl: String,
     },
 
+    // ==========================
     // Hospital Information
+    // ==========================
     hospitalType: {
       type: String,
       enum: [
@@ -109,7 +121,9 @@ const hospitalSchema = new mongoose.Schema(
       default: true,
     },
 
+    // ==========================
     // Departments
+    // ==========================
     departments: [
       {
         type: String,
@@ -123,14 +137,18 @@ const hospitalSchema = new mongoose.Schema(
       },
     ],
 
+    // ==========================
     // Facilities
+    // ==========================
     facilities: [
       {
         type: String,
       },
     ],
 
-    // Doctors
+    // ==========================
+    // Connected Doctors
+    // ==========================
     doctors: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -138,20 +156,27 @@ const hospitalSchema = new mongoose.Schema(
       },
     ],
 
-    // Ratings
-    rating: {
+    // ==========================
+    // Review System
+    // ==========================
+
+    // Automatically updated whenever a review is added
+    averageRating: {
       type: Number,
       default: 0,
       min: 0,
       max: 5,
     },
 
+    // Number of reviews
     totalReviews: {
       type: Number,
       default: 0,
     },
 
-    // Active / Inactive
+    // ==========================
+    // Status
+    // ==========================
     active: {
       type: Boolean,
       default: true,
@@ -160,17 +185,27 @@ const hospitalSchema = new mongoose.Schema(
   {
     timestamps: true,
     minimize: false,
-  },
+  }
 );
 
+// ==========================
 // Indexes
+// ==========================
+
 hospitalSchema.index({ name: 1 });
-hospitalSchema.index({ rating: -1 });
+
+hospitalSchema.index({ averageRating: -1 });
+
 hospitalSchema.index({ "address.city": 1 });
+
 hospitalSchema.index({ hospitalType: 1 });
+
 hospitalSchema.index({ specialties: 1 });
 
+hospitalSchema.index({ departments: 1 });
+
 const hospitalModel =
-  mongoose.models.hospital || mongoose.model("hospital", hospitalSchema);
+  mongoose.models.hospital ||
+  mongoose.model("hospital", hospitalSchema);
 
 export default hospitalModel;

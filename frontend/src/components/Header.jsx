@@ -4,15 +4,43 @@ import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext";
 
 const TRUST = [
-  { icon: "✅", text: "Verified Doctors" },
-  { icon: "🏥", text: "Trusted Hospitals" },
-  { icon: "📅", text: "Instant Booking" },
-  { icon: "💬", text: "24/7 Support" },
+  {
+    text: "Verified Doctors",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
+    text: "Trusted Hospitals",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15" />
+      </svg>
+    ),
+  },
+  {
+    text: "Instant Booking",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+      </svg>
+    ),
+  },
+  {
+    text: "24/7 Support",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+      </svg>
+    ),
+  },
 ];
 
 const Header = () => {
   const navigate = useNavigate();
-  const { group_profiles, header_img } = assets;
+  const { group_profiles } = assets;
   const { doctors, hospitals } = useContext(AppContext);
 
   // Real counts from the existing context/API data — not hardcoded.
@@ -52,7 +80,7 @@ const Header = () => {
       }} />
 
       {/* Main grid */}
-      <div className="relative z-10 grid md:grid-cols-2 gap-8 items-end px-8 md:px-12 lg:px-16 pt-12 md:pt-16">
+      <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center px-8 md:px-12 lg:px-16 pt-12 md:pt-16">
 
         {/* ── Left ── */}
         <div className="pb-12 md:pb-16">
@@ -106,7 +134,7 @@ const Header = () => {
             Find the right doctor, compare trusted hospitals, and manage your health records — all from one secure platform.
           </p>
 
-          {/* Trust pills */}
+          {/* Trust pills — outline icons, no emoji */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 32 }}>
             {TRUST.map((t) => (
               <span key={t.text} style={{
@@ -117,7 +145,7 @@ const Header = () => {
                 padding: "6px 14px", borderRadius: 99,
                 backdropFilter: "blur(6px)"
               }}>
-                <span>{t.icon}</span>
+                <span style={{ width: 14, height: 14, color: "#5EEAD4", flexShrink: 0 }}>{t.icon}</span>
                 <span>{t.text}</span>
               </span>
             ))}
@@ -186,18 +214,118 @@ const Header = () => {
           </div>
         </div>
 
-        {/* ── Right — Doctor image ── */}
-        <div className="hidden md:flex justify-end items-end">
-          <img
-            src={header_img}
-            alt="Doctor"
-            loading="lazy"
+        {/* ── Right — floating UI-card composition (replaces stock photo) ── */}
+        <div className="hidden md:flex relative justify-center items-center min-h-[380px]">
+
+          {/* faint heartbeat line, purely decorative */}
+          <svg
+            viewBox="0 0 400 100"
+            style={{ position: "absolute", width: "90%", opacity: 0.12, pointerEvents: "none" }}
+          >
+            <path
+              d="M0 50 H130 L150 20 L170 80 L190 50 H400"
+              fill="none" stroke="#5EEAD4" strokeWidth="2.5"
+            />
+          </svg>
+
+          {/* Main card — upcoming appointment */}
+          <div
             style={{
-              width: "100%", maxWidth: 420,
-              objectFit: "contain",
-              filter: "drop-shadow(0 24px 48px rgba(0,0,0,0.35))"
+              position: "relative", zIndex: 10,
+              background: "rgba(255,255,255,0.97)",
+              backdropFilter: "blur(10px)",
+              borderRadius: 18,
+              boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+              padding: 20,
+              width: 268,
+              transform: "rotate(-2deg)",
+              transition: "transform .4s ease"
             }}
-          />
+            onMouseEnter={e => e.currentTarget.style.transform = "rotate(0deg)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "rotate(-2deg)"}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <div style={{
+                width: 42, height: 42, borderRadius: "50%",
+                background: "linear-gradient(135deg, #2563EB, #14B8A6)",
+                color: "#fff", fontWeight: 700, fontSize: "0.8rem",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+              }}>
+                DR
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#0F172A" }}>Dr. Ayesha Khan</p>
+                <p style={{ fontSize: "0.72rem", color: "#64748B" }}>Cardiologist</p>
+              </div>
+              <span className="badge badge-green" style={{ flexShrink: 0 }}>Confirmed</span>
+            </div>
+
+            <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", color: "#475569" }}>
+                <svg style={{ width: 14, height: 14, color: "#0EA5E9", flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+                Today, 4:30 PM
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", color: "#475569" }}>
+                <svg style={{ width: 14, height: 14, color: "#0EA5E9", flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                CityCare Hospital, Bengaluru
+              </div>
+            </div>
+          </div>
+
+          {/* Floating hospital-rating mini card */}
+          <div
+            style={{
+              position: "absolute", left: "6%", bottom: 10, zIndex: 20,
+              background: "#FFFFFF", borderRadius: 14,
+              boxShadow: "0 14px 34px rgba(0,0,0,0.30)",
+              padding: 12, width: 152,
+              transform: "rotate(3deg)", transition: "transform .4s ease"
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = "rotate(0deg)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "rotate(3deg)"}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
+              <svg style={{ width: 13, height: 13, color: "#FCD34D" }} fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#0F172A" }}>4.9</span>
+              <span className="badge badge-green" style={{ marginLeft: "auto", fontSize: "0.6rem", padding: "2px 6px" }}>Open</span>
+            </div>
+            <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "#0F172A", lineHeight: 1.2 }}>Apollo Hospitals</p>
+            <p style={{ fontSize: "0.65rem", color: "#94A3B8", marginTop: 2 }}>12 Departments</p>
+          </div>
+
+          {/* Floating "records synced" badge */}
+          <div
+            style={{
+              position: "absolute", right: "2%", top: 4, zIndex: 20,
+              background: "#FFFFFF", borderRadius: 14,
+              boxShadow: "0 14px 34px rgba(0,0,0,0.30)",
+              padding: "10px 14px",
+              display: "flex", alignItems: "center", gap: 8,
+              transform: "rotate(2deg)", transition: "transform .4s ease"
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = "rotate(0deg)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "rotate(2deg)"}
+          >
+            <div style={{
+              width: 30, height: 30, borderRadius: 9,
+              background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+            }}>
+              <svg style={{ width: 16, height: 16, color: "#2563EB" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "#0F172A", lineHeight: 1.1 }}>Health Records</p>
+              <p style={{ fontSize: "0.62rem", color: "#94A3B8" }}>Synced &amp; secure</p>
+            </div>
+          </div>
         </div>
       </div>
 
