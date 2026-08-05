@@ -221,7 +221,7 @@ const DoctorDashboard = () => {
             `
           }} />
 
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 24, justifyContent: 'space-between' }}>
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
               <img
                 src={profileData.image}
@@ -261,23 +261,6 @@ const DoctorDashboard = () => {
                 </div>
               </div>
             </div>
-
-            <button
-              onClick={() => navigate('/doctor-profile')}
-              className="shine"
-              style={{
-                background: 'rgba(255,255,255,0.95)', color: '#0F172A',
-                border: 'none', borderRadius: 12, padding: '12px 24px',
-                fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 8,
-                boxShadow: '0 8px 20px rgba(0,0,0,0.25)', transition: 'all 0.2s ease',
-                fontFamily: 'Inter, sans-serif'
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-            >
-              <UserCog size={16} /> Edit Profile
-            </button>
           </div>
         </div>
 
