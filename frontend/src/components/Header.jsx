@@ -55,7 +55,10 @@ const Header = () => {
 
   return (
     <section className="relative rounded-2xl overflow-hidden" style={{
-      background: "linear-gradient(135deg, #0F172A 0%, #134E4A 55%, #0C4A6E 100%)"
+      // Deep navy-forward gradient — distinct mood from Banner/Footer's
+      // blue-forward gradient. Still same brand family (navy → blue → teal),
+      // just a different lean so the three dark sections don't look identical.
+      background: "linear-gradient(135deg, #020617 0%, #0F2547 45%, #155E75 80%, #0F766E 100%)"
     }}>
 
       {/* Mesh overlays */}
