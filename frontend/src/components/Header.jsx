@@ -1,139 +1,11 @@
-// import React from "react";
-// import { useNavigate } from "react-router-dom";
-// import { assets } from "../assets/assets";
-
-// const STATS = [
-//   { value: "50K+", label: "Patients Served" },
-//   { value: "500+", label: "Expert Doctors" },
-//   { value: "30+", label: "Specialities" },
-//   { value: "4.9★", label: "Average Rating" },
-// ];
-
-// const TRUST = [
-//   "✅ Verified Doctors",
-//   "🔒 Secure Payments",
-//   "📅 Instant Booking",
-//   "💬 24/7 Support",
-// ];
-
-// const Header = () => {
-//   const navigate = useNavigate();
-//   const { group_profiles, header_img } = assets;
-
-//   return (
-//     <section className="hero-gradient hero-mesh rounded-2xl overflow-hidden relative animate-fade-in">
-//       {/* Decorative blobs */}
-//       <div className="absolute -top-20 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-//       <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-secondary/10 rounded-full blur-3xl pointer-events-none" />
-
-//       <div className="relative z-10 grid md:grid-cols-2 gap-8 items-end px-8 md:px-12 lg:px-16 pt-12 md:pt-16">
-//         {/* Left */}
-//         <div className="pb-12 md:pb-16 animate-slide-up" style={{ animationDelay: "0.1s" }}>
-//           {/* Tag */}
-//           <span className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white text-xs font-semibold px-4 py-1.5 rounded-full mb-6 backdrop-blur-sm">
-//             <span className="w-2 h-2 bg-accent rounded-full animate-pulse-slow" />
-//             Trusted by 50,000+ patients
-//           </span>
-
-//           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4">
-//             Book Your Doctor
-//             <span className="block gradient-text mt-1">Appointment Online</span>
-//           </h1>
-
-//           <p className="text-white/70 text-base md:text-lg leading-relaxed mb-6 max-w-lg">
-//             Connect with India's best doctors. Get expert medical care from verified specialists — fast, secure, and hassle-free.
-//           </p>
-
-//           {/* Trust pills */}
-//           <div className="flex flex-wrap gap-2 mb-8">
-//             {TRUST.map((t) => (
-//               <span key={t} className="text-xs text-white/80 bg-white/10 border border-white/15 px-3 py-1.5 rounded-full backdrop-blur-sm">
-//                 {t}
-//               </span>
-//             ))}
-//           </div>
-
-//           {/* CTAs */}
-//           <div className="flex flex-wrap gap-3 items-center">
-//             <a
-//               href="#speciality"
-//               className="btn btn-primary btn-lg shine"
-//               onClick={(e) => {
-//                 e.preventDefault();
-//                 document.getElementById("speciality")?.scrollIntoView({ behavior: "smooth" });
-//               }}
-//             >
-//               Book Appointment
-//               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-//                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-//               </svg>
-//             </a>
-//             <button
-//               onClick={() => navigate("/doctors")}
-//               className="btn btn-sm text-white/80 border border-white/20 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full px-5 py-2.5 transition-all"
-//             >
-//               Browse Doctors
-//             </button>
-//           </div>
-
-//           {/* Avatars */}
-//           <div className="flex items-center gap-3 mt-8">
-//             <img src={group_profiles} alt="Happy patients" className="h-10" loading="lazy" />
-//             <div>
-//               <div className="flex gap-0.5">
-//                 {[1,2,3,4,5].map(i => (
-//                   <svg key={i} className="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-//                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-//                   </svg>
-//                 ))}
-//               </div>
-//               <p className="text-white/60 text-xs mt-0.5">4.9/5 from 12,000+ reviews</p>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Right — doctor image */}
-//         <div className="hidden md:flex justify-end items-end">
-//           <img
-//             src={header_img}
-//             alt="Doctor"
-//             loading="lazy"
-//             className="w-full max-w-sm lg:max-w-md object-contain drop-shadow-2xl animate-float"
-//           />
-//         </div>
-//       </div>
-
-//       {/* Stats bar */}
-//       <div className="relative z-10 border-t border-white/10 mx-4 md:mx-0">
-//         <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10">
-//           {STATS.map((s) => (
-//             <div key={s.label} className="stat-card text-center rounded-none border-0 py-5">
-//               <p className="text-2xl md:text-3xl font-extrabold gradient-text">{s.value}</p>
-//               <p className="text-white/55 text-xs md:text-sm mt-1">{s.label}</p>
-//             </div>
-//           ))}
-//         </div>
-//       </div>
-//     </section>
-//   );
-// };
-
-// export default React.memo(Header);
-
-import React from "react";
+import React, { useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
-
-const STATS = [
-  { value: "50K+", label: "Patients Served" },
-  { value: "500+", label: "Expert Doctors" },
-  { value: "30+", label: "Specialities" },
-  { value: "4.9★", label: "Average Rating" },
-];
+import { AppContext } from "../context/AppContext";
 
 const TRUST = [
   { icon: "✅", text: "Verified Doctors" },
-  { icon: "🔒", text: "Secure Payments" },
+  { icon: "🏥", text: "Trusted Hospitals" },
   { icon: "📅", text: "Instant Booking" },
   { icon: "💬", text: "24/7 Support" },
 ];
@@ -141,6 +13,17 @@ const TRUST = [
 const Header = () => {
   const navigate = useNavigate();
   const { group_profiles, header_img } = assets;
+  const { doctors, hospitals } = useContext(AppContext);
+
+  // Real counts from the existing context/API data — not hardcoded.
+  // "Patients Served" and "Average Rating" stay as labeled placeholders
+  // since there's no backend field for those yet.
+  const STATS = useMemo(() => [
+    { value: "50K+", label: "Patients Served", isPlaceholder: true },
+    { value: doctors.length ? `${doctors.length}+` : "—", label: "Expert Doctors" },
+    { value: hospitals.length ? `${hospitals.length}+` : "—", label: "Partner Hospitals" },
+    { value: "4.9★", label: "Average Rating", isPlaceholder: true },
+  ], [doctors.length, hospitals.length]);
 
   return (
     <section className="relative rounded-2xl overflow-hidden" style={{
@@ -190,7 +73,7 @@ const Header = () => {
               background: "#5EEAD4", display: "inline-block",
               animation: "pulse 2s infinite"
             }} />
-            Trusted by 50,000+ patients
+            Doctors, hospitals & records — one platform
           </span>
 
           {/* Heading */}
@@ -201,17 +84,16 @@ const Header = () => {
             lineHeight: 1.2,
             marginBottom: 16
           }}>
-            Book Your Doctor
+            Healthcare Made
             <span style={{
               display: "block",
               marginTop: 4,
-              // Bright cyan-to-white gradient — readable on dark bg
               background: "linear-gradient(90deg, #5EEAD4, #BAE6FD)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text"
             }}>
-              Appointment Online
+              Smarter, Together
             </span>
           </h1>
 
@@ -221,7 +103,7 @@ const Header = () => {
             fontSize: "1rem", lineHeight: 1.7,
             marginBottom: 24, maxWidth: 480
           }}>
-            Connect with India's best doctors. Get expert medical care from verified specialists — fast, secure, and hassle-free.
+            Find the right doctor, compare trusted hospitals, and manage your health records — all from one secure platform.
           </p>
 
           {/* Trust pills */}
@@ -259,14 +141,14 @@ const Header = () => {
                 document.getElementById("speciality")?.scrollIntoView({ behavior: "smooth" });
               }}
             >
-              Book Appointment
+              Find Doctors
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </a>
 
             <button
-              onClick={() => navigate("/doctors")}
+              onClick={() => navigate("/hospitals")}
               style={{
                 background: "rgba(255,255,255,0.10)",
                 color: "#FFFFFF",
@@ -282,7 +164,7 @@ const Header = () => {
               onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
               onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.10)"}
             >
-              Browse Doctors
+              Explore Hospitals
             </button>
           </div>
 
@@ -337,7 +219,6 @@ const Header = () => {
               borderRight: i < 3 ? "1px solid rgba(255,255,255,0.10)" : "none",
               background: "rgba(255,255,255,0.04)"
             }}>
-              {/* Stat value — bright so it pops on dark bg */}
               <p style={{
                 fontSize: "clamp(1.5rem, 3vw, 2rem)",
                 fontWeight: 800,
@@ -349,7 +230,6 @@ const Header = () => {
               }}>
                 {s.value}
               </p>
-              {/* Label — clearly readable */}
               <p style={{
                 color: "rgba(255,255,255,0.60)",
                 fontSize: "0.8rem",
