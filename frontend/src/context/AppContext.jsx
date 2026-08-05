@@ -55,9 +55,14 @@ const AppContextProvider = (props) => {
             if(data.success){
                 setUserData(data.userData)
             }else{
+                // Token was rejected by the backend (expired/invalid/stale secret) -
+                // clear it instead of leaving the user stuck with a token that will
+                // never work, so they can simply log in again.
+                localStorage.removeItem('token')
+                setToken(false)
                 toast.error(data.message)
             }
-            
+
         } catch (error) {
              console.log(error)
             toast.error(error.message)

@@ -227,6 +227,58 @@ const App = () => {
   }
 />
 
+      {/* Doctor */}
+      <Route
+        path="/doctor-dashboard"
+        element={
+          <ProtectedRoute token={dToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto h-[calc(100vh-70px)]">
+                  <DoctorDashboard />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/doctor-appointments"
+        element={
+          <ProtectedRoute token={dToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <DoctorAppointment />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/doctor-profile"
+        element={
+          <ProtectedRoute token={dToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <DoctorProfile />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
     </Routes>
   </div>
 )

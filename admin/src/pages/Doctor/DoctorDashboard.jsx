@@ -1,247 +1,415 @@
-
-
-// import React, { useContext, useEffect } from 'react'
-// import { DoctorContext } from '../../context/DoctorContext'
-// import { AppContext } from '../../context/AppContext'
-// import { assets } from '../../assets/assets'
-
-// const DoctorDashboard = () => {
-
-//   const { dashData, getDashData, dToken, cancelAppointment, completeAppointment } = useContext(DoctorContext)
-//   const { currency, slotDateFormat } = useContext(AppContext)
-
-//   useEffect(() => {
-//     if (dToken) getDashData()
-//   }, [dToken])
-
-//   if (!dashData) return null
-
-//   return (
-//     <div className='p-4 sm:p-6'>
-
-//       {/* 🔥 Top Cards */}
-//       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-
-//         <div className='flex items-center gap-4 bg-white p-5 rounded-xl border shadow-sm hover:shadow-md hover:-translate-y-1 transition-all'>
-//           <img className='w-12' src={assets.earning_icon} alt='' />
-//           <div>
-//             <p className='text-xl font-semibold text-gray-700'>
-//               {currency}{dashData.earnings}
-//             </p>
-//             <p className='text-gray-400 text-sm'>Earnings</p>
-//           </div>
-//         </div>
-
-//         <div className='flex items-center gap-4 bg-white p-5 rounded-xl border shadow-sm hover:shadow-md hover:-translate-y-1 transition-all'>
-//           <img className='w-12' src={assets.appointment_icon} alt='' />
-//           <div>
-//             <p className='text-xl font-semibold text-gray-700'>
-//               {dashData.appointments}
-//             </p>
-//             <p className='text-gray-400 text-sm'>Appointments</p>
-//           </div>
-//         </div>
-
-//         <div className='flex items-center gap-4 bg-white p-5 rounded-xl border shadow-sm hover:shadow-md hover:-translate-y-1 transition-all'>
-//           <img className='w-12' src={assets.patients_icon} alt='' />
-//           <div>
-//             <p className='text-xl font-semibold text-gray-700'>
-//               {dashData.patients}
-//             </p>
-//             <p className='text-gray-400 text-sm'>Patients</p>
-//           </div>
-//         </div>
-
-//       </div>
-
-//       {/* 🔥 Latest Appointments */}
-//       <div className='mt-8 bg-white rounded-xl border shadow-sm'>
-
-//         {/* Header */}
-//         <div className='flex items-center gap-2 px-4 py-4 border-b'>
-//           <img src={assets.list_icon} alt='' />
-//           <p className='font-semibold text-gray-700'>Latest Bookings</p>
-//         </div>
-
-//         {/* List */}
-//         <div className='divide-y'>
-
-//           {dashData.latestAppointments.map((item, index) => (
-//             <div
-//               key={index}
-//               className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50 transition-all'
-//             >
-
-//               {/* Left */}
-//               <div className='flex items-center gap-3'>
-//                 <img
-//                   className='w-10 h-10 rounded-full object-cover'
-//                   src={item.userData.image}
-//                   alt=''
-//                 />
-//                 <div>
-//                   <p className='text-gray-800 font-medium text-sm sm:text-base'>
-//                     {item.userData.name}
-//                   </p>
-//                   <p className='text-gray-500 text-xs'>
-//                     {slotDateFormat(item.slotDate)}
-//                   </p>
-//                 </div>
-//               </div>
-
-//               {/* Right Actions */}
-//               <div className='flex items-center gap-2'>
-
-//                 {item.cancelled ? (
-//                   <span className='text-red-400 text-xs font-medium'>
-//                     Cancelled
-//                   </span>
-//                 ) : item.isCompleted ? (
-//                   <span className='text-green-500 text-xs font-medium'>
-//                     Completed
-//                   </span>
-//                 ) : (
-//                   <div className='flex gap-2'>
-//                     <img
-//                       onClick={() => cancelAppointment(item._id)}
-//                       className='w-8 cursor-pointer hover:scale-110 transition'
-//                       src={assets.cancel_icon}
-//                       alt=''
-//                     />
-//                     <img
-//                       onClick={() => completeAppointment(item._id)}
-//                       className='w-8 cursor-pointer hover:scale-110 transition'
-//                       src={assets.tick_icon}
-//                       alt=''
-//                     />
-//                   </div>
-//                 )}
-
-//               </div>
-
-//             </div>
-//           ))}
-
-//         </div>
-//       </div>
-
-//     </div>
-//   )
-// }
-
-// export default DoctorDashboard
-import React, { useContext, useEffect } from 'react'
+import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 import { DoctorContext } from '../../context/DoctorContext'
 import { AppContext } from '../../context/AppContext'
-import { assets } from '../../assets/assets'
+import {
+  CalendarDays,
+  Users,
+  Star,
+  IndianRupee,
+  Award,
+  MessageSquare,
+  ShieldCheck,
+  UserCog,
+  CalendarClock,
+  ToggleRight,
+  Building2,
+  ArrowRight,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Sparkles
+} from 'lucide-react'
+
+// ─── Shared visual primitives (mirrors the language already used across
+// Dashboard.jsx / HospitalsList.jsx / ReviewsList.jsx: white rounded-24
+// cards, #E2E8F0 borders, blue→teal gradient icon badges, soft lift on
+// hover) so this page reads as part of the same system, not a new one. ───
+
+const PageLoader = () => (
+  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
+    <div style={{ width: 44, height: 44, border: '3px solid #E2E8F0', borderTopColor: '#14B8A6', borderRadius: '50%', animation: 'curalink-spin .7s linear infinite' }} />
+    <style>{'@keyframes curalink-spin { to { transform: rotate(360deg); } }'}</style>
+  </div>
+)
+
+const StatCard = (props) => {
+  const StatIcon = props.icon
+  const { label, value, accent } = props
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: '#FFFFFF', borderRadius: 20, padding: '20px 22px',
+        border: '1px solid #E2E8F0',
+        boxShadow: hovered ? '0 12px 32px rgba(15,23,42,0.08)' : '0 8px 24px rgba(15,23,42,0.04)',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)'
+      }}
+    >
+      <div style={{
+        width: 42, height: 42, borderRadius: 12, marginBottom: 14,
+        background: accent.bg, display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        <StatIcon size={20} color={accent.color} />
+      </div>
+      <p style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', lineHeight: 1, margin: 0, letterSpacing: '-0.01em' }}>{value}</p>
+      <p style={{ fontSize: 12.5, color: '#64748B', marginTop: 6, fontWeight: 500 }}>{label}</p>
+    </div>
+  )
+}
+
+const QuickAction = (props) => {
+  const ActionIcon = props.icon
+  const { label, description, onClick } = props
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+        background: hovered ? 'linear-gradient(135deg, rgba(37,99,235,0.06), rgba(20,184,166,0.06))' : '#FFFFFF',
+        border: `1px solid ${hovered ? '#99F6E4' : '#E2E8F0'}`,
+        borderRadius: 16, padding: '16px 18px', cursor: 'pointer',
+        transition: 'all 0.2s ease', width: '100%', fontFamily: 'Inter, sans-serif'
+      }}
+    >
+      <div style={{
+        width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+        background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        <ActionIcon size={18} color="#FFFFFF" />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', margin: 0 }}>{label}</p>
+        <p style={{ fontSize: 12, color: '#64748B', margin: '2px 0 0' }}>{description}</p>
+      </div>
+      <ArrowRight size={16} color="#94A3B8" style={{ flexShrink: 0, transform: hovered ? 'translateX(2px)' : 'none', transition: 'transform 0.2s' }} />
+    </button>
+  )
+}
+
+const EmptyState = (props) => {
+  const EmptyIcon = props.icon
+  const { title, subtitle } = props
+  return (
+  <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+    <div style={{
+      width: 56, height: 56, borderRadius: 16, background: '#EFF6FF',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
+    }}>
+      <EmptyIcon size={26} color="#2563EB" />
+    </div>
+    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', margin: '0 0 4px' }}>{title}</h3>
+    <p style={{ fontSize: 13, color: '#64748B', margin: 0 }}>{subtitle}</p>
+  </div>
+  )
+}
+
+const StarRow = ({ rating, size = 13 }) => (
+  <div style={{ display: 'flex', gap: 2 }}>
+    {[1, 2, 3, 4, 5].map(i => (
+      <Star key={i} size={size} color={i <= Math.round(rating) ? '#FBBF24' : '#E2E8F0'} fill={i <= Math.round(rating) ? '#FBBF24' : '#E2E8F0'} />
+    ))}
+  </div>
+)
 
 const DoctorDashboard = () => {
-  const { dashData, getDashData, dToken, cancelAppointment, completeAppointment } = useContext(DoctorContext)
-  const { currency, slotDateFormat } = useContext(AppContext)
+  const {
+    dashData, getDashData, dToken,
+    profileData, getProfileData, setProfileData,
+    appointments, getAllAppointments,
+    cancelAppointment, completeAppointment,
+    backendUrl
+  } = useContext(DoctorContext)
+  const { currency } = useContext(AppContext)
+  const navigate = useNavigate()
+
+  const [hospital, setHospital] = useState(null)
+  const [reviews, setReviews] = useState([])
+  const [togglingAvailability, setTogglingAvailability] = useState(false)
 
   useEffect(() => {
-    if (dToken) getDashData()
+    if (dToken) {
+      getDashData()
+      getProfileData()
+      getAllAppointments()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dToken])
 
-  if (!dashData) return null
+  useEffect(() => {
+    const fetchHospital = async () => {
+      if (!profileData?.hospitalId) return
+      try {
+        const { data } = await axios.get(`${backendUrl}/api/hospital/${profileData.hospitalId}`)
+        if (data.success) setHospital(data.hospital)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+    fetchHospital()
+  }, [profileData?.hospitalId, backendUrl])
 
-  const stats = [
-    { label: 'Total Earnings', value: `${currency}${dashData.earnings}`, icon: assets.earning_icon, color: '#22C55E', bg: '#F0FDF4', border: '#BBF7D0' },
-    { label: 'Appointments', value: dashData.appointments, icon: assets.appointment_icon, color: '#14B8A6', bg: '#F0FDFA', border: '#99F6E4' },
-    { label: 'Patients', value: dashData.patients, icon: assets.patients_icon, color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' }
-  ]
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!profileData?._id) return
+      try {
+        const { data } = await axios.get(`${backendUrl}/api/review/doctor/${profileData._id}`, { params: { limit: 3 } })
+        if (data.success) setReviews(data.reviews)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+    fetchReviews()
+  }, [profileData?._id, backendUrl])
+
+  const todayKey = useMemo(() => {
+    const d = new Date()
+    return `${d.getDate()}_${d.getMonth() + 1}_${d.getFullYear()}`
+  }, [])
+
+  const todaysAppointments = useMemo(
+    () => appointments.filter(a => a.slotDate === todayKey && !a.cancelled),
+    [appointments, todayKey]
+  )
+
+  const toggleAvailability = useCallback(async () => {
+    if (!profileData) return
+    setTogglingAvailability(true)
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/doctor/update-profile`,
+        { fees: profileData.fees, address: profileData.address, available: !profileData.available },
+        { headers: { dToken } }
+      )
+      if (data.success) {
+        setProfileData(prev => ({ ...prev, available: !prev.available }))
+      }
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setTogglingAvailability(false)
+    }
+  }, [profileData, backendUrl, dToken, setProfileData])
+
+  if (!dashData || !profileData) return <PageLoader />
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', padding: '28px 24px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '32px 24px 48px' }}>
+      <div style={{ maxWidth: 1320, margin: '0 auto' }}>
 
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0F172A', margin: 0 }}>Doctor Dashboard</h1>
-        <p style={{ fontSize: 14, color: '#64748B', marginTop: 4 }}>Here's your practice overview for today.</p>
-      </div>
+        {/* ══════════ HERO WELCOME CARD ══════════ */}
+        <div style={{
+          position: 'relative', overflow: 'hidden', borderRadius: 28,
+          background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 75%, #14B8A6 100%)',
+          padding: '36px 32px', marginBottom: 28,
+          boxShadow: '0 24px 60px rgba(15,23,42,0.28)'
+        }}>
+          {/* mesh overlay, matches Homepage hero */}
+          <div style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            backgroundImage: `
+              radial-gradient(circle at 20% 80%, rgba(20,184,166,0.20) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(37,99,235,0.20) 0%, transparent 50%)
+            `
+          }} />
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 32 }}>
-        {stats.map((item, i) => (
-          <div key={i} style={{
-            background: '#FFFFFF', borderRadius: 16, padding: '22px 24px',
-            border: `1px solid ${item.border}`,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-            transition: 'box-shadow 0.2s, transform 0.2s', cursor: 'default'
-          }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.10)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(0)' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 12, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={item.icon} alt={item.label} style={{ width: 24, height: 24 }} />
-              </div>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color }} />
-            </div>
-            <p style={{ fontSize: 28, fontWeight: 800, color: '#0F172A', lineHeight: 1, margin: 0 }}>{item.value}</p>
-            <p style={{ fontSize: 13, color: '#64748B', marginTop: 6 }}>{item.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Latest Appointments */}
-      <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #F1F5F9', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #F1F5F9', background: '#FAFAFA' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E' }} />
-            <p style={{ fontWeight: 600, color: '#0F172A', fontSize: 15, margin: 0 }}>Latest Bookings</p>
-          </div>
-          <span style={{ fontSize: 12, color: '#64748B', background: '#F1F5F9', padding: '4px 10px', borderRadius: 99 }}>
-            {dashData.latestAppointments?.length || 0} records
-          </span>
-        </div>
-
-        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-          {dashData.latestAppointments.map((item, index) => (
-            <div key={index} style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '14px 24px', borderBottom: '1px solid #F8FAFC',
-              transition: 'background 0.15s'
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <img src={item.userData.image} alt='' style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: '2px solid #E2E8F0' }} />
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 600, color: '#0F172A', fontSize: 14, margin: 0 }}>{item.userData.name}</p>
-                <p style={{ color: '#94A3B8', fontSize: 12, marginTop: 2 }}>{slotDateFormat(item.slotDate)}</p>
-              </div>
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 24, justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+              <img
+                src={profileData.image}
+                alt={profileData.name}
+                style={{
+                  width: 88, height: 88, borderRadius: '50%', objectFit: 'cover',
+                  border: '4px solid rgba(255,255,255,0.85)', boxShadow: '0 8px 24px rgba(0,0,0,0.35)', flexShrink: 0
+                }}
+              />
               <div>
-                {item.cancelled ? (
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444', background: '#FEE2E2', padding: '4px 10px', borderRadius: 99 }}>Cancelled</span>
-                ) : item.isCompleted ? (
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', background: '#DCFCE7', padding: '4px 10px', borderRadius: 99 }}>Completed</span>
-                ) : (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => cancelAppointment(item._id)} style={{
-                      background: '#FEE2E2', border: 'none', borderRadius: 8,
-                      padding: '6px 12px', color: '#EF4444', fontSize: 12,
-                      fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s'
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#FECACA'}
-                      onMouseLeave={e => e.currentTarget.style.background = '#FEE2E2'}
-                    >Cancel</button>
-                    <button onClick={() => completeAppointment(item._id)} style={{
-                      background: '#DCFCE7', border: 'none', borderRadius: 8,
-                      padding: '6px 12px', color: '#16A34A', fontSize: 12,
-                      fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s'
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#BBF7D0'}
-                      onMouseLeave={e => e.currentTarget.style.background = '#DCFCE7'}
-                    >Complete</button>
-                  </div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                  <h1 style={{ fontSize: 26, fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '-0.01em' }}>
+                    Welcome back, {profileData.name}
+                  </h1>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    background: profileData.available ? 'rgba(34,197,94,0.18)' : 'rgba(148,163,184,0.18)',
+                    border: `1px solid ${profileData.available ? 'rgba(94,234,212,0.4)' : 'rgba(255,255,255,0.25)'}`,
+                    color: profileData.available ? '#5EEAD4' : '#CBD5E1',
+                    fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.04em'
+                  }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: profileData.available ? '#5EEAD4' : '#94A3B8' }} />
+                    {profileData.available ? 'Available' : 'Unavailable'}
+                  </span>
+                </div>
+                <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14, margin: '0 0 10px' }}>
+                  {hospital ? hospital.name : 'Loading hospital…'} · {profileData.speciality}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <StarRow rating={profileData.averageRating} size={14} />
+                  <span style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 700 }}>
+                    {profileData.totalReviews > 0 ? profileData.averageRating.toFixed(1) : 'New'}
+                  </span>
+                  <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12.5 }}>
+                    ({profileData.totalReviews || 0} review{profileData.totalReviews === 1 ? '' : 's'})
+                  </span>
+                </div>
               </div>
             </div>
-          ))}
+
+            <button
+              onClick={() => navigate('/doctor-profile')}
+              className="shine"
+              style={{
+                background: 'rgba(255,255,255,0.95)', color: '#0F172A',
+                border: 'none', borderRadius: 12, padding: '12px 24px',
+                fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 8,
+                boxShadow: '0 8px 20px rgba(0,0,0,0.25)', transition: 'all 0.2s ease',
+                fontFamily: 'Inter, sans-serif'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              <UserCog size={16} /> Edit Profile
+            </button>
+          </div>
         </div>
+
+        {/* ══════════ STATISTICS ══════════ */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+          gap: 18, marginBottom: 28
+        }}>
+          <StatCard icon={CalendarDays} label="Appointments" value={dashData.appointments} accent={{ bg: '#EFF6FF', color: '#2563EB' }} />
+          <StatCard icon={Users} label="Patients" value={dashData.patients} accent={{ bg: '#F0FDFA', color: '#14B8A6' }} />
+          <StatCard icon={MessageSquare} label="Reviews" value={profileData.totalReviews || 0} accent={{ bg: '#F0FDF4', color: '#22C55E' }} />
+          <StatCard icon={Star} label="Average Rating" value={profileData.totalReviews > 0 ? profileData.averageRating.toFixed(1) : 'New'} accent={{ bg: '#FFFBEB', color: '#D97706' }} />
+          <StatCard icon={IndianRupee} label="Consultation Fee" value={`${currency}${profileData.fees}`} accent={{ bg: '#EFF6FF', color: '#2563EB' }} />
+          <StatCard icon={Award} label="Years Experience" value={profileData.experience} accent={{ bg: '#F0FDFA', color: '#14B8A6' }} />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 24, marginBottom: 28 }} className="curalink-dash-grid">
+          {/* ══════════ TODAY'S APPOINTMENTS ══════════ */}
+          <div style={{ background: '#FFFFFF', borderRadius: 24, border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,23,42,0.04)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #F1F5F9', background: '#F8FAFC' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <CalendarClock size={17} color="#2563EB" />
+                <p style={{ fontWeight: 700, color: '#0F172A', fontSize: 15, margin: 0 }}>Today's Appointments</p>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#2563EB', background: '#EFF6FF', padding: '4px 12px', borderRadius: 99 }}>
+                {todaysAppointments.length} scheduled
+              </span>
+            </div>
+
+            {todaysAppointments.length === 0 ? (
+              <EmptyState icon={CalendarClock} title="No appointments today" subtitle="Enjoy the calm — new bookings will show up here." />
+            ) : (
+              <div style={{ maxHeight: 420, overflowY: 'auto' }}>
+                {todaysAppointments.map((item) => (
+                  <div key={item._id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 24px', borderBottom: '1px solid #F8FAFC' }}>
+                    <img src={item.userData?.image} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid #E2E8F0', flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, color: '#0F172A', fontSize: 13.5, margin: 0 }}>{item.userData?.name}</p>
+                      <p style={{ color: '#94A3B8', fontSize: 11.5, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Clock size={11} /> {item.slotTime}
+                      </p>
+                    </div>
+                    {item.isCompleted ? (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#16A34A', background: '#DCFCE7', padding: '4px 10px', borderRadius: 99 }}>Completed</span>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => cancelAppointment(item._id)} title="Cancel" style={{ background: '#FEE2E2', border: 'none', borderRadius: 8, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <XCircle size={14} color="#EF4444" />
+                        </button>
+                        <button onClick={() => completeAppointment(item._id)} title="Mark complete" style={{ background: '#DCFCE7', border: 'none', borderRadius: 8, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <CheckCircle2 size={14} color="#16A34A" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ══════════ QUICK ACTIONS ══════════ */}
+          <div style={{ background: '#FFFFFF', borderRadius: 24, border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,23,42,0.04)', padding: 22 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <Sparkles size={17} color="#14B8A6" />
+              <p style={{ fontWeight: 700, color: '#0F172A', fontSize: 15, margin: 0 }}>Quick Actions</p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <QuickAction icon={UserCog} label="Manage Profile" description="Edit your professional details" onClick={() => navigate('/doctor-profile')} />
+              <QuickAction icon={CalendarDays} label="Appointments" description="View & manage your bookings" onClick={() => navigate('/doctor-appointments')} />
+              <QuickAction
+                icon={ToggleRight}
+                label={togglingAvailability ? 'Updating…' : profileData.available ? 'Set Unavailable' : 'Set Available'}
+                description="Toggle your booking availability"
+                onClick={toggleAvailability}
+              />
+              <QuickAction icon={Building2} label="Hospital" description={hospital ? hospital.name : 'View hospital details'} onClick={() => navigate('/doctor-profile')} />
+            </div>
+          </div>
+        </div>
+
+        {/* ══════════ RECENT REVIEWS ══════════ */}
+        <div style={{ background: '#FFFFFF', borderRadius: 24, border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,23,42,0.04)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #F1F5F9', background: '#F8FAFC' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <ShieldCheck size={17} color="#22C55E" />
+              <p style={{ fontWeight: 700, color: '#0F172A', fontSize: 15, margin: 0 }}>Recent Reviews</p>
+            </div>
+            <button
+              onClick={() => navigate('/doctor-profile')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: '#2563EB', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+            >
+              View All Reviews <ArrowRight size={13} />
+            </button>
+          </div>
+
+          {reviews.length === 0 ? (
+            <EmptyState icon={MessageSquare} title="No reviews yet" subtitle="Reviews from your patients will appear here once submitted." />
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 1, background: '#F1F5F9' }}>
+              {reviews.map((review) => (
+                <div key={review._id} style={{ background: '#FFFFFF', padding: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {review.userId?.image ? (
+                        <img src={review.userId.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#2563EB' }}>{review.userId?.name?.[0]?.toUpperCase() || '?'}</span>
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', margin: 0 }}>{review.userId?.name || 'Patient'}</p>
+                      <p style={{ fontSize: 11, color: '#94A3B8', margin: 0 }}>{new Date(review.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <StarRow rating={review.rating} />
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', margin: '8px 0 3px' }}>{review.title}</p>
+                  <p style={{ fontSize: 12.5, color: '#64748B', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {review.comment}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .curalink-dash-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   )
 }
