@@ -108,6 +108,40 @@ const HospitalContextProvider = (props) => {
         }
     }, [backendUrl, hToken])
 
+    // Submits the hospital's official reply to a patient review (one reply per review).
+    const replyToReview = useCallback(async (reviewId, text) => {
+        try {
+            const { data } = await axios.post(backendUrl + '/api/review/hospital/' + reviewId + '/reply', { text }, { headers: { htoken: hToken } })
+            if (data.success) {
+                toast.success(data.message)
+            } else {
+                toast.error(data.message)
+            }
+            return data
+        } catch (error) {
+            console.log(error)
+            toast.error(error.response?.data?.message || error.message)
+            return { success: false, message: error.message }
+        }
+    }, [backendUrl, hToken])
+
+    // Edits the hospital's existing reply to a review.
+    const editReviewReply = useCallback(async (reviewId, text) => {
+        try {
+            const { data } = await axios.put(backendUrl + '/api/review/hospital/' + reviewId + '/reply', { text }, { headers: { htoken: hToken } })
+            if (data.success) {
+                toast.success(data.message)
+            } else {
+                toast.error(data.message)
+            }
+            return data
+        } catch (error) {
+            console.log(error)
+            toast.error(error.response?.data?.message || error.message)
+            return { success: false, message: error.message }
+        }
+    }, [backendUrl, hToken])
+
     const value = {
         backendUrl,
         hToken, setHToken,
@@ -116,6 +150,7 @@ const HospitalContextProvider = (props) => {
         dashData, setDashData, getDashData,
         doctors, setDoctors, getHospitalDoctors, deleteHospitalDoctor, toggleDoctorAvailability,
         appointments, setAppointments, getHospitalAppointments,
+        replyToReview, editReviewReply,
     }
 
     return (

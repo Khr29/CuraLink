@@ -88,14 +88,49 @@ const DoctorContextProvider = (props) => {
             toast.error(error.message)
         }
     }
- 
+
+    // Submits the doctor's official reply to a patient review (one reply per review).
+    const replyToReview = async (reviewId, text) => {
+        try {
+            const { data } = await axios.post(backendUrl + '/api/review/doctor/' + reviewId + '/reply', { text }, { headers: { dToken } })
+            if (data.success) {
+                toast.success(data.message)
+            } else {
+                toast.error(data.message)
+            }
+            return data
+        } catch (error) {
+            console.log(error)
+            toast.error(error.response?.data?.message || error.message)
+            return { success: false, message: error.message }
+        }
+    }
+
+    // Edits the doctor's existing reply to a review.
+    const editReviewReply = async (reviewId, text) => {
+        try {
+            const { data } = await axios.put(backendUrl + '/api/review/doctor/' + reviewId + '/reply', { text }, { headers: { dToken } })
+            if (data.success) {
+                toast.success(data.message)
+            } else {
+                toast.error(data.message)
+            }
+            return data
+        } catch (error) {
+            console.log(error)
+            toast.error(error.response?.data?.message || error.message)
+            return { success: false, message: error.message }
+        }
+    }
+
     const value = {
         dToken, setDToken,
         backendUrl,
         appointments, setAppointments, getAllAppointments,
         completeAppointment, cancelAppointment,
         dashData,setDashData,getDashData,
-        profileData,setProfileData,getProfileData
+        profileData,setProfileData,getProfileData,
+        replyToReview, editReviewReply
     }
     return (
         <DoctorContext.Provider value={value}>

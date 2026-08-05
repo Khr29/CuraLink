@@ -20,6 +20,10 @@ const HospitalDetails = () => {
   const [doctors, setDoctors] = useState([]);
   const [reviewStats, setReviewStats] = useState(null);
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0);
+  // Hospital reviews no longer require an appointment, so modal visibility
+  // can't be derived from a truthy appointmentId (it's always null here) —
+  // track it as its own boolean.
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewModalAppointmentId, setReviewModalAppointmentId] = useState(null);
 
   const reviewEligibility = useReviewEligibility("hospital", hospitalId);
@@ -39,8 +43,18 @@ const HospitalDetails = () => {
     }
   };
 
-  const handleReviewSuccess = () => {
+  const openReviewModal = (appointmentId) => {
+    setReviewModalAppointmentId(appointmentId ?? null);
+    setReviewModalOpen(true);
+  };
+
+  const closeReviewModal = () => {
+    setReviewModalOpen(false);
     setReviewModalAppointmentId(null);
+  };
+
+  const handleReviewSuccess = () => {
+    closeReviewModal();
     setReviewsRefreshKey((k) => k + 1);
     reviewEligibility.refresh();
     getHospital();
@@ -320,7 +334,7 @@ const HospitalDetails = () => {
           {reviewStats && reviewStats.total > 0 && (
             <WriteReviewCTA
               eligibility={reviewEligibility}
-              onOpenModal={setReviewModalAppointmentId}
+              onOpenModal={openReviewModal}
               targetLabel="hospital"
             />
           )}
@@ -340,13 +354,13 @@ const HospitalDetails = () => {
           refreshKey={reviewsRefreshKey}
           onStats={setReviewStats}
           eligibility={reviewEligibility}
-          onWriteReview={setReviewModalAppointmentId}
+          onWriteReview={openReviewModal}
         />
       </div>
 
       <ReviewForm
-        open={!!reviewModalAppointmentId}
-        onClose={() => setReviewModalAppointmentId(null)}
+        open={reviewModalOpen}
+        onClose={closeReviewModal}
         targetType="hospital"
         targetId={hospitalId}
         targetName={hospital.name}

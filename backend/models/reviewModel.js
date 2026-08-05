@@ -9,11 +9,13 @@ const reviewSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Appointment linked to this review
+    // Appointment linked to this review. Required for doctor reviews (enforced
+    // in the controller); hospital reviews don't require a completed
+    // appointment, so this is left null for those.
     appointmentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "appointment",
-      required: true,
+      default: null,
     },
 
     // Doctor review (optional)
@@ -72,6 +74,25 @@ const reviewSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+
+    // Official reply from the doctor or hospital being reviewed (optional, one per review)
+    reply: {
+      type: {
+        text: {
+          type: String,
+          trim: true,
+          maxlength: 1000,
+        },
+        repliedAt: {
+          type: Date,
+        },
+        repliedBy: {
+          type: String,
+          enum: ["doctor", "hospital"],
+        },
+      },
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -84,9 +105,9 @@ reviewSchema.index({ hospitalId: 1 });
 reviewSchema.index({ userId: 1 });
 reviewSchema.index({ appointmentId: 1 });
 
-// A user may leave at most one review per doctor/hospital for a given
-// appointment. Partial so the constraint only applies when that target
-// is actually set (a review always has exactly one of doctorId/hospitalId).
+// A user may leave at most one review per doctor for a given appointment
+// (doctor reviews remain tied to a specific completed appointment). Partial
+// so the constraint only applies when doctorId is actually set.
 reviewSchema.index(
   { appointmentId: 1, doctorId: 1 },
   {
@@ -94,8 +115,11 @@ reviewSchema.index(
     partialFilterExpression: { doctorId: { $type: "objectId" } },
   },
 );
+
+// Hospital reviews aren't tied to an appointment, so instead a user may
+// leave at most one review per hospital overall.
 reviewSchema.index(
-  { appointmentId: 1, hospitalId: 1 },
+  { userId: 1, hospitalId: 1 },
   {
     unique: true,
     partialFilterExpression: { hospitalId: { $type: "objectId" } },

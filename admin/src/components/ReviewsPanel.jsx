@@ -255,6 +255,15 @@ const ReviewRow = ({ review, target, targetLabel, onToggleVisibility, onReply, o
               </div>
             )}
 
+            {review.reply?.text && (
+              <div style={{ marginTop: 10, background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)', border: '1px solid #BFDBFE', borderRadius: 12, padding: 10 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#2563EB', margin: '0 0 3px' }}>
+                  {review.reply.repliedBy === 'hospital' ? 'Hospital Reply' : 'Doctor Reply'}
+                </p>
+                <p style={{ fontSize: 12.5, color: '#1E3A8A', margin: 0 }}>{review.reply.text}</p>
+              </div>
+            )}
+
             {replyOpen && (
               <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
                 <input

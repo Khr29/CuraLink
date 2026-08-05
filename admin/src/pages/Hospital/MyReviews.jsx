@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState, useMemo } from 'react'
 import axios from 'axios'
 import { HospitalContext } from '../../context/HospitalContext'
-import { MessageSquare, Star, Search, ShieldCheck } from 'lucide-react'
+import { MessageSquare, Star, Search, ShieldCheck, Pencil, Check, Loader2 } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 import EmptyState from '../../components/EmptyState'
 import RatingDistribution from '../../components/RatingDistribution'
@@ -13,17 +13,89 @@ const selectStyle = {
   fontFamily: 'Inter, sans-serif', cursor: 'pointer'
 }
 
-// Read-only — hospitals can view but never moderate their own reviews.
-// Reuses the same public GET /api/review/hospital/:id endpoint the patient
-// site uses, so there is no separate review-fetching path to maintain.
+const focusTeal = (e) => { e.target.style.borderColor = '#14B8A6'; e.target.style.boxShadow = '0 0 0 3px rgba(20,184,166,0.12)' }
+const blurDefault = (e) => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none' }
+const MAX_REPLY_LENGTH = 1000
+
+const ReplyModal = ({ mode, initialText, onCancel, onSubmit, submitting }) => {
+  const [text, setText] = useState(initialText)
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(2px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20
+    }}>
+      <div style={{
+        background: '#FFFFFF', borderRadius: 24, boxShadow: '0 24px 60px rgba(15,23,42,0.35)',
+        width: '100%', maxWidth: 480, padding: 28
+      }}>
+        <h3 style={{ fontSize: 17, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>
+          {mode === 'edit' ? 'Edit Reply' : 'Reply to Review'}
+        </h3>
+        <p style={{ fontSize: 12.5, color: '#64748B', margin: '0 0 16px' }}>
+          Your response will be shown publicly under this review.
+        </p>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value.slice(0, MAX_REPLY_LENGTH))}
+          placeholder="Write your response…"
+          rows={5}
+          autoFocus
+          style={{
+            width: '100%', background: '#F8FAFC', border: '1.5px solid #E2E8F0',
+            borderRadius: 12, padding: '12px 14px', fontSize: 13.5, color: '#0F172A',
+            outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical', boxSizing: 'border-box'
+          }}
+          onFocus={focusTeal} onBlur={blurDefault}
+        />
+        <p style={{ fontSize: 11, color: '#94A3B8', textAlign: 'right', margin: '6px 0 20px' }}>
+          {text.length}/{MAX_REPLY_LENGTH}
+        </p>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button
+            onClick={onCancel} disabled={submitting}
+            style={{
+              padding: '10px 20px', borderRadius: 99, border: '1.5px solid #E2E8F0',
+              background: '#FFFFFF', color: '#475569', fontSize: 13.5, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'Inter, sans-serif'
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onSubmit(text)} disabled={submitting || !text.trim()}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 22px', borderRadius: 99, border: 'none',
+              background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
+              color: '#FFFFFF', fontSize: 13.5, fontWeight: 700,
+              cursor: (submitting || !text.trim()) ? 'not-allowed' : 'pointer',
+              opacity: (submitting || !text.trim()) ? 0.7 : 1,
+              boxShadow: '0 6px 18px rgba(37,99,235,0.30)', fontFamily: 'Inter, sans-serif'
+            }}
+          >
+            {submitting ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+            {submitting ? 'Saving…' : (mode === 'edit' ? 'Save Reply' : 'Submit Reply')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Hospitals can view their reviews and post an official reply, but never
+// moderate (hide/delete) — that stays admin-only. Reuses the same public
+// GET /api/review/hospital/:id endpoint the patient site uses.
 const MyReviews = () => {
-  const { hToken, backendUrl, hospitalProfile, getHospitalProfile } = useContext(HospitalContext)
+  const { hToken, backendUrl, hospitalProfile, getHospitalProfile, replyToReview, editReviewReply } = useContext(HospitalContext)
   const [reviews, setReviews] = useState([])
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [ratingFilter, setRatingFilter] = useState('all')
   const [sortOrder, setSortOrder] = useState('newest')
+  const [replyTarget, setReplyTarget] = useState(null)
+  const [replySubmitting, setReplySubmitting] = useState(false)
 
   useEffect(() => {
     if (hToken) getHospitalProfile()
@@ -67,6 +139,23 @@ const MyReviews = () => {
     })
     return list
   }, [reviews, search, ratingFilter, sortOrder])
+
+  const submitReply = async (text) => {
+    if (!replyTarget) return
+    setReplySubmitting(true)
+    try {
+      const { reviewId, mode } = replyTarget
+      const data = mode === 'edit'
+        ? await editReviewReply(reviewId, text)
+        : await replyToReview(reviewId, text)
+      if (data.success) {
+        setReviews(prev => prev.map(r => r._id === reviewId ? { ...r, reply: data.review.reply } : r))
+        setReplyTarget(null)
+      }
+    } finally {
+      setReplySubmitting(false)
+    }
+  }
 
   return (
     <div className="curalink-fade-in" style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '36px 24px' }}>
@@ -146,6 +235,42 @@ const MyReviews = () => {
                         <p style={{ fontSize: 12.5, color: '#475569', margin: 0 }}>{review.adminReply}</p>
                       </div>
                     )}
+
+                    {review.reply?.text ? (
+                      <div style={{
+                        marginTop: 10, background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)',
+                        border: '1px solid #BFDBFE', borderRadius: 14, padding: 14
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <p style={{ fontSize: 11.5, fontWeight: 800, color: '#2563EB', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <ShieldCheck size={13} color="#2563EB" /> Hospital Response
+                          </p>
+                          <button
+                            onClick={() => setReplyTarget({ reviewId: review._id, mode: 'edit', initialText: review.reply.text })}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none',
+                              color: '#2563EB', fontSize: 11, fontWeight: 700, cursor: 'pointer', padding: '2px 4px', fontFamily: 'Inter, sans-serif'
+                            }}
+                          >
+                            <Pencil size={11} /> Edit Reply
+                          </button>
+                        </div>
+                        <p style={{ fontSize: 13, color: '#1E3A8A', lineHeight: 1.6, margin: '4px 0 6px' }}>{review.reply.text}</p>
+                        <p style={{ fontSize: 10.5, color: '#64748B', margin: 0 }}>{new Date(review.reply.repliedAt).toLocaleDateString()}</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setReplyTarget({ reviewId: review._id, mode: 'create', initialText: '' })}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
+                          background: '#FFFFFF', border: '1.5px solid #E2E8F0', color: '#2563EB',
+                          fontSize: 12, fontWeight: 700, padding: '7px 16px', borderRadius: 99,
+                          cursor: 'pointer', fontFamily: 'Inter, sans-serif'
+                        }}
+                      >
+                        <MessageSquare size={13} /> Reply
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -161,6 +286,16 @@ const MyReviews = () => {
           </div>
         )}
       </div>
+
+      {replyTarget && (
+        <ReplyModal
+          mode={replyTarget.mode}
+          initialText={replyTarget.initialText}
+          submitting={replySubmitting}
+          onCancel={() => setReplyTarget(null)}
+          onSubmit={submitReply}
+        />
+      )}
     </div>
   )
 }

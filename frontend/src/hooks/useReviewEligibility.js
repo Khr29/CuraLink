@@ -3,11 +3,16 @@ import axios from "axios";
 import { AppContext } from "../context/AppContext";
 
 // Shared by the Doctor Profile and Hospital Profile pages: determines
-// whether the logged-in user may write a review for `targetId` (a doctor
-// or hospital, per `targetType`) — i.e. they have at least one completed,
-// non-cancelled appointment with that target that they haven't already
-// reviewed. Reuses the existing appointments + my-reviews endpoints rather
-// than adding a dedicated eligibility API.
+// whether the logged-in user may write a review for `targetId`.
+//
+// Doctor reviews (targetType === "doctor") still require at least one
+// completed, non-cancelled appointment with that doctor that hasn't already
+// been reviewed — this logic is unchanged.
+//
+// Hospital reviews (targetType === "hospital") no longer require a
+// completed appointment: any authenticated user is eligible, provided they
+// haven't already reviewed that hospital (one review per user per
+// hospital).
 const useReviewEligibility = (targetType, targetId) => {
   const { backendUrl, token } = useContext(AppContext);
   const [loading, setLoading] = useState(true);
@@ -24,6 +29,18 @@ const useReviewEligibility = (targetType, targetId) => {
     }
     setLoading(true);
     try {
+      if (targetType === "hospital") {
+        const { data } = await axios.get(`${backendUrl}/api/review/my-reviews`, { headers: { token } });
+        const myReviews = data.success ? data.reviews : [];
+        const hasReviewed = myReviews.some((r) => {
+          const id = r.hospitalId?._id || r.hospitalId;
+          return id && id.toString() === targetId;
+        });
+        setAppointmentId(null);
+        setAlreadyReviewed(hasReviewed);
+        return;
+      }
+
       const [appointmentsRes, reviewsRes] = await Promise.all([
         axios.get(`${backendUrl}/api/user/appointments`, { headers: { token } }),
         axios.get(`${backendUrl}/api/review/my-reviews`, { headers: { token } }),
@@ -59,16 +76,19 @@ const useReviewEligibility = (targetType, targetId) => {
     } finally {
       setLoading(false);
     }
-  }, [backendUrl, token, targetId, targetField, reviewField]);
+  }, [backendUrl, token, targetId, targetType, targetField, reviewField]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
+  const eligible =
+    targetType === "hospital" ? Boolean(token) && !alreadyReviewed : Boolean(appointmentId);
+
   return {
     loading,
     isLoggedIn: Boolean(token),
-    eligible: Boolean(appointmentId),
+    eligible,
     appointmentId,
     alreadyReviewed,
     refresh,

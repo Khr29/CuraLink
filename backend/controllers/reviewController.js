@@ -87,7 +87,7 @@ const addReview = async (req, res) => {
     const { appointmentId, doctorId, hospitalId, rating, title, comment } =
       req.body;
 
-    if (!appointmentId || !rating || !title || !comment) {
+    if (!rating || !title || !comment) {
       return res.json({ success: false, message: "Missing Details" });
     }
 
@@ -117,49 +117,58 @@ const addReview = async (req, res) => {
       });
     }
 
-    const appointment = await appointmentModel.findById(appointmentId);
+    if (doctorId) {
+      // Doctor reviews still require a completed appointment with that doctor.
+      if (!appointmentId) {
+        return res.json({ success: false, message: "Missing Details" });
+      }
 
-    if (!appointment || appointment.userId.toString() !== userId) {
-      return res.json({ success: false, message: "Appointment not found" });
+      const appointment = await appointmentModel.findById(appointmentId);
+
+      if (!appointment || appointment.userId.toString() !== userId) {
+        return res.json({ success: false, message: "Appointment not found" });
+      }
+
+      if (!appointment.isCompleted) {
+        return res.json({
+          success: false,
+          message: "You can only review a completed appointment",
+        });
+      }
+
+      if (appointment.docId.toString() !== doctorId) {
+        return res.json({
+          success: false,
+          message: "Doctor does not match this appointment",
+        });
+      }
+
+      const existing = await reviewModel.findOne({ appointmentId, doctorId });
+
+      if (existing) {
+        return res.json({
+          success: false,
+          message: "You have already reviewed this appointment",
+        });
+      }
     }
 
-    if (!appointment.isCompleted) {
-      return res.json({
-        success: false,
-        message: "You can only review a completed appointment",
-      });
-    }
+    if (hospitalId) {
+      // Any authenticated user may review a hospital — no completed
+      // appointment required. One review per user per hospital.
+      const existing = await reviewModel.findOne({ userId, hospitalId });
 
-    if (doctorId && appointment.docId.toString() !== doctorId) {
-      return res.json({
-        success: false,
-        message: "Doctor does not match this appointment",
-      });
-    }
-
-    if (hospitalId && appointment.hospitalId.toString() !== hospitalId) {
-      return res.json({
-        success: false,
-        message: "Hospital does not match this appointment",
-      });
-    }
-
-    const existing = await reviewModel.findOne({
-      appointmentId,
-      ...(doctorId ? { doctorId } : {}),
-      ...(hospitalId ? { hospitalId } : {}),
-    });
-
-    if (existing) {
-      return res.json({
-        success: false,
-        message: "You have already reviewed this appointment",
-      });
+      if (existing) {
+        return res.json({
+          success: false,
+          message: "You have already reviewed this hospital",
+        });
+      }
     }
 
     const review = await reviewModel.create({
       userId,
-      appointmentId,
+      appointmentId: doctorId ? appointmentId : null,
       doctorId: doctorId || null,
       hospitalId: hospitalId || null,
       rating: numericRating,
@@ -176,7 +185,7 @@ const addReview = async (req, res) => {
     if (error.code === 11000) {
       return res.json({
         success: false,
-        message: "You have already reviewed this appointment",
+        message: "You have already reviewed this",
       });
     }
     res.json({ success: false, message: error.message });
@@ -421,6 +430,93 @@ const replyToReview = async (req, res) => {
 };
 
 // =============================
+// Doctor / Hospital reply to review (owner-only)
+// =============================
+// Shared logic for the four owner-reply endpoints below. `role` determines
+// which id field on the review is checked for ownership and which value is
+// stamped into reply.repliedBy — both derived from the authenticated
+// account (req.docId / req.hospitalId), never from the request body.
+const MAX_REPLY_LENGTH = 1000;
+
+const submitOwnerReply = async (req, res, { role, mode }) => {
+  try {
+    const { reviewId } = req.params;
+    const { text } = req.body;
+    const ownerId = role === "doctor" ? req.docId : req.hospitalId;
+    const ownerField = role === "doctor" ? "doctorId" : "hospitalId";
+
+    if (!text || !text.trim()) {
+      return res.json({ success: false, message: "Reply cannot be empty" });
+    }
+
+    const trimmedText = text.trim();
+    if (trimmedText.length > MAX_REPLY_LENGTH) {
+      return res.json({
+        success: false,
+        message: `Reply cannot exceed ${MAX_REPLY_LENGTH} characters`,
+      });
+    }
+
+    const review = await reviewModel.findById(reviewId);
+
+    if (!review) {
+      return res.json({ success: false, message: "Review not found" });
+    }
+
+    const target = review[ownerField];
+    if (!target || target.toString() !== ownerId) {
+      return res.json({ success: false, message: "Not authorized to reply to this review" });
+    }
+
+    if (mode === "create" && review.reply && review.reply.text) {
+      return res.json({
+        success: false,
+        message: "A reply already exists for this review. Use edit instead.",
+      });
+    }
+
+    if (mode === "update" && (!review.reply || !review.reply.text)) {
+      return res.json({
+        success: false,
+        message: "No existing reply to update",
+      });
+    }
+
+    review.reply = {
+      text: trimmedText,
+      repliedAt: new Date(),
+      repliedBy: role,
+    };
+
+    await review.save();
+
+    res.json({
+      success: true,
+      message:
+        mode === "create"
+          ? "Reply submitted successfully"
+          : "Reply updated successfully",
+      review,
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+const replyToReviewAsDoctor = (req, res) =>
+  submitOwnerReply(req, res, { role: "doctor", mode: "create" });
+
+const updateDoctorReply = (req, res) =>
+  submitOwnerReply(req, res, { role: "doctor", mode: "update" });
+
+const replyToReviewAsHospital = (req, res) =>
+  submitOwnerReply(req, res, { role: "hospital", mode: "create" });
+
+const updateHospitalReply = (req, res) =>
+  submitOwnerReply(req, res, { role: "hospital", mode: "update" });
+
+// =============================
 // Delete Review (admin)
 // =============================
 const deleteReview = async (req, res) => {
@@ -453,5 +549,9 @@ export {
   getAllReviewsAdmin,
   toggleReviewVisibility,
   replyToReview,
+  replyToReviewAsDoctor,
+  updateDoctorReply,
+  replyToReviewAsHospital,
+  updateHospitalReply,
   deleteReview,
 };

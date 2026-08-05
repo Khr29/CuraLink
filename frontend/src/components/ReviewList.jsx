@@ -129,6 +129,19 @@ const ReviewList = ({ targetType, targetId, refreshKey, onStats, eligibility, on
                   <p className="text-xs text-text-secondary">{review.adminReply}</p>
                 </div>
               )}
+
+              {review.reply?.text && (
+                <div className="mt-3 bg-secondary/5 rounded-xl p-3 border border-secondary/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="badge badge-teal text-[10px]">✓ Verified</span>
+                    <p className="text-xs font-bold text-secondary">
+                      {review.reply.repliedBy === "hospital" ? "Hospital Response" : "Doctor Response"}
+                    </p>
+                  </div>
+                  <p className="text-xs text-text-secondary leading-relaxed">{review.reply.text}</p>
+                  <p className="text-[11px] text-text-muted mt-1">{timeAgo(review.reply.repliedAt)}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
