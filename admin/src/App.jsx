@@ -62,6 +62,7 @@ import Login from './pages/Login'
 import { ToastContainer } from 'react-toastify'
 import { AdminContext } from './context/AdminContext'
 import { DoctorContext } from './context/DoctorContext'
+import { HospitalContext } from './context/HospitalContext'
 import Navbar from './components/Navbar'
 import SideBar from './components/SideBar'
 import { Route, Routes } from 'react-router-dom'
@@ -83,6 +84,18 @@ const DoctorDashboard = lazy(() => import('./pages/Doctor/DoctorDashboard'))
 const DoctorAppointment = lazy(() => import('./pages/Doctor/DoctorAppointment'))
 const DoctorProfile = lazy(() => import('./pages/Doctor/DoctorProfile'))
 
+// Lazy loaded Hospital Portal Pages
+const HospitalDashboard = lazy(() => import('./pages/Hospital/HospitalDashboard'))
+const HospitalDoctors = lazy(() => import('./pages/Hospital/HospitalDoctors'))
+const HospitalAddDoctor = lazy(() => import('./pages/Hospital/HospitalAddDoctor'))
+const HospitalEditDoctor = lazy(() => import('./pages/Hospital/HospitalEditDoctor'))
+const HospitalDepartments = lazy(() => import('./pages/Hospital/HospitalDepartments'))
+const HospitalAppointments = lazy(() => import('./pages/Hospital/HospitalAppointments'))
+const HospitalMyReviews = lazy(() => import('./pages/Hospital/MyReviews'))
+const HospitalGallery = lazy(() => import('./pages/Hospital/HospitalGallery'))
+const HospitalProfile = lazy(() => import('./pages/Hospital/HospitalProfile'))
+const HospitalSettings = lazy(() => import('./pages/Hospital/HospitalSettings'))
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="flex justify-center items-center h-full min-h-[50vh]">
@@ -94,6 +107,7 @@ const App = () => {
 
   const { aToken } = useContext(AdminContext)
   const { dToken } = useContext(DoctorContext)
+  const { hToken } = useContext(HospitalContext)
 
   const isAdmin = !!aToken
   const isDoctor = !!dToken
@@ -290,6 +304,177 @@ const App = () => {
                 <SideBar />
                 <div className="flex-1 p-4 sm:p-6 md:p-8">
                   <DoctorProfile />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Hospital Portal */}
+      <Route
+        path="/hospital-dashboard"
+        element={
+          <ProtectedRoute token={hToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto h-[calc(100vh-70px)]">
+                  <HospitalDashboard />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hospital-my-doctors"
+        element={
+          <ProtectedRoute token={hToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <HospitalDoctors />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hospital-add-doctor"
+        element={
+          <ProtectedRoute token={hToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <HospitalAddDoctor />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hospital-edit-doctor/:doctorId"
+        element={
+          <ProtectedRoute token={hToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <HospitalEditDoctor />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hospital-departments"
+        element={
+          <ProtectedRoute token={hToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <HospitalDepartments />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hospital-appointments"
+        element={
+          <ProtectedRoute token={hToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <HospitalAppointments />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hospital-my-reviews"
+        element={
+          <ProtectedRoute token={hToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <HospitalMyReviews />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hospital-gallery"
+        element={
+          <ProtectedRoute token={hToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <HospitalGallery />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hospital-profile"
+        element={
+          <ProtectedRoute token={hToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <HospitalProfile />
+                </div>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hospital-settings"
+        element={
+          <ProtectedRoute token={hToken}>
+            <>
+              <Navbar />
+              <div className="flex">
+                <SideBar />
+                <div className="flex-1 p-4 sm:p-6 md:p-8">
+                  <HospitalSettings />
                 </div>
               </div>
             </>

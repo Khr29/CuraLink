@@ -52,6 +52,14 @@ const hospitalSchema = new mongoose.Schema(
       lowercase: true,
     },
 
+    // Hospital portal login (hashed). Optional at the schema level so
+    // hospitals created before the portal existed remain valid documents —
+    // an admin sets this via Add/Edit Hospital to grant portal access.
+    password: {
+      type: String,
+      default: "",
+    },
+
     phone: {
       type: String,
       required: true,

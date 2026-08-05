@@ -2,14 +2,23 @@ import React, { useContext, useCallback, useMemo } from 'react'
 import { assets } from '../assets/assets'
 import { AdminContext } from '../context/AdminContext'
 import { DoctorContext } from '../context/DoctorContext'
+import { HospitalContext } from '../context/HospitalContext'
 import { useNavigate } from 'react-router-dom'
+
+const ROLE_BADGE = {
+  Admin: { bg: '#EEF2FF', border: '#C7D2FE', dot: '#6366F1', text: '#4F46E5', avatar: 'A' },
+  Doctor: { bg: '#F0FDF4', border: '#BBF7D0', dot: '#22C55E', text: '#16A34A', avatar: 'D' },
+  Hospital: { bg: '#EFF6FF', border: '#BFDBFE', dot: '#2563EB', text: '#1D4ED8', avatar: 'H' },
+}
 
 const Navbar = () => {
   const { aToken, setAToken } = useContext(AdminContext)
   const { dToken, setDToken } = useContext(DoctorContext)
+  const { hToken, setHToken } = useContext(HospitalContext)
   const navigate = useNavigate()
 
-  const role = useMemo(() => (aToken ? 'Admin' : 'Doctor'), [aToken])
+  const role = useMemo(() => (aToken ? 'Admin' : dToken ? 'Doctor' : 'Hospital'), [aToken, dToken])
+  const badge = ROLE_BADGE[role]
 
   const logout = useCallback(() => {
     if (aToken) {
@@ -22,8 +31,13 @@ const Navbar = () => {
       localStorage.removeItem('dToken')
     }
 
+    if (hToken) {
+      setHToken('')
+      localStorage.removeItem('hToken')
+    }
+
     navigate('/')
-  }, [aToken, dToken, setAToken, setDToken, navigate])
+  }, [aToken, dToken, hToken, setAToken, setDToken, setHToken, navigate])
 
   return (
     <div
@@ -92,10 +106,8 @@ const Navbar = () => {
             gap: 7,
             padding: '5px 14px',
             borderRadius: 999,
-            background: role === 'Admin' ? '#EEF2FF' : '#F0FDF4',
-            border: `1px solid ${
-              role === 'Admin' ? '#C7D2FE' : '#BBF7D0'
-            }`
+            background: badge.bg,
+            border: `1px solid ${badge.border}`
           }}
         >
           <div
@@ -103,7 +115,7 @@ const Navbar = () => {
               width: 7,
               height: 7,
               borderRadius: '50%',
-              background: role === 'Admin' ? '#6366F1' : '#22C55E'
+              background: badge.dot
             }}
           />
 
@@ -111,7 +123,7 @@ const Navbar = () => {
             style={{
               fontSize: 12,
               fontWeight: 700,
-              color: role === 'Admin' ? '#4F46E5' : '#16A34A'
+              color: badge.text
             }}
           >
             {role}
@@ -141,7 +153,7 @@ const Navbar = () => {
             fontWeight: 700
           }}
         >
-          {role === 'Admin' ? 'A' : 'D'}
+          {badge.avatar}
         </div>
 
         <button

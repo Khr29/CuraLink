@@ -33,7 +33,8 @@ import {
   Utensils,
   Eye,
   Microscope,
-  Baby
+  Baby,
+  Lock
 } from 'lucide-react'
 
 // Icon mappings for departments
@@ -72,6 +73,7 @@ const INITIAL_HOSPITAL_STATE = {
   name: '',
   description: '',
   email: '',
+  password: '',
   phone: '',
   website: '',
   hospitalType: 'Private',
@@ -155,6 +157,10 @@ const AddHospital = () => {
       return toast.error('Hospital primary cover image is required!')
     }
 
+    if (hospitalData.password && hospitalData.password.length < 8) {
+      return toast.error('Portal password must be at least 8 characters')
+    }
+
     setLoading(true)
 
     try {
@@ -170,6 +176,9 @@ const AddHospital = () => {
       formData.append('name', hospitalData.name.trim())
       formData.append('description', hospitalData.description.trim())
       formData.append('email', hospitalData.email.trim())
+      if (hospitalData.password) {
+        formData.append('password', hospitalData.password)
+      }
       formData.append('phone', hospitalData.phone.trim())
       formData.append('website', hospitalData.website.trim())
       formData.append('hospitalType', hospitalData.hospitalType)
@@ -370,6 +379,23 @@ const AddHospital = () => {
                   icon={Globe}
                 />
               </div>
+            </DashboardCard>
+
+            {/* CARD: PORTAL ACCESS */}
+            <DashboardCard title="Portal Access" icon={Lock}>
+              <InputField
+                label="Portal Password"
+                type="password"
+                name="password"
+                value={hospitalData.password}
+                onChange={handleInputChange}
+                placeholder="Leave blank to set up later"
+                icon={Lock}
+              />
+              <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 10 }}>
+                Sets the password this hospital uses to sign in to its own CuraLink portal
+                (min 8 characters). Leave blank if the hospital doesn't need portal access yet.
+              </p>
             </DashboardCard>
 
             {/* CARD 3: ADDRESS */}

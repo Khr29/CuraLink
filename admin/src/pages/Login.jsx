@@ -157,9 +157,22 @@ import React, { useContext, useState, useCallback } from 'react'
 import { assets } from '../assets/assets'
 import { AdminContext } from '../context/AdminContext'
 import { DoctorContext } from '../context/DoctorContext'
+import { HospitalContext } from '../context/HospitalContext'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
+
+const LOGIN_ROUTES = {
+  Admin: { url: '/api/admin/login', tokenKey: 'aToken', dashboard: '/admin-dashboard' },
+  Doctor: { url: '/api/doctor/login', tokenKey: 'dToken', dashboard: '/doctor-dashboard' },
+  Hospital: { url: '/api/hospital/login', tokenKey: 'hToken', dashboard: '/hospital-dashboard' },
+}
+
+const ROLE_ACCENT = {
+  Admin: { active: 'linear-gradient(135deg, #6366F1, #4F46E5)', dot: '#6366F1', text: '#4F46E5', glow: 'rgba(99,102,241,0.35)', ring: 'rgba(99,102,241,0.12)' },
+  Doctor: { active: 'linear-gradient(135deg, #14B8A6, #0D9488)', dot: '#14B8A6', text: '#0D9488', glow: 'rgba(20,184,166,0.35)', ring: 'rgba(20,184,166,0.12)' },
+  Hospital: { active: 'linear-gradient(135deg, #2563EB, #1D4ED8)', dot: '#2563EB', text: '#1D4ED8', glow: 'rgba(37,99,235,0.35)', ring: 'rgba(37,99,235,0.12)' },
+}
 
 const Login = () => {
   const [state, setState] = useState('Admin')
@@ -170,30 +183,29 @@ const Login = () => {
 
   const { setAToken, backendUrl } = useContext(AdminContext)
   const { setDToken } = useContext(DoctorContext)
+  const { setHToken } = useContext(HospitalContext)
   const navigate = useNavigate()
 
   const onSubmitHandler = useCallback(async (event) => {
     event.preventDefault()
     setLoading(true)
     try {
-      const url = state === 'Admin'
-        ? `${backendUrl}/api/admin/login`
-        : `${backendUrl}/api/doctor/login`
+      const { url, tokenKey, dashboard } = LOGIN_ROUTES[state]
 
-      const { data } = await axios.post(url, { email, password })
+      const { data } = await axios.post(`${backendUrl}${url}`, { email, password })
 
       if (data.success) {
-        if (state === 'Admin') {
-          localStorage.setItem('aToken', data.token)
-          localStorage.removeItem('dToken')
-          setAToken(data.token)
-          navigate('/admin-dashboard')
-        } else {
-          localStorage.setItem('dToken', data.token)
-          localStorage.removeItem('aToken')
-          setDToken(data.token)
-          navigate('/doctor-dashboard')
-        }
+        // Only one role is ever logged in at a time — clear the other tokens.
+        ['aToken', 'dToken', 'hToken'].forEach((key) => {
+          if (key !== tokenKey) localStorage.removeItem(key)
+        })
+        localStorage.setItem(tokenKey, data.token)
+
+        if (tokenKey === 'aToken') setAToken(data.token)
+        else if (tokenKey === 'dToken') setDToken(data.token)
+        else setHToken(data.token)
+
+        navigate(dashboard)
         toast.success('Login successful 🚀')
       } else {
         toast.error(data.message)
@@ -204,9 +216,9 @@ const Login = () => {
     } finally {
       setLoading(false)
     }
-  }, [state, email, password, backendUrl, setAToken, setDToken, navigate])
+  }, [state, email, password, backendUrl, setAToken, setDToken, setHToken, navigate])
 
-  const isAdmin = state === 'Admin'
+  const accent = ROLE_ACCENT[state]
 
   return (
     <div style={{
@@ -291,21 +303,17 @@ const Login = () => {
 
           {/* Role Toggle */}
           <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 28 }}>
-            {['Admin', 'Doctor'].map((role) => (
+            {['Admin', 'Doctor', 'Hospital'].map((role) => (
               <button key={role} type="button" onClick={() => setState(role)} style={{
                 flex: 1, padding: '9px 0', borderRadius: 9, border: 'none',
                 fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 0.2s',
-                background: state === role
-                  ? role === 'Admin'
-                    ? 'linear-gradient(135deg, #6366F1, #4F46E5)'
-                    : 'linear-gradient(135deg, #14B8A6, #0D9488)'
-                  : 'transparent',
+                background: state === role ? ROLE_ACCENT[role].active : 'transparent',
                 color: state === role ? '#FFFFFF' : '#64748B',
                 boxShadow: state === role ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
                 fontFamily: 'Inter, sans-serif'
               }}>
-                {role === 'Admin' ? '🛡️' : '🩺'} {role}
+                {role === 'Admin' ? '🛡️' : role === 'Doctor' ? '🩺' : '🏥'} {role}
               </button>
             ))}
           </div>
@@ -320,8 +328,8 @@ const Login = () => {
 
             {/* Role badge */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 22 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: isAdmin ? '#6366F1' : '#14B8A6' }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: isAdmin ? '#4F46E5' : '#0D9488', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: accent.dot }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: accent.text, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 {state} Portal
               </span>
             </div>
@@ -344,7 +352,7 @@ const Login = () => {
                     outline: 'none', boxSizing: 'border-box',
                     fontFamily: 'Inter, sans-serif', transition: 'border-color 0.2s, box-shadow 0.2s'
                   }}
-                  onFocus={e => { e.target.style.borderColor = isAdmin ? '#6366F1' : '#14B8A6'; e.target.style.boxShadow = `0 0 0 3px ${isAdmin ? 'rgba(99,102,241,0.12)' : 'rgba(20,184,166,0.12)'}` }}
+                  onFocus={e => { e.target.style.borderColor = accent.dot; e.target.style.boxShadow = `0 0 0 3px ${accent.ring}` }}
                   onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none' }}
                 />
               </div>
@@ -368,7 +376,7 @@ const Login = () => {
                     outline: 'none', boxSizing: 'border-box',
                     fontFamily: 'Inter, sans-serif', transition: 'border-color 0.2s, box-shadow 0.2s'
                   }}
-                  onFocus={e => { e.target.style.borderColor = isAdmin ? '#6366F1' : '#14B8A6'; e.target.style.boxShadow = `0 0 0 3px ${isAdmin ? 'rgba(99,102,241,0.12)' : 'rgba(20,184,166,0.12)'}` }}
+                  onFocus={e => { e.target.style.borderColor = accent.dot; e.target.style.boxShadow = `0 0 0 3px ${accent.ring}` }}
                   onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none' }}
                 />
                 {/* Show/hide toggle */}
@@ -384,12 +392,10 @@ const Login = () => {
             {/* Submit */}
             <button type='submit' disabled={loading} style={{
               width: '100%', padding: '13px',
-              background: isAdmin
-                ? loading ? '#A5B4FC' : 'linear-gradient(135deg, #6366F1, #4F46E5)'
-                : loading ? '#5EEAD4' : 'linear-gradient(135deg, #14B8A6, #0D9488)',
+              background: loading ? '#CBD5E1' : accent.active,
               color: '#FFFFFF', border: 'none', borderRadius: 12,
               fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: loading ? 'none' : `0 4px 14px ${isAdmin ? 'rgba(99,102,241,0.35)' : 'rgba(20,184,166,0.35)'}`,
+              boxShadow: loading ? 'none' : `0 4px 14px ${accent.glow}`,
               transition: 'all 0.2s', fontFamily: 'Inter, sans-serif',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
             }}
