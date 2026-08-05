@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import StatCard from '../../components/StatCard'
 import EmptyState from '../../components/EmptyState'
+import RatingDistribution from '../../components/RatingDistribution'
 
 // ─── Shared visual primitives (mirrors the language already used across
 // Dashboard.jsx / HospitalsList.jsx / ReviewsList.jsx: white rounded-24
@@ -89,6 +90,7 @@ const DoctorDashboard = () => {
 
   const [hospital, setHospital] = useState(null)
   const [reviews, setReviews] = useState([])
+  const [reviewStats, setReviewStats] = useState(null)
   const [togglingAvailability, setTogglingAvailability] = useState(false)
 
   useEffect(() => {
@@ -118,7 +120,10 @@ const DoctorDashboard = () => {
       if (!profileData?._id) return
       try {
         const { data } = await axios.get(`${backendUrl}/api/review/doctor/${profileData._id}`, { params: { limit: 3 } })
-        if (data.success) setReviews(data.reviews)
+        if (data.success) {
+          setReviews(data.reviews)
+          setReviewStats({ total: data.total, distribution: data.distribution })
+        }
       } catch (error) {
         console.error(error)
       }
@@ -311,6 +316,16 @@ const DoctorDashboard = () => {
               View All Reviews <ArrowRight size={13} />
             </button>
           </div>
+
+          {reviewStats && reviewStats.total > 0 && (
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #F1F5F9' }}>
+              <RatingDistribution
+                distribution={reviewStats.distribution}
+                total={reviewStats.total}
+                averageRating={profileData.averageRating}
+              />
+            </div>
+          )}
 
           {reviews.length === 0 ? (
             <EmptyState compact icon={MessageSquare} title="No reviews yet" subtitle="Reviews from your patients will appear here once submitted." />

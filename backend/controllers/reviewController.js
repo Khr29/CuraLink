@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import reviewModel from "../models/reviewModel.js";
 import doctorModel from "../models/doctorModel.js";
 import hospitalModel from "../models/hospitalModel.js";
@@ -57,6 +58,24 @@ const parsePagination = (query, defaultLimit = 10, maxLimit = 50) => {
   );
   const skip = (page - 1) * limit;
   return { page, limit, skip };
+};
+
+// Star-count breakdown (5..1) for a doctor or hospital's currently-visible
+// reviews, used to render the "Rating Distribution" bars.
+const getRatingDistribution = async (doctorId, hospitalId) => {
+  const filter = doctorId
+    ? { doctorId: new mongoose.Types.ObjectId(doctorId), isVisible: true }
+    : { hospitalId: new mongoose.Types.ObjectId(hospitalId), isVisible: true };
+
+  const rows = await reviewModel.aggregate([
+    { $match: filter },
+    { $group: { _id: "$rating", count: { $sum: 1 } } },
+  ]);
+  const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  rows.forEach((row) => {
+    distribution[row._id] = row.count;
+  });
+  return distribution;
 };
 
 // =============================
@@ -174,7 +193,7 @@ const getDoctorReviews = async (req, res) => {
 
     const filter = { doctorId, isVisible: true };
 
-    const [reviews, total] = await Promise.all([
+    const [reviews, total, distribution] = await Promise.all([
       reviewModel
         .find(filter)
         .sort({ createdAt: -1 })
@@ -182,9 +201,10 @@ const getDoctorReviews = async (req, res) => {
         .limit(limit)
         .populate("userId", "name image"),
       reviewModel.countDocuments(filter),
+      getRatingDistribution(doctorId, null),
     ]);
 
-    res.json({ success: true, reviews, total, page, limit });
+    res.json({ success: true, reviews, total, page, limit, distribution });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -201,7 +221,7 @@ const getHospitalReviews = async (req, res) => {
 
     const filter = { hospitalId, isVisible: true };
 
-    const [reviews, total] = await Promise.all([
+    const [reviews, total, distribution] = await Promise.all([
       reviewModel
         .find(filter)
         .sort({ createdAt: -1 })
@@ -209,9 +229,10 @@ const getHospitalReviews = async (req, res) => {
         .limit(limit)
         .populate("userId", "name image"),
       reviewModel.countDocuments(filter),
+      getRatingDistribution(null, hospitalId),
     ]);
 
-    res.json({ success: true, reviews, total, page, limit });
+    res.json({ success: true, reviews, total, page, limit, distribution });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -221,13 +242,102 @@ const getHospitalReviews = async (req, res) => {
 // =============================
 // Get My Reviews (authUser)
 // =============================
+// Reviews can only be edited within this window of being created.
+const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 const getMyReviews = async (req, res) => {
   try {
     const userId = req.userId;
 
-    const reviews = await reviewModel.find({ userId });
+    const reviews = await reviewModel
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .populate("doctorId", "name image speciality")
+      .populate("hospitalId", "name image")
+      .populate("appointmentId", "slotDate slotTime");
 
-    res.json({ success: true, reviews });
+    // `editable` is computed server-side (rather than left to the client)
+    // so the 24h window has a single source of truth shared with editMyReview.
+    const now = Date.now();
+    const reviewsWithEditable = reviews.map((review) => ({
+      ...review.toObject(),
+      editable: now - review.createdAt.getTime() <= EDIT_WINDOW_MS,
+    }));
+
+    res.json({ success: true, reviews: reviewsWithEditable });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// =============================
+// Edit My Review (authUser, owner, within 24h)
+// =============================
+const editMyReview = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { reviewId } = req.params;
+    const { rating, title, comment } = req.body;
+
+    const review = await reviewModel.findById(reviewId);
+
+    if (!review || review.userId.toString() !== userId) {
+      return res.json({ success: false, message: "Review not found" });
+    }
+
+    if (Date.now() - review.createdAt.getTime() > EDIT_WINDOW_MS) {
+      return res.json({
+        success: false,
+        message: "Reviews can only be edited within 24 hours of posting",
+      });
+    }
+
+    if (rating !== undefined) {
+      const numericRating = Number(rating);
+      if (
+        !Number.isFinite(numericRating) ||
+        numericRating < 1 ||
+        numericRating > 5
+      ) {
+        return res.json({
+          success: false,
+          message: "Rating must be between 1 and 5",
+        });
+      }
+      review.rating = numericRating;
+    }
+    if (title !== undefined) review.title = title.trim();
+    if (comment !== undefined) review.comment = comment.trim();
+
+    await review.save();
+    await updateAverageRating(review.doctorId, review.hospitalId);
+
+    res.json({ success: true, message: "Review updated", review });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// =============================
+// Delete My Review (authUser, owner)
+// =============================
+const deleteMyReview = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { reviewId } = req.params;
+
+    const review = await reviewModel.findById(reviewId);
+
+    if (!review || review.userId.toString() !== userId) {
+      return res.json({ success: false, message: "Review not found" });
+    }
+
+    await review.deleteOne();
+    await updateAverageRating(review.doctorId, review.hospitalId);
+
+    res.json({ success: true, message: "Review deleted" });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -338,6 +448,8 @@ export {
   getDoctorReviews,
   getHospitalReviews,
   getMyReviews,
+  editMyReview,
+  deleteMyReview,
   getAllReviewsAdmin,
   toggleReviewVisibility,
   replyToReview,

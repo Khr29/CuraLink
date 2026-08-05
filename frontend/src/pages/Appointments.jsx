@@ -5,6 +5,7 @@ import { assets } from "../assets/assets";
 import RelatedDoctor from "../components/RelatedDoctor";
 import StarRating from "../components/StarRating";
 import ReviewList from "../components/ReviewList";
+import RatingDistribution from "../components/RatingDistribution";
 import { toast } from "react-toastify";
 import axios from "axios";
 
@@ -20,6 +21,7 @@ const Appointments = () => {
   const [slotIndex, setSlotIndex] = useState(0);
   const [slotTime, setSlotTime] = useState("");
   const [booking, setBooking] = useState(false);
+  const [reviewStats, setReviewStats] = useState(null);
 
   const fetchDocInfo = useCallback(() => {
     const doctor = doctors.find((doc) => doc._id === docId);
@@ -249,7 +251,16 @@ const Appointments = () => {
       {/* Reviews */}
       <div className="profile-section mb-8">
         <h2 className="text-lg font-bold text-text-primary mb-6">Patient Reviews</h2>
-        <ReviewList targetType="doctor" targetId={docId} />
+        {reviewStats && reviewStats.total > 0 && (
+          <div className="pb-6 mb-6 border-b border-slate-100">
+            <RatingDistribution
+              distribution={reviewStats.distribution}
+              total={reviewStats.total}
+              averageRating={docInfo.averageRating}
+            />
+          </div>
+        )}
+        <ReviewList targetType="doctor" targetId={docId} onStats={setReviewStats} />
       </div>
 
       <RelatedDoctor docId={docId} speciality={docInfo.speciality} />

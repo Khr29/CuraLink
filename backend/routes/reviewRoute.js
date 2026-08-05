@@ -4,6 +4,8 @@ import {
   getDoctorReviews,
   getHospitalReviews,
   getMyReviews,
+  editMyReview,
+  deleteMyReview,
   getAllReviewsAdmin,
   toggleReviewVisibility,
   replyToReview,
@@ -19,6 +21,8 @@ const reviewRouter = express.Router();
 // =====================================
 reviewRouter.post("/add", authUser, addReview);
 reviewRouter.get("/my-reviews", authUser, getMyReviews);
+reviewRouter.patch("/:reviewId", authUser, editMyReview);
+reviewRouter.delete("/:reviewId", authUser, deleteMyReview);
 
 // =====================================
 // Public

@@ -5,6 +5,7 @@ import { AppContext } from "../context/AppContext";
 import { assets } from "../assets/assets";
 import StarRating from "../components/StarRating";
 import ReviewList from "../components/ReviewList";
+import RatingDistribution from "../components/RatingDistribution";
 
 const HospitalDetails = () => {
   const { hospitalId } = useParams();
@@ -14,6 +15,7 @@ const HospitalDetails = () => {
 
   const [hospital, setHospital] = useState(null);
   const [doctors, setDoctors] = useState([]);
+  const [reviewStats, setReviewStats] = useState(null);
 
   const getHospital = async () => {
     try {
@@ -300,7 +302,16 @@ const HospitalDetails = () => {
       {/* Reviews */}
       <div className="profile-section mb-8">
         <h2 className="text-lg font-bold text-text-primary mb-6">Patient Reviews</h2>
-        <ReviewList targetType="hospital" targetId={hospitalId} />
+        {reviewStats && reviewStats.total > 0 && (
+          <div className="pb-6 mb-6 border-b border-slate-100">
+            <RatingDistribution
+              distribution={reviewStats.distribution}
+              total={reviewStats.total}
+              averageRating={hospital.averageRating}
+            />
+          </div>
+        )}
+        <ReviewList targetType="hospital" targetId={hospitalId} onStats={setReviewStats} />
       </div>
     </div>
   );

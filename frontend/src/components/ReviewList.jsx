@@ -24,7 +24,9 @@ const LIMIT = 5;
 // Renders a paginated ("load more") list of visible reviews for a doctor
 // or hospital. `refreshKey` can be bumped by the parent to force a reload
 // (e.g. right after the user submits a new review elsewhere on the page).
-const ReviewList = ({ targetType, targetId, refreshKey }) => {
+// `onStats` (optional) is called with { total, distribution } after each
+// fetch, so a parent can render a <RatingDistribution> without a second call.
+const ReviewList = ({ targetType, targetId, refreshKey, onStats }) => {
   const { backendUrl } = useContext(AppContext);
 
   const [reviews, setReviews] = useState([]);
@@ -44,6 +46,7 @@ const ReviewList = ({ targetType, targetId, refreshKey }) => {
           setReviews((prev) => (pageToLoad === 1 ? data.reviews : [...prev, ...data.reviews]));
           setTotal(data.total);
           setPage(pageToLoad);
+          onStats?.({ total: data.total, distribution: data.distribution });
         }
       } catch (error) {
         console.error(error);
@@ -51,6 +54,7 @@ const ReviewList = ({ targetType, targetId, refreshKey }) => {
         setLoading(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [backendUrl, targetType, targetId]
   );
 

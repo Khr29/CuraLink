@@ -4,17 +4,21 @@ import { toast } from "react-toastify";
 import { AppContext } from "../context/AppContext";
 import StarRating from "./StarRating";
 
-// Modal review form, reused for both doctor and hospital targets.
-// `targetType` is "doctor" | "hospital".
-const ReviewForm = ({ open, onClose, targetType, targetId, targetName, appointmentId, onSuccess }) => {
+// Modal review form, reused for both doctor and hospital targets, and for
+// both creating a new review and editing an existing one (pass `editReview`
+// to prefill the fields and PATCH instead of POST). Callers that need fresh
+// prefilled state per target should render this with a changing `key`.
+const ReviewForm = ({ open, onClose, targetType, targetId, targetName, appointmentId, editReview, onSuccess }) => {
   const { backendUrl, token } = useContext(AppContext);
 
-  const [rating, setRating] = useState(0);
-  const [title, setTitle] = useState("");
-  const [comment, setComment] = useState("");
+  const [rating, setRating] = useState(() => editReview?.rating || 0);
+  const [title, setTitle] = useState(() => editReview?.title || "");
+  const [comment, setComment] = useState(() => editReview?.comment || "");
   const [submitting, setSubmitting] = useState(false);
 
   if (!open) return null;
+
+  const isEditMode = Boolean(editReview);
 
   const resetForm = () => {
     setRating(0);
@@ -41,17 +45,23 @@ const ReviewForm = ({ open, onClose, targetType, targetId, targetName, appointme
 
     setSubmitting(true);
     try {
-      const { data } = await axios.post(
-        `${backendUrl}/api/review/add`,
-        {
-          appointmentId,
-          [targetType === "doctor" ? "doctorId" : "hospitalId"]: targetId,
-          rating,
-          title: title.trim(),
-          comment: comment.trim(),
-        },
-        { headers: { token } }
-      );
+      const { data } = isEditMode
+        ? await axios.patch(
+            `${backendUrl}/api/review/${editReview._id}`,
+            { rating, title: title.trim(), comment: comment.trim() },
+            { headers: { token } }
+          )
+        : await axios.post(
+            `${backendUrl}/api/review/add`,
+            {
+              appointmentId,
+              [targetType === "doctor" ? "doctorId" : "hospitalId"]: targetId,
+              rating,
+              title: title.trim(),
+              comment: comment.trim(),
+            },
+            { headers: { token } }
+          );
 
       if (data.success) {
         toast.success(data.message);
@@ -83,7 +93,7 @@ const ReviewForm = ({ open, onClose, targetType, targetId, targetName, appointme
         </button>
 
         <h2 className="text-lg font-bold text-text-primary mb-1">
-          Rate {targetType === "doctor" ? "Doctor" : "Hospital"}
+          {isEditMode ? "Edit Your Review" : `Rate ${targetType === "doctor" ? "Doctor" : "Hospital"}`}
         </h2>
         <p className="text-sm text-text-muted mb-5">{targetName}</p>
 
@@ -120,7 +130,7 @@ const ReviewForm = ({ open, onClose, targetType, targetId, targetName, appointme
           </div>
 
           <button type="submit" disabled={submitting} className="btn btn-primary shine w-full">
-            {submitting ? "Submitting..." : "Submit Review"}
+            {submitting ? "Saving..." : isEditMode ? "Save Changes" : "Submit Review"}
           </button>
         </form>
       </div>

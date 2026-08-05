@@ -1,8 +1,145 @@
-import React, { useState, useContext, useCallback } from "react";
+import React, { useState, useContext, useCallback, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
-import { assets } from "../assets/assets";
 import axios from "axios";
 import { toast } from "react-toastify";
+import StarRating from "../components/StarRating";
+import ReviewForm from "../components/ReviewForm";
+
+const months = [" ", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const formatSlotDate = (slotDate) => {
+  if (!slotDate) return "";
+  const [d, m, y] = slotDate.split("_");
+  return `${d} ${months[Number(m)]} ${y}`;
+};
+
+const MyReviews = () => {
+  const { backendUrl, token } = useContext(AppContext);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingReview, setEditingReview] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const fetchMyReviews = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${backendUrl}/api/review/my-reviews`, { headers: { token } });
+      if (data.success) setReviews(data.reviews);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [backendUrl, token]);
+
+  useEffect(() => {
+    if (token) fetchMyReviews();
+  }, [token, fetchMyReviews]);
+
+  const handleDelete = async (reviewId) => {
+    if (!window.confirm("Delete this review? This cannot be undone.")) return;
+    setDeletingId(reviewId);
+    try {
+      const { data } = await axios.delete(`${backendUrl}/api/review/${reviewId}`, { headers: { token } });
+      if (data.success) {
+        toast.success(data.message);
+        fetchMyReviews();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Something went wrong");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="profile-section animate-pulse">
+        <div className="h-4 bg-slate-100 rounded w-1/4 mb-3" />
+        <div className="h-16 bg-slate-100 rounded" />
+      </div>
+    );
+  }
+
+  if (reviews.length === 0) {
+    return (
+      <div className="profile-section flex flex-col items-center justify-center py-12 text-center">
+        <div className="text-4xl mb-2">📝</div>
+        <h3 className="text-base font-bold text-text-primary mb-1">No Reviews Yet</h3>
+        <p className="text-text-muted text-sm max-w-sm">
+          Reviews you write for doctors and hospitals will show up here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {reviews.map((review) => {
+        const target = review.doctorId || review.hospitalId;
+        const targetType = review.doctorId ? "Doctor" : "Hospital";
+        const editable = review.editable;
+
+        return (
+          <div key={review._id} className="profile-section">
+            <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="badge badge-teal text-[10px]">{targetType}</span>
+                  <span className="text-sm font-bold text-text-primary">{target?.name || "Unknown"}</span>
+                  {!review.isVisible && <span className="badge badge-slate text-[10px]">Hidden by admin</span>}
+                </div>
+                <p className="text-xs text-text-muted mt-1">
+                  Appointment: {formatSlotDate(review.appointmentId?.slotDate)}
+                  {review.appointmentId?.slotTime ? ` · ${review.appointmentId.slotTime}` : ""}
+                </p>
+              </div>
+              <StarRating rating={review.rating} size="sm" />
+            </div>
+
+            <h4 className="text-sm font-semibold text-text-primary mt-2">{review.title}</h4>
+            <p className="text-sm text-text-secondary mt-1 leading-relaxed">{review.comment}</p>
+
+            {review.adminReply && (
+              <div className="mt-3 bg-gradient-card rounded-xl p-3 border border-slate-100">
+                <p className="text-xs font-bold text-primary mb-1">Response from CuraLink</p>
+                <p className="text-xs text-text-secondary">{review.adminReply}</p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 mt-3">
+              {editable ? (
+                <button onClick={() => setEditingReview(review)} className="btn btn-ghost btn-sm">
+                  Edit
+                </button>
+              ) : (
+                <span className="text-xs text-text-muted">Edit window expired</span>
+              )}
+              <button
+                onClick={() => handleDelete(review._id)}
+                disabled={deletingId === review._id}
+                className="btn btn-ghost btn-sm border-danger/30 text-danger hover:bg-red-50"
+              >
+                {deletingId === review._id ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+
+      <ReviewForm
+        key={editingReview?._id || "closed"}
+        open={!!editingReview}
+        onClose={() => setEditingReview(null)}
+        targetType={editingReview?.doctorId ? "doctor" : "hospital"}
+        targetName={editingReview ? (editingReview.doctorId || editingReview.hospitalId)?.name : ""}
+        editReview={editingReview}
+        onSuccess={fetchMyReviews}
+      />
+    </div>
+  );
+};
 
 const InfoRow = ({ label, value }) => (
   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-3 border-b border-slate-100 last:border-b-0">
@@ -225,6 +362,17 @@ const MyProfile = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* My Reviews */}
+      <div className="mb-8">
+        <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
+          <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+          </svg>
+          My Reviews
+        </h3>
+        <MyReviews />
       </div>
 
       {/* Save / Cancel */}

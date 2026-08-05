@@ -316,7 +316,7 @@ const changeHospitalStatus = async (hospitalId) => {
     const getAllReviews = useCallback(async () => {
         try {
             const { data } = await axios.get(
-                backendUrl + '/api/review/admin/all',
+                backendUrl + '/api/review/admin/all?limit=100',
                 config
             )
 

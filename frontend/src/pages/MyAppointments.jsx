@@ -53,7 +53,7 @@ const MyAppointments = () => {
   const hasReviewed = (appointmentId, targetType) =>
     myReviews.some(
       (r) =>
-        r.appointmentId === appointmentId &&
+        (r.appointmentId?._id || r.appointmentId) === appointmentId &&
         (targetType === "doctor" ? r.doctorId : r.hospitalId)
     );
 
