@@ -75,7 +75,7 @@ const reviewSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes
@@ -84,8 +84,25 @@ reviewSchema.index({ hospitalId: 1 });
 reviewSchema.index({ userId: 1 });
 reviewSchema.index({ appointmentId: 1 });
 
+// A user may leave at most one review per doctor/hospital for a given
+// appointment. Partial so the constraint only applies when that target
+// is actually set (a review always has exactly one of doctorId/hospitalId).
+reviewSchema.index(
+  { appointmentId: 1, doctorId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { doctorId: { $type: "objectId" } },
+  },
+);
+reviewSchema.index(
+  { appointmentId: 1, hospitalId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { hospitalId: { $type: "objectId" } },
+  },
+);
+
 const reviewModel =
-  mongoose.models.review ||
-  mongoose.model("review", reviewSchema);
+  mongoose.models.review || mongoose.model("review", reviewSchema);
 
 export default reviewModel;

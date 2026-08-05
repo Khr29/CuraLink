@@ -120,6 +120,8 @@ const AdminContextProvider = (props) => {
 
     const [hospitals, setHospitals] = useState([])
 
+    const [reviews, setReviews] = useState([])
+
     const backendUrl = import.meta.env.VITE_BACKEND_URL
 
     // 🔥 common config (avoid repeat)
@@ -310,6 +312,88 @@ const changeHospitalStatus = async (hospitalId) => {
     }, [aToken])
 
 
+    // ✅ GET ALL REVIEWS (moderation)
+    const getAllReviews = useCallback(async () => {
+        try {
+            const { data } = await axios.get(
+                backendUrl + '/api/review/admin/all',
+                config
+            )
+
+            if (data.success) {
+                setReviews(data.reviews)
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }, [aToken])
+
+
+    const toggleReviewVisibility = async (reviewId) => {
+        try {
+            const { data } = await axios.patch(
+                backendUrl + '/api/review/admin/' + reviewId + '/visibility',
+                {},
+                config
+            )
+
+            if (data.success) {
+                toast.success(data.message)
+                getAllReviews()
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+
+    const replyToReview = async (reviewId, reply) => {
+        try {
+            const { data } = await axios.patch(
+                backendUrl + '/api/review/admin/' + reviewId + '/reply',
+                { reply },
+                config
+            )
+
+            if (data.success) {
+                toast.success(data.message)
+                getAllReviews()
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+
+    const deleteReview = async (reviewId) => {
+        try {
+            const { data } = await axios.delete(
+                backendUrl + '/api/review/admin/' + reviewId,
+                config
+            )
+
+            if (data.success) {
+                toast.success(data.message)
+                getAllReviews()
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+
     const value = {
     aToken,
     setAToken,
@@ -333,6 +417,13 @@ const changeHospitalStatus = async (hospitalId) => {
     setAppointments,
     getAllAppointments,
     cancelAppointment,
+
+    // Reviews
+    reviews,
+    getAllReviews,
+    toggleReviewVisibility,
+    replyToReview,
+    deleteReview,
 
     // Dashboard
     getDashData,

@@ -103,6 +103,16 @@ const AdminSidebar = () => {
         name: 'Hospital List',
         path: '/hospital-list',
         icon: assets.people_icon
+      },
+
+      // -------------------------
+      // Review Moderation
+      // -------------------------
+
+      {
+        name: 'Reviews',
+        path: '/reviews',
+        icon: assets.list_icon
       }
 
     ], [])

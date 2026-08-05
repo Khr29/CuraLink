@@ -98,7 +98,7 @@
 // export default React.memo(DoctorsList)
 import React, { useContext, useEffect, useCallback, useMemo, useState } from 'react'
 import { AdminContext } from '../../context/AdminContext'
-import { Users, Stethoscope, CheckCircle2, XCircle } from 'lucide-react'
+import { Users, Stethoscope, CheckCircle2, XCircle, Star } from 'lucide-react'
 
 const DoctorsList = () => {
   const { doctors, aToken, getAllDoctors, changeAvailability } = useContext(AdminContext)
@@ -338,6 +338,15 @@ const DoctorCard = ({ item, onToggleAvailability }) => {
           >
             {item.name}
           </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
+            <Star size={13} color="#FBBF24" fill="#FBBF24" />
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: '#0F172A' }}>
+              {item.totalReviews > 0 ? item.averageRating.toFixed(1) : 'New'}
+            </span>
+            {item.totalReviews > 0 && (
+              <span style={{ fontSize: 11.5, color: '#94A3B8' }}>({item.totalReviews})</span>
+            )}
+          </div>
         </div>
 
         {/* AVAILABILITY TOGGLE CONTROL */}

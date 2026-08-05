@@ -4,6 +4,7 @@ import { useContext, useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import ReviewForm from "../components/ReviewForm";
 
 const months = [" ", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -23,6 +24,8 @@ const MyAppointments = () => {
   const { backendUrl, token, getDoctorsData } = useContext(AppContext);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [myReviews, setMyReviews] = useState([]);
+  const [reviewModal, setReviewModal] = useState(null);
   const navigate = useNavigate();
 
   const getUserAppointments = async () => {
@@ -37,6 +40,22 @@ const MyAppointments = () => {
       setLoading(false);
     }
   };
+
+  const getMyReviews = async () => {
+    try {
+      const { data } = await axios.get(`${backendUrl}/api/review/my-reviews`, { headers: { token } });
+      if (data.success) setMyReviews(data.reviews);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const hasReviewed = (appointmentId, targetType) =>
+    myReviews.some(
+      (r) =>
+        r.appointmentId === appointmentId &&
+        (targetType === "doctor" ? r.doctorId : r.hospitalId)
+    );
 
   const cancelAppointment = async (appointmentId) => {
     try {
@@ -101,7 +120,10 @@ const MyAppointments = () => {
   };
 
   useEffect(() => {
-    if (token) getUserAppointments();
+    if (token) {
+      getUserAppointments();
+      getMyReviews();
+    }
   }, [token]);
 
   if (loading) {
@@ -245,13 +267,59 @@ const MyAppointments = () => {
                   <span className="badge badge-red justify-center py-2">Appointment Cancelled</span>
                 )}
                 {item.isCompleted && (
-                  <span className="badge badge-green justify-center py-2">✅ Completed</span>
+                  <>
+                    <span className="badge badge-green justify-center py-2">✅ Completed</span>
+                    {hasReviewed(item._id, "doctor") ? (
+                      <span className="badge badge-teal justify-center py-2 text-[11px]">✓ Doctor Reviewed</span>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          setReviewModal({
+                            targetType: "doctor",
+                            targetId: item.docId,
+                            targetName: item.docData?.name,
+                            appointmentId: item._id,
+                          })
+                        }
+                        className="btn btn-sm btn-secondary w-full justify-center"
+                      >
+                        ⭐ Rate Doctor
+                      </button>
+                    )}
+                    {hasReviewed(item._id, "hospital") ? (
+                      <span className="badge badge-teal justify-center py-2 text-[11px]">✓ Hospital Reviewed</span>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          setReviewModal({
+                            targetType: "hospital",
+                            targetId: item.hospitalId,
+                            targetName: "Your visit on " + formatDate(item.slotDate),
+                            appointmentId: item._id,
+                          })
+                        }
+                        className="btn btn-sm btn-ghost w-full justify-center"
+                      >
+                        ⭐ Rate Hospital
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      <ReviewForm
+        open={!!reviewModal}
+        onClose={() => setReviewModal(null)}
+        targetType={reviewModal?.targetType}
+        targetId={reviewModal?.targetId}
+        targetName={reviewModal?.targetName}
+        appointmentId={reviewModal?.appointmentId}
+        onSuccess={getMyReviews}
+      />
     </div>
   );
 };

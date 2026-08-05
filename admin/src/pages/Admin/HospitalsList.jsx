@@ -188,7 +188,7 @@ const HospitalCard = ({ item, onStatusChange, onDelete }) => {
   const locationText = [city, state].filter(Boolean).join(', ') || 'Location N/A'
   const deptCount = item.departments?.length || 0
   const facilityCount = item.facilities?.length || 0
-  const rating = item.rating || 4.5
+  const rating = item.totalReviews > 0 ? item.averageRating.toFixed(1) : 'New'
 
   return (
     <div
