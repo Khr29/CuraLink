@@ -1,6 +1,7 @@
 import express from "express";
 import {
   addReview,
+  getRecentReviews,
   getDoctorReviews,
   getHospitalReviews,
   getMyReviews,
@@ -33,6 +34,7 @@ reviewRouter.delete("/:reviewId", authUser, deleteMyReview);
 // =====================================
 // Public
 // =====================================
+reviewRouter.get("/recent", getRecentReviews);
 reviewRouter.get("/doctor/:doctorId", getDoctorReviews);
 reviewRouter.get("/hospital/:hospitalId", getHospitalReviews);
 

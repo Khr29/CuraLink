@@ -1,85 +1,39 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useMemo } from "react";
 import { AppContext } from "../context/AppContext";
-import { specialityData } from "../assets/assets";
+import useInView from "../hooks/useInView";
+import StatCard from "./StatCard";
 
-const useCountUp = (target, active, duration = 1200) => {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    let start = null;
-    let frame;
-    const step = (ts) => {
-      if (start === null) start = ts;
-      const progress = Math.min((ts - start) / duration, 1);
-      setValue(Math.floor(progress * target));
-      if (progress < 1) frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [active, target, duration]);
-  return value;
-};
-
-const StatBlock = ({ target, suffix, label, active }) => {
-  const count = useCountUp(target, active);
-  return (
-    <div className="stat-block">
-      <p className="stat-block-value">
-        {count}
-        {suffix}
-      </p>
-      <p className="stat-block-label">{label}</p>
-    </div>
-  );
-};
-
+// "Platform Numbers" — live counts pulled from the shared platformStats
+// context value (fetched once in AppContext, no extra request here).
+// Cards count up the first time the section scrolls into view.
 const Stats = () => {
-  const { doctors, hospitals } = useContext(AppContext);
-  const sectionRef = useRef(null);
-  const [inView, setInView] = useState(false);
+  const { platformStats } = useContext(AppContext);
+  const [sectionRef, inView] = useInView(0.3);
+  const active = inView && Boolean(platformStats);
 
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.3 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // Derived directly from real data already in context — no fake numbers.
-  const stats = useMemo(() => [
-    { target: hospitals.length, suffix: "+", label: "Hospitals" },
-    { target: doctors.length, suffix: "+", label: "Doctors" },
-    { target: specialityData.length, suffix: "+", label: "Departments" },
-    // No backend field for total patients / avg rating yet —
-    // shown as static placeholders instead of invented "live" numbers.
-    { target: 0, suffix: "50K+", label: "Patients", isPlaceholder: true },
-    { target: 0, suffix: "4.8★", label: "Avg. Rating", isPlaceholder: true },
-  ], [doctors.length, hospitals.length]);
+  const stats = useMemo(() => ([
+    { key: "patients", icon: "👥", value: platformStats?.totalPatients ?? 0, suffix: "+", label: "Registered Patients" },
+    { key: "doctors", icon: "👨‍⚕️", value: platformStats?.totalDoctors ?? 0, suffix: "+", label: "Doctors" },
+    { key: "hospitals", icon: "🏥", value: platformStats?.totalHospitals ?? 0, suffix: "+", label: "Hospitals" },
+    { key: "appointments", icon: "📅", value: platformStats?.totalAppointments ?? 0, suffix: "+", label: "Appointments" },
+    { key: "reviews", icon: "⭐", value: platformStats?.totalReviews ?? 0, suffix: "+", label: "Reviews" },
+  ]), [platformStats]);
 
   return (
-    <section ref={sectionRef} className="py-16 px-4">
-      <div className="stats-panel">
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-6 sm:gap-4">
-          {stats.map((s) =>
-            s.isPlaceholder ? (
-              <div key={s.label} className="stat-block">
-                <p className="stat-block-value">{s.suffix}</p>
-                <p className="stat-block-label">{s.label}</p>
-              </div>
-            ) : (
-              <StatBlock key={s.label} target={s.target} suffix={s.suffix} label={s.label} active={inView} />
-            )
-          )}
-        </div>
+    <section ref={sectionRef} className="py-20 md:py-24 px-4 bg-gradient-section">
+      <div className="text-center mb-14">
+        <span className="section-tag">Platform Numbers</span>
+        <h2 className="section-title">Growing Every Day</h2>
+        <p className="section-subtitle mx-auto">
+          Real numbers from the CuraLink platform, updated live.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5 max-w-5xl mx-auto">
+        {stats.map((s, i) => (
+          <div key={s.key} className="animate-slide-up" style={{ animationDelay: `${i * 0.08}s` }}>
+            <StatCard icon={s.icon} value={s.value} suffix={s.suffix} label={s.label} active={active} />
+          </div>
+        ))}
       </div>
     </section>
   );

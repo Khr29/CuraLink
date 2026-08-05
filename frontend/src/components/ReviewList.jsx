@@ -3,22 +3,7 @@ import axios from "axios";
 import { AppContext } from "../context/AppContext";
 import StarRating from "./StarRating";
 import WriteReviewCTA from "./WriteReviewCTA";
-
-const timeAgo = (dateString) => {
-  const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
-  const units = [
-    ["year", 31536000],
-    ["month", 2592000],
-    ["day", 86400],
-    ["hour", 3600],
-    ["minute", 60],
-  ];
-  for (const [name, secondsInUnit] of units) {
-    const count = Math.floor(seconds / secondsInUnit);
-    if (count >= 1) return `${count} ${name}${count > 1 ? "s" : ""} ago`;
-  }
-  return "Just now";
-};
+import timeAgo from "../utils/timeAgo";
 
 const LIMIT = 5;
 

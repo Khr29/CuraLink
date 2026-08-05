@@ -11,8 +11,6 @@ const navLinks = [
   { name: "Contact", path: "/contact" },
 ];
 
-const ADMIN_URL = "http://localhost:5174/admin-dashboard";
-
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -90,16 +88,6 @@ const Navbar = () => {
 
           {/* Right actions */}
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-              localStorage.removeItem("aToken");
-              window.location.href = ADMIN_URL;
-            }}
-              className="hidden md:inline-flex btn btn-ghost btn-sm text-xs"
-            >
-              Admin Panel
-            </button>
-
             {token && userData ? (
               <div className="relative group">
                 <button
@@ -254,16 +242,6 @@ const Navbar = () => {
               </button>
             </>
           )}
-
-          <button
-            onClick={() => {
-            localStorage.removeItem("aToken");
-            window.location.href = ADMIN_URL;
-          }}
-            className="btn btn-ghost w-full justify-center mt-2 text-sm"
-          >
-            Admin Panel
-          </button>
         </nav>
       </aside>
     </>

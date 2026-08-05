@@ -1,14 +1,26 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AppContext } from "../context/AppContext";
 
 const FEATURES = ["No registration fees", "Instant confirmation", "Easy reschedule"];
 
 const Banner = () => {
   const navigate = useNavigate();
-  const handleNavigate = useCallback(() => {
-    navigate("/login");
+  const { platformStats } = useContext(AppContext);
+
+  const handleFindDoctors = useCallback(() => {
+    navigate("/doctors");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [navigate]);
+
+  const handleExploreHospitals = useCallback(() => {
+    navigate("/hospitals");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [navigate]);
+
+  const trustBadge = platformStats
+    ? `${platformStats.totalDoctors}+ Doctors & ${platformStats.totalHospitals}+ Hospitals Trusted`
+    : "Trusted Doctors & Hospitals";
 
   return (
     <section className="my-16 px-4">
@@ -57,7 +69,7 @@ const Banner = () => {
               <svg style={{ width: 14, height: 14, color: "#5EEAD4" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15" />
               </svg>
-              100+ Trusted Doctors &amp; Hospitals
+              {trustBadge}
             </span>
 
             <h2 style={{
@@ -67,7 +79,7 @@ const Banner = () => {
               lineHeight: 1.2,
               marginBottom: 16
             }}>
-              Start Your Healthcare
+              Ready to Find the Right
               <span style={{
                 display: "block",
                 marginTop: 4,
@@ -76,7 +88,7 @@ const Banner = () => {
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text"
               }}>
-                Journey Today
+                Healthcare Provider?
               </span>
             </h2>
 
@@ -90,7 +102,7 @@ const Banner = () => {
 
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
               <button
-                onClick={handleNavigate}
+                onClick={handleFindDoctors}
                 className="btn btn-lg shine"
                 style={{
                   background: "linear-gradient(135deg, #14B8A6, #0EA5E9)",
@@ -101,13 +113,13 @@ const Banner = () => {
                   fontWeight: 600
                 }}
               >
-                Create Free Account
+                Find Doctors
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </button>
               <button
-                onClick={() => navigate("/doctors")}
+                onClick={handleExploreHospitals}
                 style={{
                   background: "rgba(255,255,255,0.10)",
                   color: "#FFFFFF",
@@ -123,7 +135,7 @@ const Banner = () => {
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
                 onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.10)"}
               >
-                Explore Doctors
+                Explore Hospitals
               </button>
             </div>
 

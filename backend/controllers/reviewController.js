@@ -193,6 +193,28 @@ const addReview = async (req, res) => {
 };
 
 // =============================
+// Get Recent Reviews (public, platform-wide — for the homepage)
+// =============================
+const getRecentReviews = async (req, res) => {
+  try {
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 6));
+
+    const reviews = await reviewModel
+      .find({ isVisible: true })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate("userId", "name image")
+      .populate("doctorId", "name")
+      .populate("hospitalId", "name");
+
+    res.json({ success: true, reviews });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// =============================
 // Get Doctor Reviews (public)
 // =============================
 const getDoctorReviews = async (req, res) => {
@@ -541,6 +563,7 @@ const deleteReview = async (req, res) => {
 export {
   updateAverageRating,
   addReview,
+  getRecentReviews,
   getDoctorReviews,
   getHospitalReviews,
   getMyReviews,

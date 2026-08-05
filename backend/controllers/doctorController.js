@@ -183,7 +183,7 @@ const changeAvailability = async (req, res) => {
 // Doctor List
 const doctorList = async (req, res) => {
     try {
-        const doctors = await doctorModel.find({}, { password: 0, email: 0 })
+        const doctors = await doctorModel.find({}, { password: 0, email: 0 }).populate("hospitalId", "name")
         res.json({ success: true, doctors })
     } catch (error) {
         console.log(error)

@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import StarRating from "./StarRating";
 
-const HospitalCard = React.memo(({ item, onClick }) => {
-  const deptCount = Array.isArray(item.departments)
-    ? item.departments.length
-    : (item.departments ?? item.departmentsCount ?? 0);
+const FEATURED_COUNT = 6;
+
+const HospitalCard = React.memo(({ item, onClick, doctorCount }) => {
+  const city = item.address?.city;
+  const departments = Array.isArray(item.departments) ? item.departments : [];
 
   return (
     <div
@@ -20,25 +21,17 @@ const HospitalCard = React.memo(({ item, onClick }) => {
       {/* Image */}
       <div className="relative w-full aspect-[4/3] bg-gradient-card overflow-hidden">
         <img
-          src={item.image}
+          src={item.logo || item.image}
           alt={item.name}
           loading="lazy"
           className="doc-img w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-primary/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
 
-        {/* Open / Closed badge */}
-        <div className="absolute top-3 left-3">
-          <span className={`badge ${item.isOpen ? "badge-green" : "badge-slate"}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${item.isOpen ? "bg-accent" : "bg-slate-400"}`} />
-            {item.isOpen ? "Open Now" : "Closed"}
-          </span>
-        </div>
-
         {/* Hospital type badge */}
-        {item.type && (
+        {item.hospitalType && (
           <div className="absolute top-3 right-3">
-            <span className="badge badge-blue">{item.type}</span>
+            <span className="badge badge-blue">{item.hospitalType}</span>
           </div>
         )}
       </div>
@@ -48,14 +41,25 @@ const HospitalCard = React.memo(({ item, onClick }) => {
         <h3 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors duration-200 leading-tight">
           {item.name}
         </h3>
-        {item.city && (
+        {city && (
           <p className="text-xs text-text-muted mt-1 flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
             </svg>
-            {item.city}
+            {city}
           </p>
+        )}
+
+        {departments.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {departments.slice(0, 3).map((d) => (
+              <span key={d} className="badge badge-teal">{d}</span>
+            ))}
+            {departments.length > 3 && (
+              <span className="text-[11px] text-text-muted self-center">+{departments.length - 3} more</span>
+            )}
+          </div>
         )}
 
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
@@ -66,16 +70,16 @@ const HospitalCard = React.memo(({ item, onClick }) => {
             </span>
           </div>
 
-          {deptCount > 0 && (
+          {doctorCount > 0 && (
             <span className="text-[11px] text-text-muted">
-              {deptCount} Dept{deptCount !== 1 ? "s" : ""}
+              {doctorCount} Doctor{doctorCount !== 1 ? "s" : ""}
             </span>
           )}
-
-          <button className="text-[11px] font-semibold text-primary bg-primary-light px-2.5 py-1 rounded-full hover:bg-primary hover:text-white transition-all duration-200">
-            View Details
-          </button>
         </div>
+
+        <button className="w-full mt-3 text-[11px] font-semibold text-primary bg-primary-light px-2.5 py-2 rounded-full hover:bg-primary hover:text-white transition-all duration-200">
+          View Hospital
+        </button>
       </div>
     </div>
   );
@@ -84,8 +88,27 @@ HospitalCard.displayName = "HospitalCard";
 
 const FeaturedHospitals = () => {
   const navigate = useNavigate();
-  const { hospitals } = useContext(AppContext);
-  const featured = useMemo(() => hospitals.slice(0, 8), [hospitals]);
+  const { hospitals, doctors } = useContext(AppContext);
+
+  // How many doctors are on staff at each hospital — derived client-side
+  // from the already-loaded doctors list, no extra request needed.
+  const doctorCountByHospital = useMemo(() => {
+    const counts = {};
+    doctors.forEach((d) => {
+      const hospitalId = d.hospitalId?._id || d.hospitalId;
+      if (!hospitalId) return;
+      counts[hospitalId] = (counts[hospitalId] || 0) + 1;
+    });
+    return counts;
+  }, [doctors]);
+
+  // Highest-rated first (ties broken by review count), capped to a small
+  // featured set.
+  const featured = useMemo(() => (
+    [...hospitals]
+      .sort((a, b) => (b.averageRating - a.averageRating) || (b.totalReviews - a.totalReviews))
+      .slice(0, FEATURED_COUNT)
+  ), [hospitals]);
 
   const handleNavigate = useCallback(
     (id) => { navigate(`/hospital/${id}`); },
@@ -101,18 +124,18 @@ const FeaturedHospitals = () => {
   if (!featured.length) return null;
 
   return (
-    <section className="py-16 px-4">
+    <section className="py-16 md:py-20 px-4">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
         <div>
           <span className="section-tag">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
             </svg>
-            Featured Hospitals
+            Top Rated Hospitals
           </span>
           <h2 className="section-title">Trusted Hospitals Near You</h2>
           <p className="section-subtitle">
-            Compare top-rated hospitals by speciality, ratings, and location.
+            Our highest-rated hospitals by speciality, ratings, and location.
           </p>
         </div>
         <button onClick={handleMoreHospitals} className="btn btn-secondary flex-shrink-0">
@@ -123,9 +146,14 @@ const FeaturedHospitals = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {featured.map((item) => (
-          <HospitalCard key={item._id} item={item} onClick={handleNavigate} />
+          <HospitalCard
+            key={item._id}
+            item={item}
+            onClick={handleNavigate}
+            doctorCount={doctorCountByHospital[item._id] || 0}
+          />
         ))}
       </div>
     </section>

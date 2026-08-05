@@ -14,6 +14,7 @@ const AppContextProvider = (props) => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL
       const [doctors, setDoctors] = useState([])
       const [hospitals, setHospitals] = useState([])
+      const [platformStats, setPlatformStats] = useState(null)
       const [token, setToken] = useState(localStorage.getItem('token')? localStorage.getItem('token'): false)
       const [userData, setUserData] = useState(false)
 
@@ -48,6 +49,20 @@ const AppContextProvider = (props) => {
     }
 }
 
+    // Live homepage stats (patients, doctors, hospitals, appointments,
+    // reviews, average rating). Fetched once and shared via context so
+    // every homepage section reads the same numbers with a single request.
+    const getPlatformStats = async () => {
+        try {
+            const { data } = await axios.get(backendUrl + '/api/stats')
+            if (data.success) {
+                setPlatformStats(data.stats)
+            }
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
     const loadUserProfileData = async () => {
         try {
 
@@ -77,6 +92,9 @@ const AppContextProvider = (props) => {
     hospitals,
     getHospitalsData,
 
+    platformStats,
+    getPlatformStats,
+
     currencySymbol,
 
     setToken,
@@ -92,6 +110,7 @@ const AppContextProvider = (props) => {
     useEffect(()=> {
         getDoctorsData()
         getHospitalsData()
+        getPlatformStats()
     },[])
 
     useEffect(() => {

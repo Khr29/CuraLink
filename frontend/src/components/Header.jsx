@@ -2,6 +2,7 @@ import React, { useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext";
+import useCountUp from "../hooks/useCountUp";
 
 const TRUST = [
   {
@@ -38,20 +39,49 @@ const TRUST = [
   },
 ];
 
+// One live metric card in the hero's stats strip — count-up starts once
+// `active` (platform stats have arrived), same numeric logic as the
+// Platform Numbers section further down via the shared useCountUp hook.
+const HeroStatCard = ({ icon, value, suffix, label, decimals, active }) => {
+  const count = useCountUp(value, active, { decimals });
+  return (
+    <div className="stat-card" style={{ textAlign: "center" }}>
+      <div style={{ fontSize: "1.4rem", lineHeight: 1, marginBottom: 6 }} aria-hidden="true">{icon}</div>
+      <p style={{
+        fontSize: "clamp(1.3rem, 2.6vw, 1.7rem)",
+        fontWeight: 800,
+        background: "linear-gradient(90deg, #5EEAD4, #BAE6FD)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        backgroundClip: "text",
+        lineHeight: 1.1
+      }}>
+        {decimals ? count.toFixed(decimals) : count}{suffix}
+      </p>
+      <p style={{ color: "rgba(255,255,255,0.60)", fontSize: "0.76rem", marginTop: 4, fontWeight: 400 }}>
+        {label}
+      </p>
+    </div>
+  );
+};
+
 const Header = () => {
   const navigate = useNavigate();
   const { group_profiles } = assets;
-  const { doctors, hospitals } = useContext(AppContext);
+  const { doctors, hospitals, platformStats } = useContext(AppContext);
 
-  // Real counts from the existing context/API data — not hardcoded.
-  // "Patients Served" and "Average Rating" stay as labeled placeholders
-  // since there's no backend field for those yet.
-  const STATS = useMemo(() => [
-    { value: "50K+", label: "Patients Served", isPlaceholder: true },
-    { value: doctors.length ? `${doctors.length}+` : "—", label: "Expert Doctors" },
-    { value: hospitals.length ? `${hospitals.length}+` : "—", label: "Partner Hospitals" },
-    { value: "4.9★", label: "Average Rating", isPlaceholder: true },
-  ], [doctors.length, hospitals.length]);
+  // Live counts from the platform stats API — animate together once they
+  // arrive. Falls back to the already-loaded doctors/hospitals arrays so
+  // those two numbers aren't stuck at 0 while /api/stats is in flight.
+  const statsReady = Boolean(platformStats);
+  const HERO_STATS = useMemo(() => ([
+    { key: "doctors", icon: "👨‍⚕️", value: platformStats?.totalDoctors ?? doctors.length, suffix: "+", label: "Doctors" },
+    { key: "hospitals", icon: "🏥", value: platformStats?.totalHospitals ?? hospitals.length, suffix: "+", label: "Hospitals" },
+    { key: "patients", icon: "👥", value: platformStats?.totalPatients ?? 0, suffix: "+", label: "Patients" },
+    { key: "appointments", icon: "📅", value: platformStats?.totalAppointments ?? 0, suffix: "+", label: "Appointments" },
+    { key: "reviews", icon: "⭐", value: platformStats?.totalReviews ?? 0, suffix: "+", label: "Reviews" },
+    { key: "rating", icon: "⭐", value: platformStats?.averageRating ?? 0, suffix: "", label: "Avg. Rating", decimals: 1 },
+  ]), [doctors.length, hospitals.length, platformStats]);
 
   return (
     <section className="relative rounded-2xl overflow-hidden" style={{
@@ -332,44 +362,23 @@ const Header = () => {
         </div>
       </div>
 
-      {/* ── Stats bar ── */}
+      {/* ── Live stats grid ── */}
       <div style={{
         position: "relative", zIndex: 10,
         borderTop: "1px solid rgba(255,255,255,0.10)",
-        margin: "0 16px"
+        padding: "20px 16px 24px"
       }}>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: 0
-        }} className="md:grid-cols-4">
-          {STATS.map((s, i) => (
-            <div key={s.label} style={{
-              textAlign: "center",
-              padding: "20px 16px",
-              borderRight: i < 3 ? "1px solid rgba(255,255,255,0.10)" : "none",
-              background: "rgba(255,255,255,0.04)"
-            }}>
-              <p style={{
-                fontSize: "clamp(1.5rem, 3vw, 2rem)",
-                fontWeight: 800,
-                background: "linear-gradient(90deg, #5EEAD4, #BAE6FD)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                lineHeight: 1.1
-              }}>
-                {s.value}
-              </p>
-              <p style={{
-                color: "rgba(255,255,255,0.60)",
-                fontSize: "0.8rem",
-                marginTop: 4,
-                fontWeight: 400
-              }}>
-                {s.label}
-              </p>
-            </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          {HERO_STATS.map((s) => (
+            <HeroStatCard
+              key={s.key}
+              icon={s.icon}
+              value={s.value}
+              suffix={s.suffix}
+              label={s.label}
+              decimals={s.decimals}
+              active={statsReady}
+            />
           ))}
         </div>
       </div>

@@ -45,6 +45,7 @@ import doctorRouter from "./routes/doctorRoute.js";
 import hospitalRouter from "./routes/hospitalRoute.js";
 import userRouter from "./routes/userRoute.js";
 import reviewRouter from "./routes/reviewRoute.js";
+import statsRouter from "./routes/statsRoute.js";
 
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -102,6 +103,7 @@ app.use("/api/doctor", doctorRouter);
 app.use("/api/user", userRouter);
 app.use("/api/hospital", hospitalRouter);
 app.use("/api/review", reviewRouter);
+app.use("/api/stats", statsRouter);
 
 // global error handler (reliability)
 app.use((err, req, res, next) => {
