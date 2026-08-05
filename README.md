@@ -326,19 +326,15 @@ OPENAI_API_KEY=
 
 ## Home
 
-(Add Screenshot)
+<img width="1909" height="891" alt="image" src="https://github.com/user-attachments/assets/82a4f9fe-dfe2-4981-a31d-1d7b7f4f37fa" />
 
----
-
-## AI Symptom Analysis
-
-(Add Screenshot)
 
 ---
 
 ## Hospital Recommendation
 
-(Add Screenshot)
+<img width="1902" height="896" alt="image" src="https://github.com/user-attachments/assets/1bea4171-a74d-4388-a426-7d29fb4b61be" />
+
 
 ---
 
@@ -356,7 +352,8 @@ OPENAI_API_KEY=
 
 ## Admin Dashboard
 
-(Add Screenshot)
+<img width="1897" height="763" alt="image" src="https://github.com/user-attachments/assets/d9b08d33-9462-41f9-a082-bd237b6ccb36" />
+
 
 ---
 
