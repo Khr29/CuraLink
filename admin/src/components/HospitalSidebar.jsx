@@ -9,7 +9,8 @@ import {
   Images,
   UserCog,
   Settings,
-  LogOut
+  LogOut,
+  UserCheck
 } from 'lucide-react'
 import { HospitalContext } from '../context/HospitalContext'
 
@@ -21,6 +22,7 @@ const HospitalSidebar = () => {
   const menuItems = useMemo(() => [
     { name: 'Dashboard', path: '/hospital-dashboard', icon: LayoutDashboard },
     { name: 'Doctors', path: '/hospital-my-doctors', icon: Stethoscope },
+    { name: 'Doctor Requests', path: '/hospital-doctor-requests', icon: UserCheck },
     { name: 'Departments', path: '/hospital-departments', icon: Building2 },
     { name: 'Appointments', path: '/hospital-appointments', icon: CalendarDays },
     { name: 'Reviews', path: '/hospital-my-reviews', icon: MessageSquare },

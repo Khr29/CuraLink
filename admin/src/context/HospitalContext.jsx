@@ -142,6 +142,84 @@ const HospitalContextProvider = (props) => {
         }
     }, [backendUrl, hToken])
 
+    // ==========================
+    // Doctor Requests (join/transfer inbox + invites sent)
+    // ==========================
+    const [doctorRequests, setDoctorRequests] = useState([])
+    const [allDoctors, setAllDoctors] = useState([])
+
+    const getDoctorRequests = useCallback(async (status) => {
+        try {
+            const { data } = await axios.get(backendUrl + '/api/hospital/self/doctor-requests', {
+                headers: { htoken: hToken },
+                params: status ? { status } : {},
+            })
+            if (data.success) {
+                setDoctorRequests(data.requests)
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+    }, [backendUrl, hToken])
+
+    const approveDoctorRequest = useCallback(async (requestId) => {
+        try {
+            const { data } = await axios.patch(backendUrl + '/api/hospital/self/doctor-requests/' + requestId + '/approve', {}, { headers: { htoken: hToken } })
+            if (data.success) {
+                toast.success(data.message)
+                getDoctorRequests()
+                getHospitalDoctors()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+    }, [backendUrl, hToken, getDoctorRequests, getHospitalDoctors])
+
+    const rejectDoctorRequest = useCallback(async (requestId, reason) => {
+        try {
+            const { data } = await axios.patch(backendUrl + '/api/hospital/self/doctor-requests/' + requestId + '/reject', { reason }, { headers: { htoken: hToken } })
+            if (data.success) {
+                toast.success(data.message)
+                getDoctorRequests()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+    }, [backendUrl, hToken, getDoctorRequests])
+
+    const getAllDoctorsForInvite = useCallback(async () => {
+        try {
+            const { data } = await axios.get(backendUrl + '/api/doctor/list')
+            if (data.success) setAllDoctors(data.doctors)
+        } catch (error) {
+            console.log(error)
+        }
+    }, [backendUrl])
+
+    const inviteDoctor = useCallback(async (doctorId) => {
+        try {
+            const { data } = await axios.post(backendUrl + '/api/hospital/self/invite-doctor', { doctorId }, { headers: { htoken: hToken } })
+            if (data.success) {
+                toast.success(data.message)
+                getDoctorRequests()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+    }, [backendUrl, hToken, getDoctorRequests])
+
     const value = {
         backendUrl,
         hToken, setHToken,
@@ -151,6 +229,8 @@ const HospitalContextProvider = (props) => {
         doctors, setDoctors, getHospitalDoctors, deleteHospitalDoctor, toggleDoctorAvailability,
         appointments, setAppointments, getHospitalAppointments,
         replyToReview, editReviewReply,
+        doctorRequests, getDoctorRequests, approveDoctorRequest, rejectDoctorRequest,
+        allDoctors, getAllDoctorsForInvite, inviteDoctor,
     }
 
     return (

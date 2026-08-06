@@ -20,7 +20,13 @@ import {
   X,
   Check,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  UserRound,
+  ArrowRightLeft,
+  Send,
+  Ban,
+  History,
+  Mail
 } from 'lucide-react'
 
 const REVIEW_PAGE_SIZE = 3
@@ -138,7 +144,11 @@ const ReplyModal = ({ mode, initialText, onCancel, onSubmit, submitting }) => {
 }
 
 const DoctorProfile = () => {
-  const { dToken, profileData, setProfileData, getProfileData, backendUrl, dashData, getDashData, replyToReview, editReviewReply } = useContext(DoctorContext)
+  const {
+    dToken, profileData, setProfileData, getProfileData, backendUrl, dashData, getDashData, replyToReview, editReviewReply,
+    hospitals, getHospitalOptions, hospitalRequests, getMyHospitalRequests,
+    requestHospital, leaveHospital, cancelHospitalRequest, respondToInvite,
+  } = useContext(DoctorContext)
 
   const [replyTarget, setReplyTarget] = useState(null) // { reviewId, mode: 'create'|'edit', initialText }
   const [replySubmitting, setReplySubmitting] = useState(false)
@@ -160,14 +170,21 @@ const DoctorProfile = () => {
     if (dToken) {
       getProfileData()
       getDashData()
+      getHospitalOptions()
+      getMyHospitalRequests()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dToken])
 
-  // Hospital card data
+  // Hospital card data — independent doctors have no hospitalId, so this
+  // simply stays null rather than fetching (handled explicitly below,
+  // instead of showing "Loading hospital…" forever).
   useEffect(() => {
     const fetchHospital = async () => {
-      if (!profileData?.hospitalId) return
+      if (!profileData?.hospitalId) {
+        setHospital(null)
+        return
+      }
       try {
         const { data } = await axios.get(`${backendUrl}/api/hospital/${profileData.hospitalId}`)
         if (data.success) setHospital(data.hospital)
@@ -357,7 +374,11 @@ const DoctorProfile = () => {
                   </span>
                 </div>
                 <p style={{ color: 'rgba(255,255,255,0.78)', fontSize: 13.5, margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Building2 size={14} /> {hospital ? hospital.name : 'Loading hospital…'}
+                  {profileData.employmentType === 'independent' ? (
+                    <><UserRound size={14} /> Independent Practice</>
+                  ) : (
+                    <><Building2 size={14} /> {hospital ? hospital.name : 'Loading hospital…'}</>
+                  )}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <StarRow rating={profileData.averageRating} />
@@ -456,7 +477,11 @@ const DoctorProfile = () => {
 
             <Field label="Hospital">
               <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
-                <Building2 size={15} color="#94A3B8" /> {hospital ? hospital.name : '—'}
+                {profileData.employmentType === 'independent' ? (
+                  <><UserRound size={15} color="#94A3B8" /> Independent Practice</>
+                ) : (
+                  <><Building2 size={15} color="#94A3B8" /> {hospital ? hospital.name : '—'}</>
+                )}
               </p>
             </Field>
 
@@ -527,7 +552,15 @@ const DoctorProfile = () => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }} className="curalink-profile-grid">
           {/* ══════════ HOSPITAL CARD ══════════ */}
           <div style={{ background: '#FFFFFF', borderRadius: 24, border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,23,42,0.04)', overflow: 'hidden' }}>
-            {hospital ? (
+            {profileData.employmentType === 'independent' ? (
+              <div style={{ padding: 32, textAlign: 'center' }}>
+                <div style={{ width: 52, height: 52, borderRadius: 16, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                  <UserRound size={24} color="#2563EB" />
+                </div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', margin: '0 0 4px' }}>Independent Practice</h3>
+                <p style={{ fontSize: 12.5, color: '#64748B', margin: 0 }}>You're not affiliated with any hospital right now.</p>
+              </div>
+            ) : hospital ? (
               <>
                 <div style={{ position: 'relative', height: 140, background: 'linear-gradient(135deg, #EFF6FF, #E0F2FE)' }}>
                   <img src={hospital.image} alt={hospital.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -612,6 +645,17 @@ const DoctorProfile = () => {
             </div>
           </div>
         </div>
+
+        {/* ══════════ HOSPITAL AFFILIATION ══════════ */}
+        <HospitalAffiliationSection
+          profileData={profileData}
+          hospitals={hospitals}
+          hospitalRequests={hospitalRequests}
+          requestHospital={requestHospital}
+          leaveHospital={leaveHospital}
+          cancelHospitalRequest={cancelHospitalRequest}
+          respondToInvite={respondToInvite}
+        />
 
         {/* ══════════ REVIEWS ══════════ */}
         <SectionCard title="Patient Reviews" icon={MessageSquare}>
@@ -767,6 +811,193 @@ const DoctorProfile = () => {
         />
       )}
     </div>
+  )
+}
+
+const STATUS_BADGE = {
+  pending: { bg: '#FFFBEB', color: '#D97706', border: '#FDE68A' },
+  approved: { bg: '#F0FDF4', color: '#16A34A', border: '#BBF7D0' },
+  rejected: { bg: '#FEF2F2', color: '#DC2626', border: '#FECACA' },
+  cancelled: { bg: '#F8FAFC', color: '#64748B', border: '#E2E8F0' },
+}
+
+const RequestBadge = ({ status }) => {
+  const s = STATUS_BADGE[status] || STATUS_BADGE.cancelled
+  return (
+    <span style={{
+      fontSize: 10.5, fontWeight: 700, textTransform: 'capitalize', color: s.color,
+      background: s.bg, border: `1px solid ${s.border}`, padding: '3px 10px', borderRadius: 99,
+    }}>
+      {status}
+    </span>
+  )
+}
+
+const HospitalAffiliationSection = ({
+  profileData, hospitals, hospitalRequests,
+  requestHospital, leaveHospital, cancelHospitalRequest, respondToInvite,
+}) => {
+  const [selectedHospitalId, setSelectedHospitalId] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [confirmingLeave, setConfirmingLeave] = useState(false)
+
+  const pendingInvite = hospitalRequests.find(r => r.status === 'pending' && r.type === 'invite')
+  const pendingOwnRequest = hospitalRequests.find(r => r.status === 'pending' && r.type !== 'invite')
+  const history = hospitalRequests.filter(r => r.status !== 'pending')
+
+  const isIndependent = profileData.employmentType === 'independent'
+
+  const availableHospitals = hospitals.filter(h => h._id !== profileData.hospitalId)
+
+  const handleSend = async () => {
+    if (!selectedHospitalId) return
+    setSubmitting(true)
+    await requestHospital(selectedHospitalId)
+    setSubmitting(false)
+    setSelectedHospitalId('')
+  }
+
+  const handleLeave = async () => {
+    setSubmitting(true)
+    await leaveHospital()
+    setSubmitting(false)
+    setConfirmingLeave(false)
+  }
+
+  return (
+    <SectionCard title="Hospital Affiliation" icon={ArrowRightLeft}>
+      {pendingInvite && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+          background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)', border: '1px solid #BFDBFE',
+          borderRadius: 16, padding: '16px 18px', marginBottom: 18,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Mail size={17} color="#2563EB" />
+            </div>
+            <div>
+              <p style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                {pendingInvite.hospitalId?.name || 'A hospital'} invited you to join
+              </p>
+              <p style={{ fontSize: 11.5, color: '#64748B', marginTop: 2 }}>Accept to switch your affiliation immediately.</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => respondToInvite(pendingInvite._id, false)}
+              style={{ padding: '9px 18px', borderRadius: 99, border: '1.5px solid #E2E8F0', background: '#FFFFFF', color: '#475569', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+            >
+              Decline
+            </button>
+            <button
+              onClick={() => respondToInvite(pendingInvite._id, true)}
+              style={{ padding: '9px 18px', borderRadius: 99, border: 'none', background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#FFFFFF', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+            >
+              Accept
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pendingOwnRequest ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+          background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 16, padding: '16px 18px', marginBottom: 18,
+        }}>
+          <div>
+            <p style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', margin: 0, textTransform: 'capitalize' }}>
+              {pendingOwnRequest.type} request to {pendingOwnRequest.hospitalId?.name || 'hospital'} pending
+            </p>
+            <p style={{ fontSize: 11.5, color: '#92400E', marginTop: 2 }}>Waiting for the hospital to respond.</p>
+          </div>
+          <button
+            onClick={() => cancelHospitalRequest(pendingOwnRequest._id)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 99, border: '1.5px solid #FCA5A5', background: '#FFFFFF', color: '#DC2626', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+          >
+            <Ban size={14} /> Cancel Request
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 12, marginBottom: 18 }}>
+          <div style={{ flex: '1 1 240px' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>
+              {isIndependent ? 'Join a Hospital' : 'Transfer to Another Hospital'}
+            </p>
+            <select
+              value={selectedHospitalId}
+              onChange={(e) => setSelectedHospitalId(e.target.value)}
+              style={inputStyle}
+              onFocus={focusTeal} onBlur={blurDefault}
+            >
+              <option value="">Select a hospital…</option>
+              {availableHospitals.map(h => (
+                <option key={h._id} value={h._id}>{h.name}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleSend}
+            disabled={submitting || !selectedHospitalId}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 22px', borderRadius: 12, border: 'none',
+              background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#FFFFFF', fontSize: 13, fontWeight: 700,
+              cursor: (submitting || !selectedHospitalId) ? 'not-allowed' : 'pointer', opacity: (submitting || !selectedHospitalId) ? 0.6 : 1,
+              fontFamily: 'Inter, sans-serif', height: 48,
+            }}
+          >
+            <Send size={14} /> {isIndependent ? 'Send Request' : 'Request Transfer'}
+          </button>
+
+          {!isIndependent && (
+            confirmingLeave ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: '#64748B' }}>Leave your current hospital?</span>
+                <button
+                  onClick={handleLeave}
+                  disabled={submitting}
+                  style={{ padding: '10px 16px', borderRadius: 12, border: 'none', background: '#DC2626', color: '#FFFFFF', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', height: 48, fontFamily: 'Inter, sans-serif' }}
+                >
+                  Confirm Leave
+                </button>
+                <button
+                  onClick={() => setConfirmingLeave(false)}
+                  style={{ padding: '10px 16px', borderRadius: 12, border: '1.5px solid #E2E8F0', background: '#FFFFFF', color: '#475569', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', height: 48, fontFamily: 'Inter, sans-serif' }}
+                >
+                  Never mind
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmingLeave(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 12, border: '1.5px solid #FCA5A5', background: '#FFFFFF', color: '#DC2626', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif', height: 48 }}
+              >
+                <Ban size={14} /> Leave Hospital
+              </button>
+            )
+          )}
+        </div>
+      )}
+
+      {history.length > 0 && (
+        <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 16 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <History size={12} /> Request History
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {history.slice(0, 6).map(r => (
+              <div key={r._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12.5, color: '#475569', padding: '8px 0', borderBottom: '1px solid #F8FAFC' }}>
+                <span style={{ textTransform: 'capitalize' }}>{r.type} — {r.hospitalId?.name || 'Unknown hospital'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ color: '#94A3B8', fontSize: 11 }}>{new Date(r.createdAt).toLocaleDateString()}</span>
+                  <RequestBadge status={r.status} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </SectionCard>
   )
 }
 

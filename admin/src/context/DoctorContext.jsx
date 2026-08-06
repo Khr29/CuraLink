@@ -123,6 +123,102 @@ const DoctorContextProvider = (props) => {
         }
     }
 
+    // ==========================
+    // Hospital Affiliation
+    // ==========================
+    const [hospitals, setHospitals] = useState([])
+    const [hospitalRequests, setHospitalRequests] = useState([])
+
+    const getHospitalOptions = async () => {
+        try {
+            const { data } = await axios.get(backendUrl + '/api/hospital/list')
+            if (data.success) setHospitals(data.hospitals)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const getMyHospitalRequests = async () => {
+        try {
+            const { data } = await axios.get(backendUrl + '/api/doctor/hospital-requests', { headers: { dToken } })
+            if (data.success) {
+                setHospitalRequests(data.requests)
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+    }
+
+    const requestHospital = async (hospitalId) => {
+        try {
+            const { data } = await axios.post(backendUrl + '/api/doctor/request-hospital', { hospitalId }, { headers: { dToken } })
+            if (data.success) {
+                toast.success(data.message)
+                getMyHospitalRequests()
+                getProfileData()
+            } else {
+                toast.error(data.message)
+            }
+            return data
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+            return { success: false }
+        }
+    }
+
+    const leaveHospital = async () => {
+        try {
+            const { data } = await axios.post(backendUrl + '/api/doctor/leave-hospital', {}, { headers: { dToken } })
+            if (data.success) {
+                toast.success(data.message)
+                getMyHospitalRequests()
+                getProfileData()
+            } else {
+                toast.error(data.message)
+            }
+            return data
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+            return { success: false }
+        }
+    }
+
+    const cancelHospitalRequest = async (requestId) => {
+        try {
+            const { data } = await axios.delete(backendUrl + '/api/doctor/hospital-requests/' + requestId, { headers: { dToken } })
+            if (data.success) {
+                toast.success(data.message)
+                getMyHospitalRequests()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+    }
+
+    const respondToInvite = async (requestId, accept) => {
+        try {
+            const { data } = await axios.patch(backendUrl + '/api/doctor/hospital-requests/' + requestId + '/respond', { accept }, { headers: { dToken } })
+            if (data.success) {
+                toast.success(data.message)
+                getMyHospitalRequests()
+                getProfileData()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+    }
+
     const value = {
         dToken, setDToken,
         backendUrl,
@@ -130,7 +226,10 @@ const DoctorContextProvider = (props) => {
         completeAppointment, cancelAppointment,
         dashData,setDashData,getDashData,
         profileData,setProfileData,getProfileData,
-        replyToReview, editReviewReply
+        replyToReview, editReviewReply,
+        hospitals, getHospitalOptions,
+        hospitalRequests, getMyHospitalRequests,
+        requestHospital, leaveHospital, cancelHospitalRequest, respondToInvite
     }
     return (
         <DoctorContext.Provider value={value}>
