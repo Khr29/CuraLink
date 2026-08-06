@@ -29,6 +29,8 @@ const DoctorRequests = () => {
   const [selectedDoctor, setSelectedDoctor] = useState('')
   const [selectedHospital, setSelectedHospital] = useState('')
   const [confirmAction, setConfirmAction] = useState(null) // { type: 'remove'|'force', label }
+  const [confirming, setConfirming] = useState(false)
+  const [approvingId, setApprovingId] = useState(null)
 
   useEffect(() => {
     if (aToken) {
@@ -72,22 +74,41 @@ const DoctorRequests = () => {
   }, [selectedDoctor])
 
   const handleConfirm = useCallback(async () => {
-    if (confirmAction?.type === 'force') {
-      await transferDoctor(selectedDoctor, selectedHospital, true)
-      setSelectedDoctor('')
-      setSelectedHospital('')
-    } else if (confirmAction?.type === 'remove') {
-      await removeDoctorFromHospital(selectedDoctor)
-      setSelectedDoctor('')
+    setConfirming(true)
+    try {
+      if (confirmAction?.type === 'force') {
+        await transferDoctor(selectedDoctor, selectedHospital, true)
+        setSelectedDoctor('')
+        setSelectedHospital('')
+      } else if (confirmAction?.type === 'remove') {
+        await removeDoctorFromHospital(selectedDoctor)
+        setSelectedDoctor('')
+      }
+      setConfirmAction(null)
+    } finally {
+      setConfirming(false)
     }
-    setConfirmAction(null)
   }, [confirmAction, selectedDoctor, selectedHospital, transferDoctor, removeDoctorFromHospital])
 
   const handleConfirmReject = useCallback(async () => {
     if (!rejectTarget) return
-    await adminRejectRequest(rejectTarget._id)
-    setRejectTarget(null)
+    setConfirming(true)
+    try {
+      await adminRejectRequest(rejectTarget._id)
+      setRejectTarget(null)
+    } finally {
+      setConfirming(false)
+    }
   }, [rejectTarget, adminRejectRequest])
+
+  const handleApprove = useCallback(async (requestId) => {
+    setApprovingId(requestId)
+    try {
+      await adminApproveRequest(requestId)
+    } finally {
+      setApprovingId(null)
+    }
+  }, [adminApproveRequest])
 
   return (
     <div className="curalink-fade-in" style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '36px 24px' }}>
@@ -209,8 +230,9 @@ const DoctorRequests = () => {
               <RequestRow
                 key={request._id}
                 request={request}
-                onApprove={() => adminApproveRequest(request._id)}
+                onApprove={() => handleApprove(request._id)}
                 onReject={() => setRejectTarget(request)}
+                busy={approvingId === request._id}
               />
             ))
           ) : (
@@ -232,8 +254,9 @@ const DoctorRequests = () => {
             : `${selectedDoctorObj?.name || 'This doctor'} will become an independent practitioner immediately.`
         }
         confirmLabel={confirmAction?.type === 'force' ? 'Force Transfer' : 'Remove'}
+        loading={confirming}
         onConfirm={handleConfirm}
-        onClose={() => setConfirmAction(null)}
+        onClose={() => !confirming && setConfirmAction(null)}
       />
 
       <ConfirmDialog
@@ -241,14 +264,15 @@ const DoctorRequests = () => {
         title="Reject this request?"
         message={rejectTarget ? `${rejectTarget.doctorId?.name || 'This doctor'}'s ${rejectTarget.type} request to ${rejectTarget.hospitalId?.name || 'the hospital'} will be rejected.` : ''}
         confirmLabel="Reject Request"
+        loading={confirming}
         onConfirm={handleConfirmReject}
-        onClose={() => setRejectTarget(null)}
+        onClose={() => !confirming && setRejectTarget(null)}
       />
     </div>
   )
 }
 
-const RequestRow = ({ request, onApprove, onReject }) => {
+const RequestRow = ({ request, onApprove, onReject, busy }) => {
   const [hovered, setHovered] = useState(false)
   const doctor = request.doctorId || {}
   const TypeIcon = TYPE_ICON[request.type] || Clock
@@ -283,15 +307,17 @@ const RequestRow = ({ request, onApprove, onReject }) => {
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <button
             onClick={onReject}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 99, border: '1.5px solid #FCA5A5', background: '#FFFFFF', color: '#DC2626', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+            disabled={busy}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 99, border: '1.5px solid #FCA5A5', background: '#FFFFFF', color: '#DC2626', fontSize: 12, fontWeight: 700, cursor: busy ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif', opacity: busy ? 0.6 : 1 }}
           >
             <X size={13} /> Reject
           </button>
           <button
             onClick={onApprove}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 99, border: 'none', background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#FFFFFF', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+            disabled={busy}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 99, border: 'none', background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#FFFFFF', fontSize: 12, fontWeight: 700, cursor: busy ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif', opacity: busy ? 0.7 : 1 }}
           >
-            <Check size={13} /> Approve
+            <Check size={13} /> {busy ? 'Approving…' : 'Approve'}
           </button>
         </div>
       ) : (

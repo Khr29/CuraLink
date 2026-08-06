@@ -49,6 +49,8 @@ export const AUDIT_ACTIONS = {
   HOSPITAL_VERIFICATION_REJECTED: "HOSPITAL_VERIFICATION_REJECTED",
 
   EMAIL_VERIFIED: "EMAIL_VERIFIED",
+
+  RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
 };
 
 // Records one audit entry. Never throws — a logging failure must not break

@@ -198,10 +198,26 @@ const ReviewsPanel = ({ reviewType, icon, title, description, targetLabel }) => 
 const ReviewRow = ({ review, target, targetLabel, onToggleVisibility, onReply, onDelete }) => {
   const [replyOpen, setReplyOpen] = useState(false)
   const [replyText, setReplyText] = useState(review.adminReply || '')
+  const [submittingReply, setSubmittingReply] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
-  const submitReply = () => {
-    onReply(review._id, replyText)
-    setReplyOpen(false)
+  const submitReply = async () => {
+    setSubmittingReply(true)
+    try {
+      await onReply(review._id, replyText)
+      setReplyOpen(false)
+    } finally {
+      setSubmittingReply(false)
+    }
+  }
+
+  const handleDeleteClick = async () => {
+    setDeleting(true)
+    try {
+      await onDelete(review._id)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
@@ -274,9 +290,10 @@ const ReviewRow = ({ review, target, targetLabel, onToggleVisibility, onReply, o
                 />
                 <button
                   onClick={submitReply}
-                  style={{ background: '#2563EB', color: '#fff', border: 'none', borderRadius: 10, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+                  disabled={submittingReply}
+                  style={{ background: '#2563EB', color: '#fff', border: 'none', borderRadius: 10, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, cursor: submittingReply ? 'default' : 'pointer', opacity: submittingReply ? 0.7 : 1 }}
                 >
-                  <Send size={13} /> Send
+                  <Send size={13} /> {submittingReply ? 'Sending…' : 'Send'}
                 </button>
               </div>
             )}
@@ -300,9 +317,10 @@ const ReviewRow = ({ review, target, targetLabel, onToggleVisibility, onReply, o
             {review.isVisible ? <Eye size={15} color="#16A34A" /> : <EyeOff size={15} color="#94A3B8" />}
           </button>
           <button
-            onClick={() => onDelete(review._id)}
+            onClick={handleDeleteClick}
+            disabled={deleting}
             title="Delete review"
-            style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid #FEE2E2', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid #FEE2E2', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.6 : 1 }}
           >
             <Trash2 size={15} color="#EF4444" />
           </button>

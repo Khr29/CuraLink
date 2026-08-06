@@ -18,6 +18,7 @@ const HospitalDoctors = () => {
   const [search, setSearch] = useState('')
   const [specialityFilter, setSpecialityFilter] = useState('all')
   const [availabilityFilter, setAvailabilityFilter] = useState('all')
+  const [deletingId, setDeletingId] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -41,9 +42,13 @@ const HospitalDoctors = () => {
     })
   }, [doctors, search, specialityFilter, availabilityFilter])
 
-  const handleDelete = useCallback((doctorId, name) => {
-    if (window.confirm(`Remove Dr. ${name} from your hospital? This cannot be undone.`)) {
-      deleteHospitalDoctor(doctorId)
+  const handleDelete = useCallback(async (doctorId, name) => {
+    if (!window.confirm(`Remove Dr. ${name} from your hospital? This cannot be undone.`)) return
+    setDeletingId(doctorId)
+    try {
+      await deleteHospitalDoctor(doctorId)
+    } finally {
+      setDeletingId(null)
     }
   }, [deleteHospitalDoctor])
 
@@ -110,6 +115,7 @@ const HospitalDoctors = () => {
                 onEdit={() => navigate(`/hospital-edit-doctor/${doctor._id}`)}
                 onDelete={() => handleDelete(doctor._id, doctor.name)}
                 onToggleAvailability={() => toggleDoctorAvailability(doctor._id, !doctor.available)}
+                deleting={deletingId === doctor._id}
               />
             ))}
           </div>
@@ -127,7 +133,7 @@ const HospitalDoctors = () => {
   )
 }
 
-const DoctorCard = ({ doctor, onEdit, onDelete, onToggleAvailability }) => {
+const DoctorCard = ({ doctor, onEdit, onDelete, onToggleAvailability, deleting }) => {
   const [hovered, setHovered] = useState(false)
 
   return (
@@ -197,7 +203,7 @@ const DoctorCard = ({ doctor, onEdit, onDelete, onToggleAvailability }) => {
           <a href={`${import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173'}/appointment/${doctor._id}`} target="_blank" rel="noreferrer" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#F0FDFA', border: 'none', borderRadius: 10, padding: '8px 0', fontSize: 12.5, fontWeight: 700, color: '#0D9488', cursor: 'pointer', textDecoration: 'none' }}>
             <Eye size={13} /> View
           </a>
-          <button onClick={onDelete} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF2F2', border: 'none', borderRadius: 10, padding: '8px 12px', cursor: 'pointer' }}>
+          <button onClick={onDelete} disabled={deleting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF2F2', border: 'none', borderRadius: 10, padding: '8px 12px', cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.6 : 1 }}>
             <Trash2 size={13} color="#EF4444" />
           </button>
         </div>

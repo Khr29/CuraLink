@@ -224,7 +224,7 @@
 
 // export default DoctorAppointment
 
-import React, { useContext, useEffect, useState, useMemo } from 'react'
+import React, { useContext, useEffect, useState, useMemo, useCallback } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { DoctorContext } from '../../context/DoctorContext'
@@ -417,6 +417,7 @@ const DoctorAppointment = () => {
   const { calculateAge, slotDateFormat, currency } = useContext(AppContext)
   const [loading, setLoading] = useState(true)
   const [recordAppointment, setRecordAppointment] = useState(null)
+  const [busyId, setBusyId] = useState(null)
 
   useEffect(() => {
     if (dToken) getAllAppointments().finally(() => setLoading(false))
@@ -426,6 +427,24 @@ const DoctorAppointment = () => {
     () => (appointments ? [...appointments].reverse() : []),
     [appointments]
   )
+
+  const handleCancel = useCallback(async (id) => {
+    setBusyId(id)
+    try {
+      await cancelAppointment(id)
+    } finally {
+      setBusyId(null)
+    }
+  }, [cancelAppointment])
+
+  const handleComplete = useCallback(async (id) => {
+    setBusyId(id)
+    try {
+      await completeAppointment(id)
+    } finally {
+      setBusyId(null)
+    }
+  }, [completeAppointment])
 
   return (
     <div className="curalink-fade-in" style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '36px 24px' }}>
@@ -479,9 +498,10 @@ const DoctorAppointment = () => {
                   calculateAge={calculateAge}
                   slotDateFormat={slotDateFormat}
                   currency={currency}
-                  onCancel={cancelAppointment}
-                  onComplete={completeAppointment}
+                  onCancel={handleCancel}
+                  onComplete={handleComplete}
                   onOpenRecord={setRecordAppointment}
+                  busy={busyId === item._id}
                 />
               ))
             ) : (
@@ -507,7 +527,7 @@ const DoctorAppointment = () => {
   )
 }
 
-const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency, onCancel, onComplete, onOpenRecord }) => {
+const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency, onCancel, onComplete, onOpenRecord, busy }) => {
   const [hovered, setHovered] = useState(false)
 
   return (
@@ -575,19 +595,21 @@ const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency, o
           <div style={{ display: 'flex', gap: 6 }}>
             <button
               onClick={() => onCancel(item._id)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#EF4444', borderRadius: 99, padding: '6px 10px', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s ease' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#EF4444'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = '#EF4444' }}
+              disabled={busy}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#EF4444', borderRadius: 99, padding: '6px 10px', fontSize: 11.5, fontWeight: 600, cursor: busy ? 'default' : 'pointer', transition: 'all 0.2s ease', opacity: busy ? 0.6 : 1 }}
+              onMouseEnter={(e) => { if (!busy) { e.currentTarget.style.background = '#EF4444'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = '#EF4444' } }}
               onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.borderColor = '#E2E8F0' }}
             >
-              <XCircle size={13} /> Cancel
+              <XCircle size={13} /> {busy ? 'Cancelling…' : 'Cancel'}
             </button>
             <button
               onClick={() => onComplete(item._id)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'linear-gradient(135deg, #2563EB, #14B8A6)', border: 'none', color: '#FFFFFF', borderRadius: 99, padding: '6px 12px', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(37,99,235,0.2)', transition: 'all 0.2s ease' }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)' }}
+              disabled={busy}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'linear-gradient(135deg, #2563EB, #14B8A6)', border: 'none', color: '#FFFFFF', borderRadius: 99, padding: '6px 12px', fontSize: 11.5, fontWeight: 600, cursor: busy ? 'default' : 'pointer', boxShadow: '0 4px 12px rgba(37,99,235,0.2)', transition: 'all 0.2s ease', opacity: busy ? 0.7 : 1 }}
+              onMouseEnter={(e) => { if (!busy) e.currentTarget.style.transform = 'translateY(-1px)' }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}
             >
-              <CheckCircle2 size={13} /> Done
+              <CheckCircle2 size={13} /> {busy ? 'Saving…' : 'Done'}
             </button>
           </div>
         )}

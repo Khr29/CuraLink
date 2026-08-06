@@ -38,6 +38,7 @@ const AddDoctor = () => {
   const [degree, setDegree] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const {
   backendUrl,
@@ -64,6 +65,7 @@ useEffect(() => {
         return toast.error('Enter a valid number of years of experience')
       }
 
+      setSaving(true)
       try {
         const formData = new FormData()
 
@@ -114,6 +116,8 @@ useEffect(() => {
       } catch (error) {
         console.error(error)
         toast.error(error.message)
+      } finally {
+        setSaving(false)
       }
     },
     [
@@ -520,6 +524,7 @@ useEffect(() => {
             >
               <button
                 type="submit"
+                disabled={saving}
                 style={{
                   width: '100%',
                   height: 56,
@@ -533,21 +538,23 @@ useEffect(() => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 10,
-                  cursor: 'pointer',
+                  cursor: saving ? 'default' : 'pointer',
+                  opacity: saving ? 0.7 : 1,
                   boxShadow: '0 10px 30px rgba(37,99,235,0.25)',
                   transition: 'all 0.25s ease',
                   fontFamily: 'Inter, sans-serif'
                 }}
                 onMouseEnter={(e) => {
+                  if (saving) return
                   e.currentTarget.style.opacity = '0.95'
                   e.currentTarget.style.transform = 'translateY(-2px)'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = '1'
+                  e.currentTarget.style.opacity = saving ? '0.7' : '1'
                   e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
-                👨‍⚕️ Register Doctor
+                {saving ? 'Registering…' : <>👨‍⚕️ Register Doctor</>}
               </button>
             </div>
 

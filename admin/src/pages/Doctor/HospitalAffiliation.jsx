@@ -21,6 +21,8 @@ const HospitalAffiliation = () => {
   const [selectedHospitalId, setSelectedHospitalId] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [confirmingLeave, setConfirmingLeave] = useState(false)
+  const [respondingToInvite, setRespondingToInvite] = useState(false)
+  const [cancellingRequest, setCancellingRequest] = useState(false)
 
   useEffect(() => {
     if (dToken) {
@@ -62,6 +64,24 @@ const HospitalAffiliation = () => {
     setConfirmingLeave(false)
   }
 
+  const handleRespondToInvite = async (accept) => {
+    setRespondingToInvite(true)
+    try {
+      await respondToInvite(pendingInvite._id, accept)
+    } finally {
+      setRespondingToInvite(false)
+    }
+  }
+
+  const handleCancelRequest = async () => {
+    setCancellingRequest(true)
+    try {
+      await cancelHospitalRequest(pendingOwnRequest._id)
+    } finally {
+      setCancellingRequest(false)
+    }
+  }
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <PageHero
@@ -92,16 +112,18 @@ const HospitalAffiliation = () => {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
-                onClick={() => respondToInvite(pendingInvite._id, false)}
-                style={{ padding: '9px 18px', borderRadius: 99, border: '1.5px solid #E2E8F0', background: '#FFFFFF', color: '#475569', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                onClick={() => handleRespondToInvite(false)}
+                disabled={respondingToInvite}
+                style={{ padding: '9px 18px', borderRadius: 99, border: '1.5px solid #E2E8F0', background: '#FFFFFF', color: '#475569', fontSize: 12.5, fontWeight: 700, cursor: respondingToInvite ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif', opacity: respondingToInvite ? 0.6 : 1 }}
               >
                 Decline
               </button>
               <button
-                onClick={() => respondToInvite(pendingInvite._id, true)}
-                style={{ padding: '9px 18px', borderRadius: 99, border: 'none', background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#FFFFFF', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                onClick={() => handleRespondToInvite(true)}
+                disabled={respondingToInvite}
+                style={{ padding: '9px 18px', borderRadius: 99, border: 'none', background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#FFFFFF', fontSize: 12.5, fontWeight: 700, cursor: respondingToInvite ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif', opacity: respondingToInvite ? 0.7 : 1 }}
               >
-                Accept
+                {respondingToInvite ? 'Please wait…' : 'Accept'}
               </button>
             </div>
           </div>
@@ -119,10 +141,11 @@ const HospitalAffiliation = () => {
               <p style={{ fontSize: 11.5, color: '#92400E', marginTop: 2 }}>Waiting for the hospital to respond.</p>
             </div>
             <button
-              onClick={() => cancelHospitalRequest(pendingOwnRequest._id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 99, border: '1.5px solid #FCA5A5', background: '#FFFFFF', color: '#DC2626', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+              onClick={handleCancelRequest}
+              disabled={cancellingRequest}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 99, border: '1.5px solid #FCA5A5', background: '#FFFFFF', color: '#DC2626', fontSize: 12.5, fontWeight: 700, cursor: cancellingRequest ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif', opacity: cancellingRequest ? 0.6 : 1 }}
             >
-              <Ban size={14} /> Cancel Request
+              <Ban size={14} /> {cancellingRequest ? 'Cancelling…' : 'Cancel Request'}
             </button>
           </div>
         ) : (

@@ -49,24 +49,15 @@ import statsRouter from "./routes/statsRoute.js";
 import medicalRecordRouter from "./routes/medicalRecordRoute.js";
 
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 import compression from "compression";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import multer from "multer";
+import { generalApiLimiter } from "./middlewares/rateLimiters.js";
 
 // app config
 const app = express();
 const port = process.env.PORT || 4000;
-
-// rate limiting config
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
-  message: "Too many requests from this IP, please try again after 15 minutes",
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-});
 
 // connect services (parallel execution for speed)
 await Promise.all([connectDB(), connectCloudinary()]);
@@ -93,8 +84,13 @@ app.use(
   }),
 );
 
-// Apply rate limiting to all /api routes
-app.use("/api", apiLimiter);
+// General, role-tiered safety net against abuse/flooding — NOT the
+// security control for sensitive endpoints (those are the dedicated
+// login/register/forgot-password/OTP/review/booking limiters wired into
+// their own routes). Admins are exempt; doctors/hospitals/patients each
+// get a high-enough ceiling that normal usage never trips it. See
+// middlewares/rateLimiters.js for the full rationale.
+app.use("/api", generalApiLimiter);
 
 // health check route (fast response)
 app.get("/", (req, res) => {

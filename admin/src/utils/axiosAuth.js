@@ -18,6 +18,36 @@ export const registerTokenSetter = (headerName, setter) => {
   setters[headerName] = setter;
 };
 
+// Rewrites a 429 into a friendly, non-technical message (the backend
+// already sends one — see backend/middlewares/rateLimiters.js — this adds
+// a human "try again in N minutes" hint from the Retry-After header/body)
+// so every existing `toast.error(error.message)` call site shows it
+// automatically instead of axios's generic "Request failed with status
+// code 429". In practice this should be rare here — admin is exempt from
+// the general limiter, and doctor/hospital only hit the sensitive,
+// dedicated limiters (login/OTP/etc), never day-to-day CRUD.
+const describeRetryAfter = (seconds) => {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "";
+  if (seconds >= 60) {
+    const minutes = Math.ceil(seconds / 60);
+    return ` Try again in ${minutes} minute${minutes !== 1 ? "s" : ""}.`;
+  }
+  return ` Try again in ${seconds} second${seconds !== 1 ? "s" : ""}.`;
+};
+
+const applyFriendlyRateLimitMessage = (error) => {
+  const backendMessage = error.response?.data?.message;
+  const retryAfterSeconds = Number(
+    error.response?.headers?.["retry-after"] ?? error.response?.data?.retryAfter
+  );
+  const friendly =
+    (backendMessage || "You're making requests very quickly. Please wait a few seconds and try again.") +
+    describeRetryAfter(retryAfterSeconds);
+
+  error.message = friendly;
+  if (error.response?.data) error.response.data.message = friendly;
+};
+
 let installed = false;
 
 export const installAuthInterceptor = (backendUrl) => {
@@ -36,6 +66,10 @@ export const installAuthInterceptor = (backendUrl) => {
       const headerName = Object.keys(ROLE_CONFIG).find(
         (name) => headers[name] || headers[name.toUpperCase()]
       );
+
+      if (status === 429) {
+        applyFriendlyRateLimitMessage(error);
+      }
 
       if (status === 401 && headerName && !originalRequest._retry) {
         originalRequest._retry = true;

@@ -29,6 +29,7 @@ const MyAppointments = () => {
   const [loading, setLoading] = useState(true);
   const [myReviews, setMyReviews] = useState([]);
   const [reviewModal, setReviewModal] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
   const navigate = useNavigate();
 
   const getUserAppointments = async () => {
@@ -61,6 +62,7 @@ const MyAppointments = () => {
     );
 
   const cancelAppointment = async (appointmentId) => {
+    setCancellingId(appointmentId);
     try {
       const { data } = await axios.post(
         `${backendUrl}/api/user/cancel-appointment`,
@@ -76,7 +78,9 @@ const MyAppointments = () => {
       }
     } catch (error) {
       console.error(error);
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -265,9 +269,10 @@ const MyAppointments = () => {
                 {!item.cancelled && !item.isCompleted && (
                   <button
                     onClick={() => cancelAppointment(item._id)}
+                    disabled={cancellingId === item._id}
                     className="btn btn-sm btn-ghost border-danger/30 text-danger hover:bg-red-50 w-full justify-center"
                   >
-                    Cancel
+                    {cancellingId === item._id ? "Cancelling..." : "Cancel"}
                   </button>
                 )}
                 {item.cancelled && !item.isCompleted && (

@@ -20,6 +20,8 @@ const DoctorRequests = () => {
   const [statusFilter, setStatusFilter] = useState('pending')
   const [rejectTarget, setRejectTarget] = useState(null)
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [approvingId, setApprovingId] = useState(null)
 
   useEffect(() => {
     if (hToken) getDoctorRequests().finally(() => setLoading(false))
@@ -31,14 +33,24 @@ const DoctorRequests = () => {
     [doctorRequests, statusFilter]
   )
 
-  const handleApprove = useCallback((id) => {
-    approveDoctorRequest(id)
+  const handleApprove = useCallback(async (id) => {
+    setApprovingId(id)
+    try {
+      await approveDoctorRequest(id)
+    } finally {
+      setApprovingId(null)
+    }
   }, [approveDoctorRequest])
 
   const handleConfirmReject = useCallback(async () => {
     if (!rejectTarget) return
-    await rejectDoctorRequest(rejectTarget._id)
-    setRejectTarget(null)
+    setConfirming(true)
+    try {
+      await rejectDoctorRequest(rejectTarget._id)
+      setRejectTarget(null)
+    } finally {
+      setConfirming(false)
+    }
   }, [rejectTarget, rejectDoctorRequest])
 
   return (
@@ -98,6 +110,7 @@ const DoctorRequests = () => {
                 request={request}
                 onApprove={() => handleApprove(request._id)}
                 onReject={() => setRejectTarget(request)}
+                busy={approvingId === request._id}
               />
             ))
           ) : (
@@ -115,8 +128,9 @@ const DoctorRequests = () => {
         title="Reject this request?"
         message={rejectTarget ? `${rejectTarget.doctorId?.name || 'This doctor'}'s ${rejectTarget.type} request will be rejected.` : ''}
         confirmLabel="Reject Request"
+        loading={confirming}
         onConfirm={handleConfirmReject}
-        onClose={() => setRejectTarget(null)}
+        onClose={() => !confirming && setRejectTarget(null)}
       />
 
       {inviteModalOpen && (
@@ -131,7 +145,7 @@ const DoctorRequests = () => {
   )
 }
 
-const RequestRow = ({ request, onApprove, onReject }) => {
+const RequestRow = ({ request, onApprove, onReject, busy }) => {
   const [hovered, setHovered] = useState(false)
   const doctor = request.doctorId || {}
   const TypeIcon = TYPE_ICON[request.type] || Clock
@@ -170,15 +184,17 @@ const RequestRow = ({ request, onApprove, onReject }) => {
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
             <button
               onClick={onReject}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 99, border: '1.5px solid #FCA5A5', background: '#FFFFFF', color: '#DC2626', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+              disabled={busy}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 99, border: '1.5px solid #FCA5A5', background: '#FFFFFF', color: '#DC2626', fontSize: 12, fontWeight: 700, cursor: busy ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif', opacity: busy ? 0.6 : 1 }}
             >
               <X size={13} /> Reject
             </button>
             <button
               onClick={onApprove}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 99, border: 'none', background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#FFFFFF', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+              disabled={busy}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 99, border: 'none', background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#FFFFFF', fontSize: 12, fontWeight: 700, cursor: busy ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif', opacity: busy ? 0.7 : 1 }}
             >
-              <Check size={13} /> Approve
+              <Check size={13} /> {busy ? 'Approving…' : 'Approve'}
             </button>
           </div>
         )

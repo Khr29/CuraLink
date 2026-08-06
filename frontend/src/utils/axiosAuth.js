@@ -12,6 +12,34 @@ export const registerUserTokenSetter = (setter) => {
   tokenSetter = setter;
 };
 
+// Rewrites a 429 into a friendly, non-technical message (the backend
+// already sends one — see backend/middlewares/rateLimiters.js — this adds
+// a human "try again in N minutes" hint from the Retry-After header/body)
+// so every existing `toast.error(error.response?.data?.message ||
+// error.message)` call site shows it automatically, instead of axios's
+// generic "Request failed with status code 429".
+const describeRetryAfter = (seconds) => {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "";
+  if (seconds >= 60) {
+    const minutes = Math.ceil(seconds / 60);
+    return ` Try again in ${minutes} minute${minutes !== 1 ? "s" : ""}.`;
+  }
+  return ` Try again in ${seconds} second${seconds !== 1 ? "s" : ""}.`;
+};
+
+const applyFriendlyRateLimitMessage = (error) => {
+  const backendMessage = error.response?.data?.message;
+  const retryAfterSeconds = Number(
+    error.response?.headers?.["retry-after"] ?? error.response?.data?.retryAfter
+  );
+  const friendly =
+    (backendMessage || "You're making requests very quickly. Please wait a few seconds and try again.") +
+    describeRetryAfter(retryAfterSeconds);
+
+  error.message = friendly;
+  if (error.response?.data) error.response.data.message = friendly;
+};
+
 export const installAuthInterceptor = (backendUrl) => {
   if (installed) return;
   installed = true;
@@ -25,6 +53,10 @@ export const installAuthInterceptor = (backendUrl) => {
       const originalRequest = error.config;
       const status = error.response?.status;
       const usedUserToken = originalRequest?.headers?.token;
+
+      if (status === 429) {
+        applyFriendlyRateLimitMessage(error);
+      }
 
       if (status === 401 && usedUserToken && !originalRequest._retry) {
         originalRequest._retry = true;
