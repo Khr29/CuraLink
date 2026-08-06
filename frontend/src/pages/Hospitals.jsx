@@ -1,7 +1,9 @@
 import React, { useContext, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+import { Building2 } from "lucide-react";
 import StarRating from "../components/StarRating";
+import EmptyState from "../components/EmptyState";
 
 const departments = [
   "Cardiology",
@@ -221,24 +223,17 @@ const Hospitals = () => {
 
           {filteredHospitals.length === 0 ? (
 
-            <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="flex flex-col items-center justify-center text-center">
 
-            <div className="text-5xl mb-4">
-              🏥
-            </div>
-
-            <h3 className="text-lg font-bold text-text-primary mb-2">
-              No Hospitals Found
-            </h3>
-
-            <p className="text-text-muted text-sm mb-6">
-              We couldn't find any hospitals for{" "}
-              <strong>{selectedDepartment}</strong>. Try a different departments.
-            </p>
+            <EmptyState
+              icon={Building2}
+              title="No Hospitals Found"
+              subtitle={<>We couldn't find any hospitals for{" "}<strong>{selectedDepartment}</strong>. Try a different departments.</>}
+            />
 
             <button
               onClick={() => setSelectedDepartment("")}
-              className="btn btn-primary"
+              className="btn btn-primary mt-2"
             >
               View All Hospitals
             </button>

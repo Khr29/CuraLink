@@ -3,6 +3,7 @@ import { AppContext } from "../context/AppContext";
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import CuraLinkPhoneInput from "../components/PhoneInput";
 
 const initialFormData = {
   firstName: "",
@@ -58,6 +59,10 @@ const Register = () => {
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  const setField = useCallback((name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   }, []);
 
@@ -225,13 +230,13 @@ const Register = () => {
             </select>
           </Field>
           <Field label="Phone Number">
-            <input name="phone" className="input text-sm" value={formData.phone} onChange={handleChange} placeholder="Phone number" />
+            <CuraLinkPhoneInput value={formData.phone} onChange={(value) => setField("phone", value || "")} />
           </Field>
           <Field label="Emergency Contact Name">
             <input name="emergencyContactName" className="input text-sm" value={formData.emergencyContactName} onChange={handleChange} placeholder="Contact's full name" />
           </Field>
           <Field label="Emergency Contact Number" full>
-            <input name="emergencyContactPhone" className="input text-sm" value={formData.emergencyContactPhone} onChange={handleChange} placeholder="Contact's phone number" />
+            <CuraLinkPhoneInput value={formData.emergencyContactPhone} onChange={(value) => setField("emergencyContactPhone", value || "")} />
           </Field>
         </SectionCard>
 

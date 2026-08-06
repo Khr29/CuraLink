@@ -11,6 +11,7 @@ import PageHero from '../../components/PageHero'
 import FormCard from '../../components/FormCard'
 import FormInput from '../../components/FormInput'
 import { formLabelStyle, formInputStyle, formFocusHandlers } from '../../components/formStyles'
+import CuraLinkPhoneInput from '../../components/PhoneInput'
 
 const FACILITY_LIST = [
   { name: 'ICU', icon: Activity },
@@ -153,7 +154,10 @@ const HospitalProfile = () => {
             <FormCard title="Contact Information" icon={Phone}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                 <FormInput label="Email" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} icon={Mail} />
-                <FormInput label="Phone" value={form.phone} onChange={(e) => set('phone', e.target.value)} icon={Phone} />
+                <div>
+                  <label style={formLabelStyle}>Phone</label>
+                  <CuraLinkPhoneInput value={form.phone} onChange={(value) => set('phone', value || '')} />
+                </div>
                 <FormInput label="Website" value={form.website} onChange={(e) => set('website', e.target.value)} icon={Globe} />
               </div>
             </FormCard>

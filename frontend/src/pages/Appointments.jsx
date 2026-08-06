@@ -12,6 +12,8 @@ import useReviewEligibility from "../hooks/useReviewEligibility";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { formatExperience } from "../utils/experience";
+import EmptyState from "../components/EmptyState";
+import { CalendarX2 } from "lucide-react";
 
 const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -239,11 +241,8 @@ const Appointments = () => {
             ))}
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-text-muted text-sm py-4 mb-6">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-            </svg>
-            No slots available for this day
+          <div className="mb-6">
+            <EmptyState icon={CalendarX2} title="No Slots Available" subtitle="Please choose a different day." compact />
           </div>
         )}
 

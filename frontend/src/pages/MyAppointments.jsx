@@ -5,6 +5,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import ReviewForm from "../components/ReviewForm";
+import EmptyState from "../components/EmptyState";
+import { CalendarX2 } from "lucide-react";
 
 const months = [" ", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -152,13 +154,13 @@ const MyAppointments = () => {
     return (
       <div className="py-8">
         <h1 className="section-title mb-8">My Appointments</h1>
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="text-6xl mb-4">📅</div>
-          <h3 className="text-xl font-bold text-text-primary mb-2">No Appointments Yet</h3>
-          <p className="text-text-muted text-sm mb-6 max-w-sm">
-            You haven't booked any appointments. Find a doctor and schedule your first consultation!
-          </p>
-          <button onClick={() => navigate("/doctors")} className="btn btn-primary">
+        <div className="flex flex-col items-center justify-center text-center">
+          <EmptyState
+            icon={CalendarX2}
+            title="No Appointments Yet"
+            subtitle="You haven't booked any appointments. Find a doctor and schedule your first consultation!"
+          />
+          <button onClick={() => navigate("/doctors")} className="btn btn-primary mt-2">
             Find a Doctor
           </button>
         </div>

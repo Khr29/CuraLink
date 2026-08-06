@@ -3,6 +3,7 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { AdminContext } from '../../context/AdminContext'
 import PageHero from '../../components/PageHero'
+import CuraLinkPhoneInput from '../../components/PhoneInput'
 import {
   Building2,
   Phone,
@@ -362,14 +363,13 @@ const AddHospital = () => {
                   placeholder="hospital@email.com"
                   icon={Mail}
                 />
-                <InputField
-                  label="Phone"
-                  name="phone"
-                  value={hospitalData.phone}
-                  onChange={handleInputChange}
-                  placeholder="+91 9876543210"
-                  icon={Phone}
-                />
+                <div>
+                  <label style={labelStyle}>Phone</label>
+                  <CuraLinkPhoneInput
+                    value={hospitalData.phone}
+                    onChange={(value) => setHospitalData((prev) => ({ ...prev, phone: value || '' }))}
+                  />
+                </div>
                 <InputField
                   label="Website"
                   name="website"

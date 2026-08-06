@@ -1,8 +1,10 @@
 import React, { useContext, useEffect, useState, useCallback } from "react";
 import axios from "axios";
+import { MessageSquare } from "lucide-react";
 import { AppContext } from "../context/AppContext";
 import StarRating from "./StarRating";
 import WriteReviewCTA from "./WriteReviewCTA";
+import EmptyState from "./EmptyState";
 import timeAgo from "../utils/timeAgo";
 
 const LIMIT = 5;
@@ -63,10 +65,8 @@ const ReviewList = ({ targetType, targetId, refreshKey, onStats, eligibility, on
 
   if (!loading && reviews.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-14 text-center">
-        <div className="text-5xl mb-3">📝</div>
-        <h3 className="text-base font-bold text-text-primary mb-1">No reviews yet</h3>
-        <p className="text-text-muted text-sm mb-6">Be the first to share your experience.</p>
+      <div className="flex flex-col items-center justify-center text-center">
+        <EmptyState icon={MessageSquare} title="No reviews yet" subtitle="Be the first to share your experience." />
         {eligibility && (
           <WriteReviewCTA
             eligibility={eligibility}

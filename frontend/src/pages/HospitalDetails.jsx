@@ -9,6 +9,8 @@ import RatingDistribution from "../components/RatingDistribution";
 import WriteReviewCTA from "../components/WriteReviewCTA";
 import ReviewForm from "../components/ReviewForm";
 import { formatExperience } from "../utils/experience";
+import EmptyState from "../components/EmptyState";
+import { Stethoscope, Images, MapPin } from "lucide-react";
 import useReviewEligibility from "../hooks/useReviewEligibility";
 
 const HospitalDetails = () => {
@@ -194,12 +196,7 @@ const HospitalDetails = () => {
       <div className="profile-section mb-8">
         <h2 className="text-lg font-bold text-text-primary mb-6">Doctors</h2>
         {doctors.length === 0 ? (
-          <div className="flex items-center gap-2 text-text-muted text-sm py-4">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-            </svg>
-            No doctors found.
-          </div>
+          <EmptyState icon={Stethoscope} title="No Doctors Listed" subtitle="This hospital hasn't added any doctors yet." compact />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {doctors.map((doctor) => (
@@ -246,7 +243,7 @@ const HospitalDetails = () => {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-text-muted">No gallery images available.</p>
+          <EmptyState icon={Images} title="No Gallery Images" subtitle="Photos added by this hospital will appear here." compact />
         )}
       </div>
 
@@ -319,10 +316,7 @@ const HospitalDetails = () => {
                 </a>
               </>
             ) : (
-              <>
-                <svg className="w-12 h-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13h2.25a2.25 2.25 0 002.25-2.25V9a2.25 2.25 0 00-2.25-2.25H3m0 6h2.25A2.25 2.25 0 017.5 15.25v2.25m-4.5-4.5V13m0 0H3m0 0h2.25m4.5-4.5H9.75M9.75 6H12m0 0h2.25M12 6v2.25m0 4.5v2.25m-4.5-4.5h2.25m0 0H12m0-4.5h2.25m-4.5 4.5H9.75" /></svg>
-                <p className="text-sm text-text-muted">No location data available.</p>
-              </>
+              <EmptyState icon={MapPin} title="No Location Data" subtitle="This hospital hasn't added map coordinates yet." compact />
             )}
           </div>
         </div>

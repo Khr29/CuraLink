@@ -1,7 +1,9 @@
 import React, { useContext, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+import { SearchX } from "lucide-react";
 import StarRating from "../components/StarRating";
+import EmptyState from "../components/EmptyState";
 
 const specialities = [
   "General physician",
@@ -134,13 +136,13 @@ const Doctors = () => {
         {/* Doctor grid */}
         <main className="flex-1 min-w-0">
           {filteredDoctors.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="text-5xl mb-4">🔍</div>
-              <h3 className="text-lg font-bold text-text-primary mb-2">No Doctors Found</h3>
-              <p className="text-text-muted text-sm mb-6">
-                We couldn't find any doctors for <strong>{speciality}</strong>. Try a different speciality.
-              </p>
-              <button onClick={() => navigate("/doctors")} className="btn btn-primary">
+            <div className="flex flex-col items-center justify-center text-center">
+              <EmptyState
+                icon={SearchX}
+                title="No Doctors Found"
+                subtitle={<>We couldn't find any doctors for <strong>{speciality}</strong>. Try a different speciality.</>}
+              />
+              <button onClick={() => navigate("/doctors")} className="btn btn-primary mt-2">
                 View All Doctors
               </button>
             </div>

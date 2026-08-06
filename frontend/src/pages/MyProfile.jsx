@@ -5,6 +5,9 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import StarRating from "../components/StarRating";
 import ReviewForm from "../components/ReviewForm";
+import CuraLinkPhoneInput from "../components/PhoneInput";
+import EmptyState from "../components/EmptyState";
+import { MessageSquare, CalendarX2 } from "lucide-react";
 
 const months = [" ", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const formatSlotDate = (slotDate) => {
@@ -80,12 +83,13 @@ const MyReviews = () => {
 
   if (reviews.length === 0) {
     return (
-      <div className="profile-section flex flex-col items-center justify-center py-12 text-center">
-        <div className="text-4xl mb-2">📝</div>
-        <h3 className="text-base font-bold text-text-primary mb-1">No Reviews Yet</h3>
-        <p className="text-text-muted text-sm max-w-sm">
-          Reviews you write for doctors and hospitals will show up here.
-        </p>
+      <div className="profile-section">
+        <EmptyState
+          icon={MessageSquare}
+          title="No Reviews Yet"
+          subtitle="Reviews you write for doctors and hospitals will show up here."
+          compact
+        />
       </div>
     );
   }
@@ -197,10 +201,13 @@ const RecentAppointments = () => {
 
   if (appointments.length === 0) {
     return (
-      <div className="profile-section flex flex-col items-center justify-center py-10 text-center">
-        <div className="text-4xl mb-2">📅</div>
-        <h3 className="text-base font-bold text-text-primary mb-1">No Appointments Yet</h3>
-        <p className="text-text-muted text-sm max-w-sm">Book a doctor and it'll show up here.</p>
+      <div className="profile-section">
+        <EmptyState
+          icon={CalendarX2}
+          title="No Appointments Yet"
+          subtitle="Book a doctor and it'll show up here."
+          compact
+        />
       </div>
     );
   }
@@ -388,11 +395,10 @@ const MyProfile = () => {
           <div className="py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
             <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Phone</p>
             {isEdit ? (
-              <input
-                className="input text-sm flex-1"
+              <CuraLinkPhoneInput
+                className="flex-1"
                 value={userData.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
-                placeholder="Phone number"
+                onChange={(value) => handleChange("phone", value || "")}
               />
             ) : (
               <p className="text-sm text-text-secondary">{userData.phone || <span className="text-slate-400">Not provided</span>}</p>
@@ -553,11 +559,10 @@ const MyProfile = () => {
           <div className="py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
             <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Phone</p>
             {isEdit ? (
-              <input
-                className="input text-sm flex-1"
+              <CuraLinkPhoneInput
+                className="flex-1"
                 value={userData.emergencyContact?.phone || ""}
-                onChange={(e) => handleEmergencyContactChange("phone", e.target.value)}
-                placeholder="Contact's phone number"
+                onChange={(value) => handleEmergencyContactChange("phone", value || "")}
               />
             ) : (
               <p className="text-sm text-text-secondary">{userData.emergencyContact?.phone || <span className="text-slate-400">Not provided</span>}</p>

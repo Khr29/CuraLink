@@ -107,9 +107,9 @@ const DoctorSidebar = () => {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'background 0.2s'
                       }}>
-                        {typeof item.icon === 'function'
-                          ? <item.icon size={16} color={isActive ? '#FFFFFF' : '#94A3B8'} />
-                          : <img src={item.icon} alt={item.name} style={{ width: 16, height: 16, filter: isActive ? 'brightness(10)' : 'brightness(0.6)' }} />
+                        {typeof item.icon === 'string'
+                          ? <img src={item.icon} alt={item.name} style={{ width: 16, height: 16, filter: isActive ? 'brightness(10)' : 'brightness(0.6)' }} />
+                          : <item.icon size={16} color={isActive ? '#FFFFFF' : '#94A3B8'} />
                         }
                       </div>
                       {!collapsed && (
