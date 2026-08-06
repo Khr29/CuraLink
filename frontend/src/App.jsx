@@ -15,6 +15,7 @@ const Hospitals = lazy(() => import("./pages/Hospitals"));
 const HospitalDetails = lazy(() => import("./pages/HospitalDetails"));
 const Appointments = lazy(() => import("./pages/Appointments"));
 const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const MyProfile = lazy(() => import("./pages/MyProfile"));
@@ -65,6 +66,7 @@ const App = () => {
 
               {/* Other */}
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
 

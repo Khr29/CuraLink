@@ -37,11 +37,64 @@ const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Everything below is optional — the richer registration form collects
+    // it, but the API contract stays name/email/password-only-required so
+    // nothing that already integrates against /register breaks.
+    const {
+      phone,
+      dob,
+      gender,
+      bloodGroup,
+      emergencyContactName,
+      emergencyContactPhone,
+      height,
+      weight,
+      allergies,
+      chronicDiseases,
+      medications,
+      address,
+    } = req.body;
+
     const userData = {
       name,
       email,
       password: hashedPassword,
     };
+
+    if (phone) userData.phone = phone;
+    if (dob) userData.dob = dob;
+    if (gender) userData.gender = gender;
+    if (bloodGroup) userData.bloodGroup = bloodGroup;
+    if (emergencyContactName || emergencyContactPhone) {
+      userData.emergencyContact = {
+        name: emergencyContactName || "",
+        phone: emergencyContactPhone || "",
+      };
+    }
+    if (height || weight || allergies || chronicDiseases || medications) {
+      userData.medical = {
+        height: height || "",
+        weight: weight || "",
+        allergies: allergies || "",
+        chronicDiseases: chronicDiseases || "",
+        medications: medications || "",
+      };
+    }
+    if (address) {
+      try {
+        userData.address = JSON.parse(address);
+      } catch (e) {
+        // Malformed address JSON shouldn't block registration — the field
+        // is optional and can be filled in later from the profile page.
+      }
+    }
+
+    if (req.file) {
+      const imageUpload = await cloudinary.uploader.upload(req.file.path, {
+        resource_type: "image",
+      });
+      userData.image = imageUpload.secure_url;
+    }
 
     const newUser = new userModel(userData);
     const user = await newUser.save();
@@ -227,18 +280,58 @@ const getProfie = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const userId = req.userId;
-    const { name, phone, address, dob, gender } = req.body;
+    const {
+      name,
+      phone,
+      address,
+      dob,
+      gender,
+      bloodGroup,
+      emergencyContactName,
+      emergencyContactPhone,
+      height,
+      weight,
+      allergies,
+      chronicDiseases,
+      medications,
+    } = req.body;
     const imageFile = req.file;
     if (!name || !phone || !dob || !gender) {
       return res.json({ success: false, message: "Data Missing" });
     }
-    await userModel.findByIdAndUpdate(userId, {
+
+    const updateData = {
       name,
       phone,
       address: JSON.parse(address),
       dob,
       gender,
-    });
+    };
+
+    if (bloodGroup !== undefined) updateData.bloodGroup = bloodGroup;
+    if (emergencyContactName !== undefined || emergencyContactPhone !== undefined) {
+      updateData.emergencyContact = {
+        name: emergencyContactName || "",
+        phone: emergencyContactPhone || "",
+      };
+    }
+    if (
+      height !== undefined ||
+      weight !== undefined ||
+      allergies !== undefined ||
+      chronicDiseases !== undefined ||
+      medications !== undefined
+    ) {
+      updateData.medical = {
+        height: height || "",
+        weight: weight || "",
+        allergies: allergies || "",
+        chronicDiseases: chronicDiseases || "",
+        medications: medications || "",
+      };
+    }
+
+    await userModel.findByIdAndUpdate(userId, updateData);
 
     if (imageFile) {
       //ulload image to cloudinary
@@ -249,8 +342,22 @@ const updateProfile = async (req, res) => {
 
       await userModel.findByIdAndUpdate(userId, { image: imageUrl });
     }
+
+    await logAction({
+      req,
+      actorType: "user",
+      actorId: userId,
+      actorLabel: name,
+      action: AUDIT_ACTIONS.USER_UPDATED,
+      target: { type: "user", id: userId, label: name },
+      status: "success",
+    });
+
     res.json({ success: true, message: "Profile Updated" });
-  } catch (error) {}
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
 };
 
 //api to book appointment

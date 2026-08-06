@@ -1,4 +1,5 @@
 import React, { useState, useContext, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -10,6 +11,21 @@ const formatSlotDate = (slotDate) => {
   if (!slotDate) return "";
   const [d, m, y] = slotDate.split("_");
   return `${d} ${months[Number(m)]} ${y}`;
+};
+
+// dob is stored as a plain "YYYY-MM-DD" string (or "Not Selected") — parse
+// defensively since it's user-entered, not a real Date column.
+const calculateAge = (dob) => {
+  if (!dob || dob === "Not Selected") return null;
+  const birthDate = new Date(dob);
+  if (Number.isNaN(birthDate.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age >= 0 ? age : null;
 };
 
 const MyReviews = () => {
@@ -148,6 +164,78 @@ const InfoRow = ({ label, value }) => (
   </div>
 );
 
+// Compact summary — full history lives on /my-appointments, this just
+// surfaces the most recent few so the profile page doesn't duplicate it.
+const RecentAppointments = () => {
+  const { backendUrl, token } = useContext(AppContext);
+  const navigate = useNavigate();
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token) return;
+    (async () => {
+      try {
+        const { data } = await axios.get(`${backendUrl}/api/user/appointments`, { headers: { token } });
+        if (data.success) setAppointments(data.appointments.reverse().slice(0, 3));
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [backendUrl, token]);
+
+  if (loading) {
+    return (
+      <div className="profile-section animate-pulse">
+        <div className="h-4 bg-slate-100 rounded w-1/4 mb-3" />
+        <div className="h-16 bg-slate-100 rounded" />
+      </div>
+    );
+  }
+
+  if (appointments.length === 0) {
+    return (
+      <div className="profile-section flex flex-col items-center justify-center py-10 text-center">
+        <div className="text-4xl mb-2">📅</div>
+        <h3 className="text-base font-bold text-text-primary mb-1">No Appointments Yet</h3>
+        <p className="text-text-muted text-sm max-w-sm">Book a doctor and it'll show up here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="profile-section">
+      <div className="flex flex-col gap-3">
+        {appointments.map((item) => (
+          <div key={item._id} className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-b-0">
+            <img
+              src={item.docData?.image}
+              alt={item.docData?.name}
+              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-text-primary truncate">{item.docData?.name}</p>
+              <p className="text-xs text-text-muted">{formatSlotDate(item.slotDate)} · {item.slotTime}</p>
+            </div>
+            {item.cancelled ? (
+              <span className="badge badge-red text-[10px]">Cancelled</span>
+            ) : item.isCompleted ? (
+              <span className="badge badge-green text-[10px]">Completed</span>
+            ) : (
+              <span className="badge badge-blue text-[10px]">Upcoming</span>
+            )}
+          </div>
+        ))}
+      </div>
+      <button onClick={() => navigate("/my-appointments")} className="btn btn-ghost btn-sm w-full mt-4">
+        View All Appointments
+      </button>
+    </div>
+  );
+};
+
 const MyProfile = () => {
   const { userData, setUserData, token, backendUrl, loadUserProfileData } = useContext(AppContext);
   const [isEdit, setIsEdit] = useState(false);
@@ -167,6 +255,18 @@ const MyProfile = () => {
     [setUserData]
   );
 
+  const handleEmergencyContactChange = useCallback(
+    (field, value) =>
+      setUserData((prev) => ({ ...prev, emergencyContact: { ...prev.emergencyContact, [field]: value } })),
+    [setUserData]
+  );
+
+  const handleMedicalChange = useCallback(
+    (field, value) =>
+      setUserData((prev) => ({ ...prev, medical: { ...prev.medical, [field]: value } })),
+    [setUserData]
+  );
+
   const updateUserProfileData = async () => {
     setSaving(true);
     try {
@@ -176,6 +276,14 @@ const MyProfile = () => {
       formData.append("address", JSON.stringify(userData.address));
       formData.append("gender", userData.gender);
       formData.append("dob", userData.dob);
+      formData.append("bloodGroup", userData.bloodGroup || "");
+      formData.append("emergencyContactName", userData.emergencyContact?.name || "");
+      formData.append("emergencyContactPhone", userData.emergencyContact?.phone || "");
+      formData.append("height", userData.medical?.height || "");
+      formData.append("weight", userData.medical?.weight || "");
+      formData.append("allergies", userData.medical?.allergies || "");
+      formData.append("chronicDiseases", userData.medical?.chronicDiseases || "");
+      formData.append("medications", userData.medical?.medications || "");
       if (image) formData.append("image", image);
 
       const { data } = await axios.post(`${backendUrl}/api/user/update-profile`, formData, {
@@ -307,11 +415,43 @@ const MyProfile = () => {
                   onChange={(e) => handleAddressChange("line2", e.target.value)}
                   placeholder="Address line 2"
                 />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    className="input text-sm"
+                    value={userData.address?.city || ""}
+                    onChange={(e) => handleAddressChange("city", e.target.value)}
+                    placeholder="City"
+                  />
+                  <input
+                    className="input text-sm"
+                    value={userData.address?.state || ""}
+                    onChange={(e) => handleAddressChange("state", e.target.value)}
+                    placeholder="State"
+                  />
+                  <input
+                    className="input text-sm"
+                    value={userData.address?.country || ""}
+                    onChange={(e) => handleAddressChange("country", e.target.value)}
+                    placeholder="Country"
+                  />
+                  <input
+                    className="input text-sm"
+                    value={userData.address?.pincode || ""}
+                    onChange={(e) => handleAddressChange("pincode", e.target.value)}
+                    placeholder="Postal code"
+                  />
+                </div>
               </div>
             ) : (
               <p className="text-sm text-text-secondary">
-                {userData.address?.line1 ? (
-                  <>{userData.address.line1}{userData.address.line2 && <><br />{userData.address.line2}</>}</>
+                {userData.address?.line1 || userData.address?.city || userData.address?.state || userData.address?.country || userData.address?.pincode ? (
+                  <>
+                    {userData.address.line1}
+                    {userData.address.line2 && <><br />{userData.address.line2}</>}
+                    {(userData.address.city || userData.address.state || userData.address.country || userData.address.pincode) && (
+                      <><br />{[userData.address.city, userData.address.state, userData.address.country, userData.address.pincode].filter(Boolean).join(", ")}</>
+                    )}
+                  </>
                 ) : (
                   <span className="text-slate-400">Not provided</span>
                 )}
@@ -348,7 +488,7 @@ const MyProfile = () => {
             )}
           </div>
 
-          <div className="py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+          <div className="py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
             <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Birthday</p>
             {isEdit ? (
               <input
@@ -358,10 +498,160 @@ const MyProfile = () => {
                 onChange={(e) => handleChange("dob", e.target.value)}
               />
             ) : (
-              <p className="text-sm text-text-secondary">{userData.dob || <span className="text-slate-400">Not provided</span>}</p>
+              <p className="text-sm text-text-secondary">
+                {userData.dob && userData.dob !== "Not Selected" ? (
+                  <>{userData.dob}{calculateAge(userData.dob) !== null && ` (${calculateAge(userData.dob)} years old)`}</>
+                ) : (
+                  <span className="text-slate-400">Not provided</span>
+                )}
+              </p>
+            )}
+          </div>
+
+          <div className="py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Blood Group</p>
+            {isEdit ? (
+              <select
+                className="input text-sm w-auto max-w-[180px]"
+                value={userData.bloodGroup || ""}
+                onChange={(e) => handleChange("bloodGroup", e.target.value)}
+              >
+                <option value="">Select blood group</option>
+                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
+                  <option key={bg} value={bg}>{bg}</option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-text-secondary">{userData.bloodGroup || <span className="text-slate-400">Not provided</span>}</p>
             )}
           </div>
         </div>
+      </div>
+
+      {/* Emergency Contact */}
+      <div className="profile-section mb-8">
+        <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
+          <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+          </svg>
+          Emergency Contact
+        </h3>
+        <div>
+          <div className="py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Name</p>
+            {isEdit ? (
+              <input
+                className="input text-sm flex-1"
+                value={userData.emergencyContact?.name || ""}
+                onChange={(e) => handleEmergencyContactChange("name", e.target.value)}
+                placeholder="Contact's full name"
+              />
+            ) : (
+              <p className="text-sm text-text-secondary">{userData.emergencyContact?.name || <span className="text-slate-400">Not provided</span>}</p>
+            )}
+          </div>
+          <div className="py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Phone</p>
+            {isEdit ? (
+              <input
+                className="input text-sm flex-1"
+                value={userData.emergencyContact?.phone || ""}
+                onChange={(e) => handleEmergencyContactChange("phone", e.target.value)}
+                placeholder="Contact's phone number"
+              />
+            ) : (
+              <p className="text-sm text-text-secondary">{userData.emergencyContact?.phone || <span className="text-slate-400">Not provided</span>}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Medical Information */}
+      <div className="profile-section mb-8">
+        <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
+          <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+          </svg>
+          Medical Information
+        </h3>
+        <div>
+          <div className="py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Height</p>
+            {isEdit ? (
+              <input
+                className="input text-sm flex-1"
+                value={userData.medical?.height || ""}
+                onChange={(e) => handleMedicalChange("height", e.target.value)}
+                placeholder="e.g. 175 cm"
+              />
+            ) : (
+              <p className="text-sm text-text-secondary">{userData.medical?.height || <span className="text-slate-400">Not provided</span>}</p>
+            )}
+          </div>
+          <div className="py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Weight</p>
+            {isEdit ? (
+              <input
+                className="input text-sm flex-1"
+                value={userData.medical?.weight || ""}
+                onChange={(e) => handleMedicalChange("weight", e.target.value)}
+                placeholder="e.g. 70 kg"
+              />
+            ) : (
+              <p className="text-sm text-text-secondary">{userData.medical?.weight || <span className="text-slate-400">Not provided</span>}</p>
+            )}
+          </div>
+          <div className="py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Allergies</p>
+            {isEdit ? (
+              <input
+                className="input text-sm flex-1"
+                value={userData.medical?.allergies || ""}
+                onChange={(e) => handleMedicalChange("allergies", e.target.value)}
+                placeholder="e.g. Penicillin, peanuts"
+              />
+            ) : (
+              <p className="text-sm text-text-secondary">{userData.medical?.allergies || <span className="text-slate-400">Not provided</span>}</p>
+            )}
+          </div>
+          <div className="py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Chronic Diseases</p>
+            {isEdit ? (
+              <input
+                className="input text-sm flex-1"
+                value={userData.medical?.chronicDiseases || ""}
+                onChange={(e) => handleMedicalChange("chronicDiseases", e.target.value)}
+                placeholder="e.g. Diabetes, hypertension"
+              />
+            ) : (
+              <p className="text-sm text-text-secondary">{userData.medical?.chronicDiseases || <span className="text-slate-400">Not provided</span>}</p>
+            )}
+          </div>
+          <div className="py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Medications</p>
+            {isEdit ? (
+              <input
+                className="input text-sm flex-1"
+                value={userData.medical?.medications || ""}
+                onChange={(e) => handleMedicalChange("medications", e.target.value)}
+                placeholder="e.g. Metformin 500mg"
+              />
+            ) : (
+              <p className="text-sm text-text-secondary">{userData.medical?.medications || <span className="text-slate-400">Not provided</span>}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Appointments */}
+      <div className="mb-8">
+        <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
+          <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+          Recent Appointments
+        </h3>
+        <RecentAppointments />
       </div>
 
       {/* My Reviews */}

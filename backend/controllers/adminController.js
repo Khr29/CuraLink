@@ -175,8 +175,13 @@ const addDoctor = async (req, res) => {
       fees,
       address,
       hospitalId,
+      employmentType,
     } = req.body;
     const imageFile = req.file;
+
+    // hospitalId is only required for hospital-employed doctors —
+    // independent practitioners have none.
+    const isIndependent = employmentType === "independent";
 
     if (
       !name ||
@@ -188,7 +193,7 @@ const addDoctor = async (req, res) => {
       !about ||
       !fees ||
       !address ||
-      !hospitalId
+      (!isIndependent && !hospitalId)
     ) {
       return res.json({ success: false, message: "Missing Details" });
     }
@@ -225,7 +230,8 @@ const addDoctor = async (req, res) => {
       address: JSON.parse(address),
 
       // Hospital Relationship
-      hospitalId,
+      hospitalId: isIndependent ? null : hospitalId,
+      employmentType: isIndependent ? "independent" : "hospital",
 
       date: Date.now(),
     };

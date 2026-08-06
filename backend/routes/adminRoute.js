@@ -28,6 +28,15 @@ import {
   exportAuditLogs,
 } from "../controllers/auditLogController.js";
 
+import {
+  assignDoctorToHospital,
+  removeDoctorFromHospital,
+  transferDoctor,
+  adminApproveRequest,
+  adminRejectRequest,
+  getAllDoctorRequests,
+} from "../controllers/hospitalRequestController.js";
+
 const adminRouter = express.Router();
 
 // =====================================
@@ -98,5 +107,16 @@ adminRouter.patch("/user-status/:id", authAdmin, changeUserStatus);
 
 adminRouter.get("/audit-logs", authAdmin, getAuditLogs);
 adminRouter.get("/audit-logs/export", authAdmin, exportAuditLogs);
+
+// =====================================
+// Doctor <-> Hospital Association Control
+// =====================================
+
+adminRouter.post("/assign-doctor", authAdmin, assignDoctorToHospital);
+adminRouter.post("/remove-doctor-from-hospital", authAdmin, removeDoctorFromHospital);
+adminRouter.post("/transfer-doctor", authAdmin, transferDoctor);
+adminRouter.patch("/doctor-requests/:id/approve", authAdmin, adminApproveRequest);
+adminRouter.patch("/doctor-requests/:id/reject", authAdmin, adminRejectRequest);
+adminRouter.get("/doctor-requests", authAdmin, getAllDoctorRequests);
 
 export default adminRouter;

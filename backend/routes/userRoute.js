@@ -5,7 +5,7 @@ import authUser from '../middlewares/authUser.js'
 import upload from '../middlewares/multer.js'
 
 const userRouter = express.Router()
-userRouter.post('/register', registerUser)
+userRouter.post('/register', upload.single('image'), registerUser)
 userRouter.post('/login',loginUser)
 userRouter.post('/logout',authUser,logoutUser)
 userRouter.get('/get-profile',authUser , getProfie)

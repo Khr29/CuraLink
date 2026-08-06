@@ -76,10 +76,20 @@ const doctorSchema = new mongoose.Schema(
     // ==========================
     // Hospital Relationship
     // ==========================
+    // Nullable — a doctor with employmentType "independent" has no
+    // hospitalId. Every existing doctor already has one, so the default
+    // below keeps them correctly marked "hospital" with no migration.
     hospitalId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "hospital",
-      required: true,
+      required: false,
+      default: null,
+    },
+
+    employmentType: {
+      type: String,
+      enum: ["independent", "hospital"],
+      default: "hospital",
     },
 
     // ==========================

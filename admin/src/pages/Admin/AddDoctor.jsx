@@ -32,6 +32,7 @@ const AddDoctor = () => {
   const [fees, setFees] = useState('')
   const [about, setAbout] = useState('')
   const [speciality, setSpeciality] = useState('General physician')
+  const [employmentType, setEmploymentType] = useState('hospital')
   const [hospitalId, setHospitalId] = useState('')
   const [degree, setDegree] = useState('')
   const [address1, setAddress1] = useState('')
@@ -69,7 +70,8 @@ useEffect(() => {
         formData.append('fees', fees)
         formData.append('about', about.trim())
         formData.append('speciality', speciality)
-        formData.append('hospitalId', hospitalId)
+        formData.append('employmentType', employmentType)
+        if (employmentType === 'hospital') formData.append('hospitalId', hospitalId)
         formData.append('degree', degree.trim())
         formData.append(
           'address',
@@ -96,6 +98,7 @@ useEffect(() => {
           setFees('')
           setAbout('')
           setSpeciality('General physician')
+          setEmploymentType('hospital')
           setHospitalId('')
           setDegree('')
           setAddress1('')
@@ -117,6 +120,7 @@ useEffect(() => {
       fees,
       about,
       speciality,
+      employmentType,
       hospitalId,
       degree,
       address1,
@@ -279,49 +283,90 @@ useEffect(() => {
               </div>
 
               <div style={{ marginBottom: 18 }}>
-              <label style={labelStyle}>Hospital</label>
-
-              <div
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 14,
-                    color: '#94A3B8'
-                  }}
-                >
-                  <Building2 size={18} />
+                <label style={labelStyle}>Practice Type</label>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {[
+                    { value: 'hospital', label: 'Works at Hospital', icon: Building2 },
+                    { value: 'independent', label: 'Independent Practice', icon: User },
+                  ].map((opt) => {
+                    const Icon = opt.icon
+                    const active = employmentType === opt.value
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setEmploymentType(opt.value)}
+                        style={{
+                          flex: 1,
+                          height: 48,
+                          borderRadius: 14,
+                          border: active ? '1.5px solid #2563EB' : '1.5px solid #CBD5E1',
+                          background: active ? '#EFF6FF' : '#FFFFFF',
+                          color: active ? '#2563EB' : '#475569',
+                          fontWeight: 600,
+                          fontSize: 13,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <Icon size={16} />
+                        {opt.label}
+                      </button>
+                    )
+                  })}
                 </div>
-
-                <select
-                  required
-                  value={hospitalId}
-                  onChange={(e) => setHospitalId(e.target.value)}
-                  style={{
-                    ...inputStyle,
-                    paddingLeft: 42
-                  }}
-                >
-                  <option value="">
-                    Select Hospital
-                  </option>
-
-                  {hospitals.map((hospital) => (
-                    <option
-                      key={hospital._id}
-                      value={hospital._id}
-                    >
-                      {hospital.name}
-                    </option>
-                  ))}
-                </select>
               </div>
-            </div>
+
+              {employmentType === 'hospital' && (
+                <div style={{ marginBottom: 18 }}>
+                  <label style={labelStyle}>Hospital</label>
+
+                  <div
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 14,
+                        color: '#94A3B8'
+                      }}
+                    >
+                      <Building2 size={18} />
+                    </div>
+
+                    <select
+                      required
+                      value={hospitalId}
+                      onChange={(e) => setHospitalId(e.target.value)}
+                      style={{
+                        ...inputStyle,
+                        paddingLeft: 42
+                      }}
+                    >
+                      <option value="">
+                        Select Hospital
+                      </option>
+
+                      {hospitals.map((hospital) => (
+                        <option
+                          key={hospital._id}
+                          value={hospital._id}
+                        >
+                          {hospital.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {/* Education & Experience */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>

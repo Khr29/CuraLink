@@ -20,6 +20,12 @@ import {
   hospitalDeleteDoctor,
   getHospitalSelfAppointments,
 } from "../controllers/hospitalController.js";
+import {
+  getHospitalDoctorRequests,
+  approveHospitalDoctorRequest,
+  rejectHospitalDoctorRequest,
+  inviteDoctor,
+} from "../controllers/hospitalRequestController.js";
 import upload from "../middlewares/multer.js";
 import authHospital from "../middlewares/authHospital.js";
 import authAdmin from "../middlewares/authAdmin.js";
@@ -73,6 +79,11 @@ hospitalRouter.put(
 hospitalRouter.delete("/self/doctors/:doctorId", authHospital, hospitalDeleteDoctor);
 
 hospitalRouter.get("/self/appointments", authHospital, getHospitalSelfAppointments);
+
+hospitalRouter.get("/self/doctor-requests", authHospital, getHospitalDoctorRequests);
+hospitalRouter.patch("/self/doctor-requests/:id/approve", authHospital, approveHospitalDoctorRequest);
+hospitalRouter.patch("/self/doctor-requests/:id/reject", authHospital, rejectHospitalDoctorRequest);
+hospitalRouter.post("/self/invite-doctor", authHospital, inviteDoctor);
 
 // =====================================
 // Admin-facing Hospital Management
