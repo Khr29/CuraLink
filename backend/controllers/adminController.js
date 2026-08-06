@@ -311,7 +311,11 @@ const logoutAdmin = async (req, res) => {
 // ✅ GET ALL DOCTORS (lean for speed)
 const allDoctors = async (req, res) => {
   try {
-    const doctors = await doctorModel.find({}).select("-password").lean();
+    const doctors = await doctorModel
+      .find({})
+      .select("-password")
+      .populate("hospitalId", "name")
+      .lean();
     res.json({ success: true, doctors });
   } catch (error) {
     console.log(error);

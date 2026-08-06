@@ -374,7 +374,7 @@ const DoctorProfile = () => {
                   </span>
                 </div>
                 <p style={{ color: 'rgba(255,255,255,0.78)', fontSize: 13.5, margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {profileData.employmentType === 'independent' ? (
+                  {!profileData.hospitalId ? (
                     <><UserRound size={14} /> Independent Practice</>
                   ) : (
                     <><Building2 size={14} /> {hospital ? hospital.name : 'Loading hospital…'}</>
@@ -477,7 +477,7 @@ const DoctorProfile = () => {
 
             <Field label="Hospital">
               <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
-                {profileData.employmentType === 'independent' ? (
+                {!profileData.hospitalId ? (
                   <><UserRound size={15} color="#94A3B8" /> Independent Practice</>
                 ) : (
                   <><Building2 size={15} color="#94A3B8" /> {hospital ? hospital.name : '—'}</>
@@ -552,7 +552,7 @@ const DoctorProfile = () => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }} className="curalink-profile-grid">
           {/* ══════════ HOSPITAL CARD ══════════ */}
           <div style={{ background: '#FFFFFF', borderRadius: 24, border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,23,42,0.04)', overflow: 'hidden' }}>
-            {profileData.employmentType === 'independent' ? (
+            {!profileData.hospitalId ? (
               <div style={{ padding: 32, textAlign: 'center' }}>
                 <div style={{ width: 52, height: 52, borderRadius: 16, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
                   <UserRound size={24} color="#2563EB" />
@@ -845,7 +845,7 @@ const HospitalAffiliationSection = ({
   const pendingOwnRequest = hospitalRequests.find(r => r.status === 'pending' && r.type !== 'invite')
   const history = hospitalRequests.filter(r => r.status !== 'pending')
 
-  const isIndependent = profileData.employmentType === 'independent'
+  const isIndependent = !profileData.hospitalId
 
   const availableHospitals = hospitals.filter(h => h._id !== profileData.hospitalId)
 

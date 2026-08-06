@@ -6,6 +6,17 @@ import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 const POPULATE_DOCTOR = "name email speciality image employmentType hospitalId";
 const POPULATE_HOSPITAL = "name email image hospitalType";
 
+// Once a doctor's affiliation actually changes, any OTHER pending request
+// of theirs (a stray invite, or a transfer request to a different hospital)
+// is moot — cancel it so it doesn't sit forever claiming to be "pending"
+// against a doctor who has already moved elsewhere.
+const cancelOtherPendingRequests = async (doctorId, exceptRequestId) => {
+  await hospitalRequestModel.updateMany(
+    { doctorId, status: "pending", _id: { $ne: exceptRequestId } },
+    { status: "cancelled", respondedAt: new Date() }
+  );
+};
+
 // Shared mutation: moves a doctor onto a hospital and marks the request
 // approved. Used by hospital self-approve, admin approve, admin force
 // actions, and a doctor accepting an invite — every path that actually
@@ -21,6 +32,8 @@ const approveRequestInternal = async (request, { respondedByType, respondedById 
   request.respondedAt = new Date();
   request.respondedBy = respondedById || null;
   await request.save();
+
+  await cancelOtherPendingRequests(request.doctorId, request._id);
 };
 
 const rejectRequestInternal = async (request, { reason }) => {
@@ -113,10 +126,7 @@ const leaveHospital = async (req, res) => {
 
     // Any pending request this doctor had (join/transfer they sent, or an
     // invite they hadn't responded to) is now moot.
-    await hospitalRequestModel.updateMany(
-      { doctorId: docId, status: "pending" },
-      { status: "cancelled", respondedAt: new Date() }
-    );
+    await cancelOtherPendingRequests(docId, null);
 
     await logAction({
       req,
@@ -388,7 +398,7 @@ const assignDoctorToHospital = async (req, res) => {
 
     await doctorModel.findByIdAndUpdate(doctorId, { hospitalId, employmentType: "hospital" });
 
-    await hospitalRequestModel.create({
+    const assignedRequest = await hospitalRequestModel.create({
       doctorId,
       hospitalId,
       fromHospitalId,
@@ -397,6 +407,7 @@ const assignDoctorToHospital = async (req, res) => {
       requestedBy: "admin",
       respondedAt: new Date(),
     });
+    await cancelOtherPendingRequests(doctorId, assignedRequest._id);
 
     await logAction({
       req,
@@ -424,6 +435,7 @@ const removeDoctorFromHospital = async (req, res) => {
     const previousHospitalId = doctor.hospitalId;
 
     await doctorModel.findByIdAndUpdate(doctorId, { hospitalId: null, employmentType: "independent" });
+    await cancelOtherPendingRequests(doctorId, null);
 
     await logAction({
       req,
@@ -459,7 +471,7 @@ const transferDoctor = async (req, res) => {
     if (force) {
       await doctorModel.findByIdAndUpdate(doctorId, { hospitalId, employmentType: "hospital" });
 
-      await hospitalRequestModel.create({
+      const forcedRequest = await hospitalRequestModel.create({
         doctorId,
         hospitalId,
         fromHospitalId,
@@ -468,6 +480,7 @@ const transferDoctor = async (req, res) => {
         requestedBy: "admin",
         respondedAt: new Date(),
       });
+      await cancelOtherPendingRequests(doctorId, forcedRequest._id);
 
       await logAction({
         req,

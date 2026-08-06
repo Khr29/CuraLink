@@ -504,6 +504,120 @@ const changeHospitalStatus = async (hospitalId) => {
     }
 
 
+    // ✅ DOCTOR <-> HOSPITAL ASSOCIATION CONTROL
+    const [doctorRequests, setDoctorRequests] = useState([])
+
+    const getAllDoctorRequests = useCallback(async (status) => {
+        try {
+            const { data } = await axios.get(
+                backendUrl + '/api/admin/doctor-requests',
+                { ...config, params: status ? { status } : {} }
+            )
+            if (data.success) {
+                setDoctorRequests(data.requests)
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }, [aToken])
+
+    const assignDoctorToHospital = async (doctorId, hospitalId) => {
+        try {
+            const { data } = await axios.post(
+                backendUrl + '/api/admin/assign-doctor',
+                { doctorId, hospitalId },
+                config
+            )
+            if (data.success) {
+                toast.success(data.message)
+                getAllDoctorRequests()
+                getAllDoctors()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+    const removeDoctorFromHospital = async (doctorId) => {
+        try {
+            const { data } = await axios.post(
+                backendUrl + '/api/admin/remove-doctor-from-hospital',
+                { doctorId },
+                config
+            )
+            if (data.success) {
+                toast.success(data.message)
+                getAllDoctorRequests()
+                getAllDoctors()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+    const transferDoctor = async (doctorId, hospitalId, force) => {
+        try {
+            const { data } = await axios.post(
+                backendUrl + '/api/admin/transfer-doctor',
+                { doctorId, hospitalId, force },
+                config
+            )
+            if (data.success) {
+                toast.success(data.message)
+                getAllDoctorRequests()
+                getAllDoctors()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+    const adminApproveRequest = async (requestId) => {
+        try {
+            const { data } = await axios.patch(
+                backendUrl + '/api/admin/doctor-requests/' + requestId + '/approve',
+                {},
+                config
+            )
+            if (data.success) {
+                toast.success(data.message)
+                getAllDoctorRequests()
+                getAllDoctors()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+    const adminRejectRequest = async (requestId, reason) => {
+        try {
+            const { data } = await axios.patch(
+                backendUrl + '/api/admin/doctor-requests/' + requestId + '/reject',
+                { reason },
+                config
+            )
+            if (data.success) {
+                toast.success(data.message)
+                getAllDoctorRequests()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+
     const value = {
     aToken,
     setAToken,
@@ -550,6 +664,15 @@ const changeHospitalStatus = async (hospitalId) => {
     auditLogsPagination,
     getAuditLogs,
     exportAuditLogs,
+
+    // Doctor <-> Hospital Association
+    doctorRequests,
+    getAllDoctorRequests,
+    assignDoctorToHospital,
+    removeDoctorFromHospital,
+    transferDoctor,
+    adminApproveRequest,
+    adminRejectRequest,
 }
 
     return(

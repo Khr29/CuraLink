@@ -105,6 +105,12 @@ const AdminSidebar = () => {
         icon: assets.people_icon
       },
 
+      {
+        name: 'Doctor Assignments',
+        path: '/doctor-requests',
+        icon: assets.people_icon
+      },
+
       // -------------------------
       // User Management
       // -------------------------
