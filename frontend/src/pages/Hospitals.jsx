@@ -29,7 +29,7 @@ const HospitalCard = ({ item }) => {
   return (
     <div
       onClick={() => navigate(`/hospital/${item._id}`)}
-      className="doc-card group cursor-pointer"
+      className="doc-card group cursor-pointer flex flex-col h-full"
     >
       {/* Image */}
       <div className="relative w-full aspect-[4/5] bg-gradient-card overflow-hidden">
@@ -62,13 +62,13 @@ const HospitalCard = ({ item }) => {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-1">
 
-        <h3 className="text-sm font-bold text-text-primary">
+        <h3 className="text-sm font-bold text-text-primary truncate">
           {item.name}
         </h3>
 
-        <p className="text-xs text-text-muted mt-1">
+        <p className="text-xs text-text-muted mt-1 truncate">
           📍 {item.address?.city}, {item.address?.state}
         </p>
 
@@ -76,10 +76,12 @@ const HospitalCard = ({ item }) => {
           🩺 {item.departments?.length || 0} Departments
         </p>
 
+        <div className="flex-1" />
+
         {/* Bottom */}
         <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-100">
 
-          
+
 
 
           <div className="flex items-center gap-1.5">

@@ -15,7 +15,7 @@ const specialities = [
 const DoctorCard = React.memo(({ item, onClick }) => (
   <div
     onClick={() => onClick(item._id)}
-    className="doc-card group"
+    className="doc-card group flex flex-col h-full"
     role="button"
     tabIndex={0}
     aria-label={`Book appointment with ${item.name}`}
@@ -36,9 +36,10 @@ const DoctorCard = React.memo(({ item, onClick }) => (
         </span>
       </div>
     </div>
-    <div className="p-4">
-      <h3 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors leading-tight">{item.name}</h3>
-      <p className="text-xs text-text-muted mt-1">{item.speciality}</p>
+    <div className="p-4 flex flex-col flex-1">
+      <h3 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors leading-tight truncate">{item.name}</h3>
+      <p className="text-xs text-text-muted mt-1 truncate">{item.speciality}</p>
+      <div className="flex-1" />
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
         <div className="flex items-center gap-1.5">
           <StarRating rating={item.averageRating} size="sm" />

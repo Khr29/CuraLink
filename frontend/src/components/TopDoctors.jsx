@@ -8,7 +8,7 @@ const FEATURED_COUNT = 6;
 const DoctorCard = React.memo(({ item, onClick }) => (
   <div
     onClick={() => onClick(item._id)}
-    className="doc-card group"
+    className="doc-card group flex flex-col h-full"
     role="button"
     tabIndex={0}
     aria-label={`View profile for ${item.name}`}
@@ -34,19 +34,21 @@ const DoctorCard = React.memo(({ item, onClick }) => (
     </div>
 
     {/* Content */}
-    <div className="p-4">
-      <h3 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors duration-200 leading-tight">
+    <div className="p-4 flex flex-col flex-1">
+      <h3 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors duration-200 leading-tight truncate">
         {item.name}
       </h3>
-      <p className="text-xs text-text-muted mt-1">{item.speciality}</p>
-      {item.hospitalId?.name && (
-        <p className="text-[11px] text-text-muted mt-1 flex items-center gap-1 truncate">
-          <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15" />
-          </svg>
-          <span className="truncate">{item.hospitalId.name}</span>
-        </p>
-      )}
+      <p className="text-xs text-text-muted mt-1 truncate">{item.speciality}</p>
+      <p className="text-[11px] text-text-muted mt-1 flex items-center gap-1 truncate min-h-[16px]">
+        {item.hospitalId?.name && (
+          <>
+            <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15" />
+            </svg>
+            <span className="truncate">{item.hospitalId.name}</span>
+          </>
+        )}
+      </p>
 
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-1.5">
@@ -60,12 +62,16 @@ const DoctorCard = React.memo(({ item, onClick }) => (
         )}
       </div>
 
+      {/* Flexible spacer — absorbs leftover height so the footer below
+          always sits flush against the bottom of the (equal-height) card. */}
+      <div className="flex-1" />
+
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
         <span className="text-sm font-bold text-text-primary">
           ${item.fees}
           <span className="text-[11px] font-medium text-text-muted"> /visit</span>
         </span>
-        <button className="text-[11px] font-semibold text-primary bg-primary-light px-2.5 py-1 rounded-full hover:bg-primary hover:text-white transition-all duration-200">
+        <button className="btn btn-primary btn-sm">
           View Profile
         </button>
       </div>
