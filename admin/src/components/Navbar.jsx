@@ -1,15 +1,21 @@
-import React, { useContext, useCallback, useMemo } from 'react'
+import React, { useContext, useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { assets } from '../assets/assets'
 import { AdminContext } from '../context/AdminContext'
 import { DoctorContext } from '../context/DoctorContext'
 import { HospitalContext } from '../context/HospitalContext'
 import { useNavigate } from 'react-router-dom'
+import { User, LogOut, ChevronDown } from 'lucide-react'
 
 const ROLE_BADGE = {
-  Admin: { bg: '#EEF2FF', border: '#C7D2FE', dot: '#6366F1', text: '#4F46E5', avatar: 'A' },
+  Admin: { bg: '#F0F9FF', border: '#BAE6FD', dot: '#0EA5E9', text: '#0284C7', avatar: 'A' },
   Doctor: { bg: '#F0FDF4', border: '#BBF7D0', dot: '#22C55E', text: '#16A34A', avatar: 'D' },
   Hospital: { bg: '#EFF6FF', border: '#BFDBFE', dot: '#2563EB', text: '#1D4ED8', avatar: 'H' },
 }
+
+// Role-aware destination for the "My Profile" menu item. Admin has no
+// dedicated profile page in the current route set, so it's simply omitted
+// for that role rather than linking somewhere invalid.
+const PROFILE_PATH = { Doctor: '/doctor-profile', Hospital: '/hospital-profile' }
 
 const Navbar = () => {
   const { aToken, setAToken } = useContext(AdminContext)
@@ -17,8 +23,25 @@ const Navbar = () => {
   const { hToken, setHToken } = useContext(HospitalContext)
   const navigate = useNavigate()
 
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+
   const role = useMemo(() => (aToken ? 'Admin' : dToken ? 'Doctor' : 'Hospital'), [aToken, dToken])
   const badge = ROLE_BADGE[role]
+  const profilePath = PROFILE_PATH[role]
+
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
+    }
+    const onEscape = (e) => { if (e.key === 'Escape') setMenuOpen(false) }
+    document.addEventListener('mousedown', onClickOutside)
+    document.addEventListener('keydown', onEscape)
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside)
+      document.removeEventListener('keydown', onEscape)
+    }
+  }, [])
 
   const logout = useCallback(() => {
     if (aToken) {
@@ -38,6 +61,11 @@ const Navbar = () => {
 
     navigate('/')
   }, [aToken, dToken, hToken, setAToken, setDToken, setHToken, navigate])
+
+  const goToProfile = useCallback(() => {
+    setMenuOpen(false)
+    if (profilePath) navigate(profilePath)
+  }, [profilePath, navigate])
 
   return (
     <div
@@ -131,72 +159,100 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Right */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10
-        }}
-      >
-        <div
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg,#14B8A6,#6366F1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontSize: 13,
-            fontWeight: 700
-          }}
-        >
-          {badge.avatar}
-        </div>
-
+      {/* Right — profile dropdown, same shape/animation across Admin/Doctor/Hospital */}
+      <div ref={menuRef} style={{ position: 'relative' }}>
         <button
-          onClick={logout}
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-haspopup="true"
+          aria-expanded={menuOpen}
+          aria-label="Account menu"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 7,
-            padding: '7px 15px',
-            borderRadius: 999,
-            border: '1px solid #FECACA',
-            background: '#FFF1F2',
-            color: '#E11D48',
-            cursor: 'pointer',
-            fontSize: 13,
-            fontWeight: 600,
-            transition: '0.2s'
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '5px 10px 5px 5px', borderRadius: 999,
+            border: `1px solid ${menuOpen ? '#BFDBFE' : '#E5E7EB'}`,
+            background: menuOpen ? '#EFF6FF' : '#fff',
+            cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'Inter, sans-serif'
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#FFE4E6'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#FFF1F2'
-          }}
+          onMouseEnter={(e) => { if (!menuOpen) e.currentTarget.style.background = '#F8FAFC' }}
+          onMouseLeave={(e) => { if (!menuOpen) e.currentTarget.style.background = '#fff' }}
         >
-          <svg
-            width="13"
-            height="13"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg,#14B8A6,#0EA5E9)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 700,
+              flexShrink: 0
+            }}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"
-            />
-          </svg>
-
-          Logout
+            {badge.avatar}
+          </div>
+          <ChevronDown size={15} color="#64748B" style={{ transition: 'transform 0.2s', transform: menuOpen ? 'rotate(180deg)' : 'none' }} />
         </button>
+
+        {menuOpen && (
+          <div
+            className="curalink-navbar-dropdown"
+            style={{
+              position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+              width: 220, background: '#FFFFFF', borderRadius: 18,
+              border: '1px solid #F1F5F9', boxShadow: '0 20px 44px rgba(15,23,42,0.16)',
+              padding: 8, zIndex: 60
+            }}
+          >
+            <div style={{ padding: '8px 10px 10px', marginBottom: 4, borderBottom: '1px solid #F1F5F9' }}>
+              <p style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, margin: 0 }}>Signed in as</p>
+              <p style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', margin: '2px 0 0' }}>{role}</p>
+            </div>
+
+            {profilePath && (
+              <button
+                onClick={goToProfile}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '9px 10px', borderRadius: 10, border: 'none', background: 'transparent',
+                  color: '#334155', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif', transition: 'background 0.15s', textAlign: 'left'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFC' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+              >
+                <User size={15} color="#64748B" /> My Profile
+              </button>
+            )}
+
+            <div style={{ height: 1, background: '#F1F5F9', margin: '6px 4px' }} />
+
+            <button
+              onClick={logout}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 10px', borderRadius: 10, border: 'none', background: 'transparent',
+                color: '#DC2626', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                fontFamily: 'Inter, sans-serif', transition: 'background 0.15s', textAlign: 'left'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+            >
+              <LogOut size={15} color="#DC2626" /> Logout
+            </button>
+          </div>
+        )}
       </div>
+
+      <style>{`
+        @keyframes curalink-dropdown-in {
+          from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .curalink-navbar-dropdown { animation: curalink-dropdown-in 0.16s ease-out; transform-origin: top right; }
+      `}</style>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import React, { useContext, useMemo, useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { Building2 } from 'lucide-react'
 import { assets } from '../assets/assets'
 import { DoctorContext } from '../context/DoctorContext'
 
@@ -10,18 +11,20 @@ const DoctorSidebar = () => {
   const menuItems = useMemo(() => [
     { name: 'Dashboard', path: '/doctor-dashboard', icon: assets.home_icon },
     { name: 'Appointments', path: '/doctor-appointments', icon: assets.appointment_icon },
-    { name: 'Profile', path: '/doctor-profile', icon: assets.people_icon }
+    { name: 'Profile', path: '/doctor-profile', icon: assets.people_icon },
+    { name: 'Hospital Affiliation', path: '/doctor-hospital-affiliation', icon: Building2 }
   ], [])
 
   return (
     <div style={{
-      height: '100vh', flexShrink: 0,
+      height: '100%', flexShrink: 0,
       background: 'linear-gradient(180deg,#0F172A,#172554)',
       width: collapsed ? 68 : 240,
       minWidth: collapsed ? 68 : 240,
       transition: 'width 0.3s ease, min-width 0.3s ease',
       display: 'flex', flexDirection: 'column',
-      position: 'relative'
+      position: 'relative',
+      overflowY: 'auto'
     }}>
 
       {/* Logo area */}
@@ -104,7 +107,10 @@ const DoctorSidebar = () => {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'background 0.2s'
                       }}>
-                        <img src={item.icon} alt={item.name} style={{ width: 16, height: 16, filter: isActive ? 'brightness(10)' : 'brightness(0.6)' }} />
+                        {typeof item.icon === 'function'
+                          ? <item.icon size={16} color={isActive ? '#FFFFFF' : '#94A3B8'} />
+                          : <img src={item.icon} alt={item.name} style={{ width: 16, height: 16, filter: isActive ? 'brightness(10)' : 'brightness(0.6)' }} />
+                        }
                       </div>
                       {!collapsed && (
                         <span style={{

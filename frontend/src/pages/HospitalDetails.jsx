@@ -8,6 +8,7 @@ import ReviewList from "../components/ReviewList";
 import RatingDistribution from "../components/RatingDistribution";
 import WriteReviewCTA from "../components/WriteReviewCTA";
 import ReviewForm from "../components/ReviewForm";
+import { formatExperience } from "../utils/experience";
 import useReviewEligibility from "../hooks/useReviewEligibility";
 
 const HospitalDetails = () => {
@@ -217,7 +218,7 @@ const HospitalDetails = () => {
                   
                   <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
                     <p className="text-sm font-bold text-primary">₹{doctor.fees}</p>
-                    <p className="text-xs text-text-muted">{doctor.experience}</p>
+                    <p className="text-xs text-text-muted">{formatExperience(doctor.experience)}</p>
                   </div>
                   
                   <button

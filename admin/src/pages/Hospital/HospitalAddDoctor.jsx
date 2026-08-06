@@ -20,13 +20,14 @@ import PageHero from '../../components/PageHero'
 import FormCard from '../../components/FormCard'
 import FormInput from '../../components/FormInput'
 import { formLabelStyle, formInputStyle, formFocusHandlers } from '../../components/formStyles'
+import { formatExperienceYears } from '../../utils/experience'
 
 const HospitalAddDoctor = () => {
   const [docImg, setDocImg] = useState(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [experience, setExperience] = useState('1 Year')
+  const [experience, setExperience] = useState(1)
   const [fees, setFees] = useState('')
   const [about, setAbout] = useState('')
   const [speciality, setSpeciality] = useState('General physician')
@@ -46,6 +47,10 @@ const HospitalAddDoctor = () => {
         return toast.error('Image not selected')
       }
 
+      if (experience === '' || Number(experience) < 0) {
+        return toast.error('Enter a valid number of years of experience')
+      }
+
       setSaving(true)
       try {
         const formData = new FormData()
@@ -54,7 +59,7 @@ const HospitalAddDoctor = () => {
         formData.append('name', name.trim())
         formData.append('email', email.trim())
         formData.append('password', password)
-        formData.append('experience', experience)
+        formData.append('experience', formatExperienceYears(experience))
         formData.append('fees', fees)
         formData.append('about', about.trim())
         formData.append('speciality', speciality)
@@ -156,16 +161,22 @@ const HospitalAddDoctor = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
                 <FormInput label="Education / Degree" value={degree} onChange={(e) => setDegree(e.target.value)} placeholder="MBBS, MD" icon={GraduationCap} required />
                 <div>
-                  <label style={formLabelStyle}>Experience</label>
+                  <label style={formLabelStyle}>Experience (Years)</label>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <div style={{ position: 'absolute', left: 14, pointerEvents: 'none', color: '#94A3B8' }}>
                       <Briefcase size={18} />
                     </div>
-                    <select value={experience} onChange={(e) => setExperience(e.target.value)} style={{ ...formInputStyle, paddingLeft: 42 }} {...formFocusHandlers}>
-                      {[...Array(10)].map((_, i) => (
-                        <option key={i} value={`${i + 1} Year`}>{i + 1} Year</option>
-                      ))}
-                    </select>
+                    <input
+                      type="number" min={0} max={70} step={1}
+                      value={experience}
+                      onChange={(e) => setExperience(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="e.g. 5"
+                      style={{ ...formInputStyle, paddingLeft: 42, paddingRight: 70 }}
+                      {...formFocusHandlers}
+                    />
+                    <span style={{ position: 'absolute', right: 14, color: '#94A3B8', fontSize: 13, fontWeight: 600, pointerEvents: 'none' }}>
+                      {experience === 1 ? 'Year' : 'Years'}
+                    </span>
                   </div>
                 </div>
               </div>

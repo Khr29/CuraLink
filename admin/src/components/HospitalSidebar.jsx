@@ -39,13 +39,14 @@ const HospitalSidebar = () => {
 
   return (
     <div style={{
-      height: '100vh', flexShrink: 0,
+      height: '100%', flexShrink: 0,
       background: 'linear-gradient(180deg,#0F172A,#172554)',
       width: collapsed ? 68 : 240,
       minWidth: collapsed ? 68 : 240,
       transition: 'width 0.3s ease, min-width 0.3s ease',
       display: 'flex', flexDirection: 'column',
-      position: 'relative'
+      position: 'relative',
+      overflowY: 'auto'
     }}>
 
       {/* Logo area */}

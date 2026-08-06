@@ -231,7 +231,7 @@ const ReviewRow = ({ review, target, targetLabel, onToggleVisibility, onReply, o
                   <ShieldCheck size={11} /> Verified
                 </span>
               )}
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', padding: '2px 8px', borderRadius: 99 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, color: '#1D4ED8', background: '#EFF6FF', padding: '2px 8px', borderRadius: 99 }}>
                 {targetLabel}: {target?.name || 'Unknown'}
               </span>
             </div>

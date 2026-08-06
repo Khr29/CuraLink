@@ -293,13 +293,13 @@ const HospitalCard = ({ item, onStatusChange, onDelete }) => {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 4,
-                background: '#EEF2FF',
+                background: '#EFF6FF',
                 padding: '4px 10px',
                 borderRadius: 99
               }}
             >
-              <Activity size={12} color="#4F46E5" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5' }}>
+              <Activity size={12} color="#1D4ED8" />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#1D4ED8' }}>
                 {item.hospitalType || 'Hospital'}
               </span>
             </div>

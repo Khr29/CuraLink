@@ -11,6 +11,13 @@ const navLinks = [
   { name: "Contact", path: "/contact" },
 ];
 
+// Single source of truth for the account dropdown items, shared by the
+// desktop hover-menu and the mobile drawer so they never drift apart.
+const accountMenuItems = [
+  { label: "My Profile", path: "/my-profile", icon: "👤" },
+  { label: "My Appointments", path: "/my-appointments", icon: "📅" },
+];
+
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -114,10 +121,7 @@ const Navbar = () => {
                       <p className="text-xs text-text-muted font-medium">Signed in as</p>
                       <p className="text-sm font-semibold text-text-primary truncate">{userData.name}</p>
                     </div>
-                    {[
-                      { label: "My Profile", path: "/my-profile", icon: "👤" },
-                      { label: "My Appointments", path: "/my-appointments", icon: "📅" },
-                    ].map((item) => (
+                    {accountMenuItems.map((item) => (
                       <button
                         key={item.path}
                         onClick={() => navigate(item.path)}
@@ -217,12 +221,11 @@ const Navbar = () => {
           {token && userData ? (
             <>
               <div className="my-2 border-t border-slate-100" />
-              <NavLink to="/my-profile" className="block px-4 py-3 rounded-xl text-sm font-medium text-text-secondary hover:bg-slate-50">
-                👤 My Profile
-              </NavLink>
-              <NavLink to="/my-appointments" className="block px-4 py-3 rounded-xl text-sm font-medium text-text-secondary hover:bg-slate-50">
-                📅 My Appointments
-              </NavLink>
+              {accountMenuItems.map((item) => (
+                <NavLink key={item.path} to={item.path} className="block px-4 py-3 rounded-xl text-sm font-medium text-text-secondary hover:bg-slate-50">
+                  {item.icon} {item.label}
+                </NavLink>
+              ))}
               <div className="my-2 border-t border-slate-100" />
               <button
                 onClick={logout}

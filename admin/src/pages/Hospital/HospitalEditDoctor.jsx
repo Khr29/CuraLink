@@ -19,6 +19,7 @@ import PageHero from '../../components/PageHero'
 import FormCard from '../../components/FormCard'
 import FormInput from '../../components/FormInput'
 import { formLabelStyle, formInputStyle, formFocusHandlers } from '../../components/formStyles'
+import { parseExperienceYears, formatExperienceYears } from '../../utils/experience'
 
 const PageLoader = () => (
   <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
@@ -48,7 +49,7 @@ const HospitalEditDoctor = () => {
         image: doctor.image,
         speciality: doctor.speciality,
         degree: doctor.degree,
-        experience: doctor.experience,
+        experience: parseExperienceYears(doctor.experience) ?? 1,
         fees: doctor.fees,
         about: doctor.about,
         available: doctor.available,
@@ -61,13 +62,18 @@ const HospitalEditDoctor = () => {
   const onSubmitHandler = useCallback(
     async (event) => {
       event.preventDefault()
+
+      if (form.experience === '' || Number(form.experience) < 0) {
+        return toast.error('Enter a valid number of years of experience')
+      }
+
       setSaving(true)
       try {
         const formData = new FormData()
         if (docImg) formData.append('image', docImg)
         formData.append('speciality', form.speciality)
         formData.append('degree', form.degree)
-        formData.append('experience', form.experience)
+        formData.append('experience', formatExperienceYears(form.experience))
         formData.append('fees', form.fees)
         formData.append('about', form.about)
         formData.append('available', form.available)
@@ -159,16 +165,22 @@ const HospitalEditDoctor = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
                 <div>
-                  <label style={formLabelStyle}>Experience</label>
+                  <label style={formLabelStyle}>Experience (Years)</label>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <div style={{ position: 'absolute', left: 14, pointerEvents: 'none', color: '#94A3B8' }}>
                       <Briefcase size={18} />
                     </div>
-                    <select value={form.experience} onChange={(e) => setForm((p) => ({ ...p, experience: e.target.value }))} style={{ ...formInputStyle, paddingLeft: 42 }} {...formFocusHandlers}>
-                      {[...Array(10)].map((_, i) => (
-                        <option key={i} value={`${i + 1} Year`}>{i + 1} Year</option>
-                      ))}
-                    </select>
+                    <input
+                      type="number" min={0} max={70} step={1}
+                      value={form.experience}
+                      onChange={(e) => setForm((p) => ({ ...p, experience: e.target.value === '' ? '' : Number(e.target.value) }))}
+                      placeholder="e.g. 5"
+                      style={{ ...formInputStyle, paddingLeft: 42, paddingRight: 70 }}
+                      {...formFocusHandlers}
+                    />
+                    <span style={{ position: 'absolute', right: 14, color: '#94A3B8', fontSize: 13, fontWeight: 600, pointerEvents: 'none' }}>
+                      {form.experience === 1 ? 'Year' : 'Years'}
+                    </span>
                   </div>
                 </div>
                 <FormInput label="Consultation Fees" type="number" value={form.fees} onChange={(e) => setForm((p) => ({ ...p, fees: e.target.value }))} placeholder="500" icon={IndianRupee} required />

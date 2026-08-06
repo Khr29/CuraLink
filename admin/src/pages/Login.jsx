@@ -169,7 +169,7 @@ const LOGIN_ROUTES = {
 }
 
 const ROLE_ACCENT = {
-  Admin: { active: 'linear-gradient(135deg, #6366F1, #4F46E5)', dot: '#6366F1', text: '#4F46E5', glow: 'rgba(99,102,241,0.35)', ring: 'rgba(99,102,241,0.12)' },
+  Admin: { active: 'linear-gradient(135deg, #0EA5E9, #0284C7)', dot: '#0EA5E9', text: '#0284C7', glow: 'rgba(14,165,233,0.35)', ring: 'rgba(14,165,233,0.12)' },
   Doctor: { active: 'linear-gradient(135deg, #14B8A6, #0D9488)', dot: '#14B8A6', text: '#0D9488', glow: 'rgba(20,184,166,0.35)', ring: 'rgba(20,184,166,0.12)' },
   Hospital: { active: 'linear-gradient(135deg, #2563EB, #1D4ED8)', dot: '#2563EB', text: '#1D4ED8', glow: 'rgba(37,99,235,0.35)', ring: 'rgba(37,99,235,0.12)' },
 }

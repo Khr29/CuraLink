@@ -151,14 +151,15 @@ const AdminSidebar = () => {
 
   return (
     <div style={{
-      height: '100vh', flexShrink: 0,
+      height: '100%', flexShrink: 0,
       background:
       'linear-gradient(180deg,#0F172A,#172554)',
       width: collapsed ? 68 : 240,
       minWidth: collapsed ? 68 : 240,
       transition: 'width 0.3s ease, min-width 0.3s ease',
       display: 'flex', flexDirection: 'column',
-      position: 'relative'
+      position: 'relative',
+      overflowY: 'auto'
     }}>
 
       {/* Logo area */}
@@ -283,7 +284,7 @@ const AdminSidebar = () => {
                     >
                       <div style={{
                         width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                        background: isActive ? 'linear-gradient(135deg, #14B8A6, #6366F1)' : 'rgba(255,255,255,0.06)',
+                        background: isActive ? 'linear-gradient(135deg, #14B8A6, #0EA5E9)' : 'rgba(255,255,255,0.06)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'background 0.2s'
                       }}>
@@ -311,7 +312,7 @@ const AdminSidebar = () => {
       {!collapsed && (
         <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #14B8A6, #6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' }}>A</div>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #14B8A6, #0EA5E9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' }}>A</div>
             <div>
               <p style={{ color: '#E2E8F0', fontSize: 12, fontWeight: 600, margin: 0 }}>Admin</p>
               <p style={{ color: '#475569', fontSize: 10, margin: 0 }}>Administrator</p>

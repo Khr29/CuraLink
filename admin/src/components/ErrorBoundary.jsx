@@ -25,9 +25,10 @@ class ErrorBoundary extends React.Component {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Something went wrong</h2>
           <p className="text-gray-500 mb-6 max-w-md">An unexpected error occurred in the admin dashboard. Please try refreshing the page or contact support if the issue persists.</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
-            className="bg-[#5F6FFF] text-white px-6 py-2.5 rounded-full hover:bg-blue-600 transition-colors font-medium shadow-sm"
+            className="text-white px-6 py-2.5 rounded-full transition-all font-medium shadow-sm hover:-translate-y-0.5"
+            style={{ background: 'linear-gradient(135deg,#2563EB,#14B8A6)', boxShadow: '0 6px 18px rgba(37,99,235,.30)' }}
           >
             Refresh Dashboard
           </button>

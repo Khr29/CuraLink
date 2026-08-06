@@ -11,6 +11,7 @@ import ReviewForm from "../components/ReviewForm";
 import useReviewEligibility from "../hooks/useReviewEligibility";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { formatExperience } from "../utils/experience";
 
 const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -152,7 +153,7 @@ const Appointments = () => {
                 <p className="text-text-secondary text-sm">
                   {docInfo.degree} · {docInfo.speciality}
                 </p>
-                <span className="badge badge-teal">{docInfo.experience}</span>
+                <span className="badge badge-teal">{formatExperience(docInfo.experience)}</span>
               </div>
             </div>
           </div>

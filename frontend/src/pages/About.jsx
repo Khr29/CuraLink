@@ -16,7 +16,7 @@ const VALUES = [
   },
   {
     icon: "💡",
-    bg: "bg-violet-50 text-violet-700",
+    bg: "bg-blue-50 text-blue-700",
     title: "PERSONALIZATION",
     desc: "Tailored recommendations and reminders to help you stay on top of your health goals.",
   },

@@ -308,7 +308,7 @@ const LogRow = ({ log }) => {
 
       <span style={{
         display: 'inline-flex', width: 'fit-content', fontSize: 11.5, fontWeight: 700,
-        color: '#4F46E5', background: '#EEF2FF', padding: '5px 10px', borderRadius: 99,
+        color: '#1D4ED8', background: '#EFF6FF', padding: '5px 10px', borderRadius: 99,
       }}>
         {log.action}
       </span>

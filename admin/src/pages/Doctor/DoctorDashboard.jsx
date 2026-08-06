@@ -25,6 +25,7 @@ import StatCard from '../../components/StatCard'
 import EmptyState from '../../components/EmptyState'
 import RatingDistribution from '../../components/RatingDistribution'
 import QuickAction from '../../components/QuickAction'
+import { formatExperience } from '../../utils/experience'
 
 // ─── Shared visual primitives (mirrors the language already used across
 // Dashboard.jsx / HospitalsList.jsx / DoctorReviews.jsx: white rounded-24
@@ -203,7 +204,7 @@ const DoctorDashboard = () => {
           <StatCard icon={MessageSquare} label="Reviews" value={profileData.totalReviews || 0} accent={{ bg: '#F0FDF4', color: '#22C55E' }} />
           <StatCard icon={Star} label="Average Rating" value={profileData.totalReviews > 0 ? profileData.averageRating.toFixed(1) : 'New'} accent={{ bg: '#FFFBEB', color: '#D97706' }} />
           <StatCard icon={IndianRupee} label="Consultation Fee" value={`${currency}${profileData.fees}`} accent={{ bg: '#EFF6FF', color: '#2563EB' }} />
-          <StatCard icon={Award} label="Years Experience" value={profileData.experience} accent={{ bg: '#F0FDFA', color: '#14B8A6' }} />
+          <StatCard icon={Award} label="Years Experience" value={formatExperience(profileData.experience)} accent={{ bg: '#F0FDFA', color: '#14B8A6' }} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 24, marginBottom: 28 }} className="curalink-dash-grid">

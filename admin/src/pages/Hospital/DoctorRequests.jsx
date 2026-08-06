@@ -155,7 +155,7 @@ const RequestRow = ({ request, onApprove, onReject }) => {
         <p style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', margin: 0 }}>{doctor.name || 'Unknown Doctor'}</p>
         <p style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>{doctor.speciality}</p>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', padding: '5px 12px', borderRadius: 99, textTransform: 'capitalize', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#1D4ED8', background: '#EFF6FF', padding: '5px 12px', borderRadius: 99, textTransform: 'capitalize', flexShrink: 0 }}>
         <TypeIcon size={13} /> {request.type}
       </div>
       {request.fromHospitalId?.name && (

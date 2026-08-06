@@ -251,7 +251,7 @@ const Dashboard = () => {
                   width: 36,
                   height: 36,
                   borderRadius: 10,
-                  background: '#EEF2FF',
+                  background: '#EFF6FF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'

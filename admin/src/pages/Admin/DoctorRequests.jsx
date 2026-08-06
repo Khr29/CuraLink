@@ -273,7 +273,7 @@ const RequestRow = ({ request, onApprove, onReject }) => {
           {request.fromHospitalId?.name ? `${request.fromHospitalId.name} → ` : ''}{request.hospitalId?.name || 'Unknown hospital'}
         </p>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', padding: '5px 12px', borderRadius: 99, textTransform: 'capitalize', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#1D4ED8', background: '#EFF6FF', padding: '5px 12px', borderRadius: 99, textTransform: 'capitalize', flexShrink: 0 }}>
         <TypeIcon size={13} /> {request.type}
       </div>
       <span style={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', textTransform: 'capitalize', flexShrink: 0 }}>via {request.requestedBy}</span>

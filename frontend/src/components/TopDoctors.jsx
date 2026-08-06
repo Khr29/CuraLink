@@ -2,6 +2,7 @@ import React, { useCallback, useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import StarRating from "./StarRating";
+import { formatExperience } from "../utils/experience";
 
 const FEATURED_COUNT = 6;
 
@@ -58,7 +59,7 @@ const DoctorCard = React.memo(({ item, onClick }) => (
           </span>
         </div>
         {item.experience && (
-          <span className="text-[11px] text-text-muted">{item.experience}</span>
+          <span className="text-[11px] text-text-muted">{formatExperience(item.experience)}</span>
         )}
       </div>
 
