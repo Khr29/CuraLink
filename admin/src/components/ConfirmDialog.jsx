@@ -1,10 +1,19 @@
-import React from 'react'
+import React, { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertTriangle, X } from 'lucide-react'
 
 // Shared confirm-before-destructive-action modal — matches the CuraLink
 // admin design system (rounded cards, soft shadows, PageHero-style icon
 // badge). Used anywhere a delete/irreversible action needs a guard instead
 // of firing immediately or relying on a bare window.confirm().
+//
+// Rendered via a portal straight onto <body> — PanelLayout's h-screen
+// shell scrolls internally (via <main className="overflow-y-auto">), so a
+// dialog mounted inline would be positioned relative to that scrolled
+// content instead of the real viewport, opening "below the fold". A portal
+// sidesteps that entirely: this element's fixed/centered position is
+// always relative to the actual browser viewport regardless of where in
+// the tree it's rendered or how far the page has scrolled.
 const ConfirmDialog = ({
   open,
   title = 'Are you sure?',
@@ -16,9 +25,19 @@ const ConfirmDialog = ({
   onConfirm,
   onClose,
 }) => {
+  // Lock background scrolling while open, restore on close/unmount.
+  useEffect(() => {
+    if (!open) return undefined
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [open])
+
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
@@ -29,8 +48,9 @@ const ConfirmDialog = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000,
+        zIndex: 9999,
         padding: 20,
+        overflowY: 'auto',
       }}
     >
       <div
@@ -129,7 +149,8 @@ const ConfirmDialog = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

@@ -40,15 +40,20 @@ const App = () => {
 
       <ToastContainer />
 
-      {/* Site chrome (Navbar + routed pages) keeps its original constrained
-          width; only the Footer breaks out to full browser width below —
-          see Footer.jsx / the "detached footer" fix. */}
+      {/* Navbar spans the full browser width (like Footer) — it has its own
+          internal max-w-7xl centering, so marketing pages look identical,
+          but this is what lets its left edge line up with the Patient
+          Portal's full-bleed sidebar (see PortalLayout.jsx) instead of
+          leaving a mismatched notch in the top-left/top-right corners. */}
+      <Navbar />
+
+      {/* Automatically scroll to top on every page change */}
+      <ScrollToTop />
+
+      {/* Routed pages keep the marketing site's original constrained width;
+          portal pages break back out to full-bleed themselves via
+          PortalLayout. */}
       <div className="mx-4 sm:mx-[10%] flex flex-col flex-1">
-        <Navbar />
-
-        {/* Automatically scroll to top on every page change */}
-        <ScrollToTop />
-
         <main className="flex-grow">
           <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>
