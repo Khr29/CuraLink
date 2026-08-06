@@ -15,6 +15,7 @@ import {
 import PageHero from '../../components/PageHero'
 import EmptyState from '../../components/EmptyState'
 import { SkeletonCard } from '../../components/Skeleton'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const HospitalsList = () => {
   const {
@@ -25,6 +26,8 @@ const HospitalsList = () => {
     deleteHospital
   } = useContext(AdminContext)
   const [loading, setLoading] = useState(true)
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Fetch hospitals
   useEffect(() => {
@@ -38,21 +41,29 @@ const HospitalsList = () => {
     changeHospitalStatus(id)
   }, [changeHospitalStatus])
 
-  const handleDelete = useCallback((id) => {
-    deleteHospital(id)
-  }, [deleteHospital])
+  const handleDeleteClick = useCallback((item) => {
+    setPendingDelete(item)
+  }, [])
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!pendingDelete) return
+    setDeleting(true)
+    await deleteHospital(pendingDelete._id)
+    setDeleting(false)
+    setPendingDelete(null)
+  }, [pendingDelete, deleteHospital])
 
   // Memoized hospital card list rendering
   const renderedHospitals = useMemo(() => {
     return hospitals?.map((item) => (
-      <HospitalCard 
-        key={item._id} 
-        item={item} 
-        onStatusChange={handleStatusChange} 
-        onDelete={handleDelete} 
+      <HospitalCard
+        key={item._id}
+        item={item}
+        onStatusChange={handleStatusChange}
+        onDelete={handleDeleteClick}
       />
     ))
-  }, [hospitals, handleStatusChange, handleDelete])
+  }, [hospitals, handleStatusChange, handleDeleteClick])
 
   return (
     <div
@@ -131,6 +142,16 @@ const HospitalsList = () => {
         )}
 
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete this hospital?"
+        message={pendingDelete ? `This will permanently remove ${pendingDelete.name} from the network. This cannot be undone.` : ''}
+        confirmLabel="Delete Hospital"
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => !deleting && setPendingDelete(null)}
+      />
     </div>
   )
 }
@@ -192,7 +213,7 @@ const HospitalCard = ({ item, onStatusChange, onDelete }) => {
 
         {/* DELETE ACTION BUTTON */}
         <button
-          onClick={() => onDelete(item._id)}
+          onClick={() => onDelete(item)}
           onMouseEnter={() => setDeleteHovered(true)}
           onMouseLeave={() => setDeleteHovered(false)}
           title="Delete Hospital"

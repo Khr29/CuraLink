@@ -98,14 +98,17 @@
 // export default React.memo(DoctorsList)
 import React, { useContext, useEffect, useCallback, useMemo, useState } from 'react'
 import { AdminContext } from '../../context/AdminContext'
-import { Users, Stethoscope, CheckCircle2, XCircle, Star } from 'lucide-react'
+import { Users, Stethoscope, CheckCircle2, XCircle, Star, Trash2 } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 import EmptyState from '../../components/EmptyState'
 import { SkeletonCard } from '../../components/Skeleton'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const DoctorsList = () => {
-  const { doctors, aToken, getAllDoctors, changeAvailability } = useContext(AdminContext)
+  const { doctors, aToken, getAllDoctors, changeAvailability, deleteDoctor } = useContext(AdminContext)
   const [loading, setLoading] = useState(true)
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Fetch doctors
   useEffect(() => {
@@ -122,12 +125,29 @@ const DoctorsList = () => {
     [changeAvailability]
   )
 
+  const handleDeleteClick = useCallback((item) => {
+    setPendingDelete(item)
+  }, [])
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!pendingDelete) return
+    setDeleting(true)
+    await deleteDoctor(pendingDelete._id)
+    setDeleting(false)
+    setPendingDelete(null)
+  }, [pendingDelete, deleteDoctor])
+
   // Memoized doctor card list rendering
   const renderedDoctors = useMemo(() => {
     return doctors?.map((item) => (
-      <DoctorCard key={item._id} item={item} onToggleAvailability={handleAvailability} />
+      <DoctorCard
+        key={item._id}
+        item={item}
+        onToggleAvailability={handleAvailability}
+        onDeleteClick={handleDeleteClick}
+      />
     ))
-  }, [doctors, handleAvailability])
+  }, [doctors, handleAvailability, handleDeleteClick])
 
   return (
     <div
@@ -204,13 +224,24 @@ const DoctorsList = () => {
         )}
 
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete this doctor?"
+        message={pendingDelete ? `This will permanently remove ${pendingDelete.name} and their reviews. This cannot be undone.` : ''}
+        confirmLabel="Delete Doctor"
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => !deleting && setPendingDelete(null)}
+      />
     </div>
   )
 }
 
 // CURALINK DESIGN SYSTEM DOCTOR CARD COMPONENT
-const DoctorCard = ({ item, onToggleAvailability }) => {
+const DoctorCard = ({ item, onToggleAvailability, onDeleteClick }) => {
   const [hovered, setHovered] = useState(false)
+  const [deleteHovered, setDeleteHovered] = useState(false)
 
   return (
     <div
@@ -249,6 +280,34 @@ const DoctorCard = ({ item, onToggleAvailability }) => {
             transition: 'transform 0.5s ease'
           }}
         />
+
+        {/* DELETE ACTION BUTTON */}
+        <button
+          onClick={() => onDeleteClick(item)}
+          onMouseEnter={() => setDeleteHovered(true)}
+          onMouseLeave={() => setDeleteHovered(false)}
+          title="Delete Doctor"
+          style={{
+            position: 'absolute',
+            top: 12,
+            left: 12,
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: deleteHovered ? '#EF4444' : 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(8px)',
+            border: deleteHovered ? '1px solid #EF4444' : '1px solid rgba(226,232,240,0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            transition: 'all 0.2s ease',
+            zIndex: 2
+          }}
+        >
+          <Trash2 size={16} color={deleteHovered ? '#FFFFFF' : '#EF4444'} />
+        </button>
 
         {/* SPECIALITY BADGE OVERLAY */}
         <div

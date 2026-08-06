@@ -160,6 +160,7 @@ import doctorModel from "../models/doctorModel.js"
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import appointmentModel from "../models/appointmentModel.js"
+import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js"
 
 // Change Availability
 const changeAvailability = async (req, res) => {
@@ -198,18 +199,64 @@ const loginDoctor = async (req, res) => {
 
         const doctor = await doctorModel.findOne({ email })
         if (!doctor) {
+            await logAction({
+                req,
+                actorType: "doctor",
+                actorLabel: email || "",
+                action: AUDIT_ACTIONS.LOGIN,
+                status: "failure",
+                reason: "Invalid credentials",
+            })
             return res.json({ success: false, message: "Invalid Credentials" })
         }
 
         const isMatch = await bcrypt.compare(password, doctor.password)
 
         if (!isMatch) {
+            await logAction({
+                req,
+                actorType: "doctor",
+                actorId: doctor._id,
+                actorLabel: doctor.email,
+                action: AUDIT_ACTIONS.LOGIN,
+                status: "failure",
+                reason: "Invalid credentials",
+            })
             return res.json({ success: false, message: "Invalid Credentials" })
         }
 
         const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET)
+
+        await logAction({
+            req,
+            actorType: "doctor",
+            actorId: doctor._id,
+            actorLabel: doctor.email,
+            action: AUDIT_ACTIONS.LOGIN,
+            status: "success",
+        })
+
         res.json({ success: true, token })
 
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+// Logout Doctor (stateless JWT — this only records the audit entry)
+const logoutDoctor = async (req, res) => {
+    try {
+        const doctor = await doctorModel.findById(req.docId).select("email")
+        await logAction({
+            req,
+            actorType: "doctor",
+            actorId: req.docId,
+            actorLabel: doctor?.email || "",
+            action: AUDIT_ACTIONS.LOGOUT,
+            status: "success",
+        })
+        res.json({ success: true, message: "Logged out" })
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
@@ -340,6 +387,7 @@ export {
     changeAvailability,
     doctorList,
     loginDoctor,
+    logoutDoctor,
     appointmentsDoctor,
     appointmentCancel,
     appointmentComplete,

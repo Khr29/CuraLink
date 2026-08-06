@@ -5,7 +5,9 @@ import {
   allDoctors,
   appointmentCancel,
   appointmentsAdmin,
+  deleteDoctor,
   loginAdmin,
+  logoutAdmin,
 } from "../controllers/adminController.js";
 
 import upload from "../middlewares/multer.js";
@@ -19,6 +21,11 @@ import {
   changeHospitalStatus,
 } from "../controllers/hospitalController.js";
 
+import {
+  getAuditLogs,
+  exportAuditLogs,
+} from "../controllers/auditLogController.js";
+
 const adminRouter = express.Router();
 
 // =====================================
@@ -26,6 +33,7 @@ const adminRouter = express.Router();
 // =====================================
 
 adminRouter.post("/login", loginAdmin);
+adminRouter.post("/logout", authAdmin, logoutAdmin);
 
 // =====================================
 // Dashboard
@@ -45,6 +53,9 @@ adminRouter.post("/all-doctors", authAdmin, allDoctors);
 
 // Change Availability
 adminRouter.post("/change-availability", authAdmin, changeAvailability);
+
+// Delete Doctor
+adminRouter.delete("/delete-doctor/:id", authAdmin, deleteDoctor);
 
 // =====================================
 // Appointment Management
@@ -68,5 +79,12 @@ adminRouter.delete("/delete-hospital/:id", authAdmin, deleteHospital);
 
 // Change Hospital Status
 adminRouter.patch("/hospital-status/:id", authAdmin, changeHospitalStatus);
+
+// =====================================
+// Audit Logs
+// =====================================
+
+adminRouter.get("/audit-logs", authAdmin, getAuditLogs);
+adminRouter.get("/audit-logs/export", authAdmin, exportAuditLogs);
 
 export default adminRouter;

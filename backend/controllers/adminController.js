@@ -158,6 +158,8 @@ import doctorModel from "../models/doctorModel.js";
 import jwt from "jsonwebtoken";
 import appointmentModel from "../models/appointmentModel.js";
 import userModel from "../models/userModels.js";
+import reviewModel from "../models/reviewModel.js";
+import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 
 // ✅ ADD DOCTOR (optimized)
 const addDoctor = async (req, res) => {
@@ -228,7 +230,16 @@ const addDoctor = async (req, res) => {
       date: Date.now(),
     };
 
-    await doctorModel.create(doctorData);
+    const doctor = await doctorModel.create(doctorData);
+
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.DOCTOR_CREATED,
+      target: { type: "doctor", id: doctor._id, label: doctor.name },
+      status: "success",
+    });
 
     res.json({ success: true, message: "Doctor Added" });
   } catch (error) {
@@ -246,11 +257,45 @@ const loginAdmin = async (req, res) => {
       email !== process.env.ADMIN_EMAIL ||
       password !== process.env.ADMIN_PASSWORD
     ) {
+      await logAction({
+        req,
+        actorType: "admin",
+        actorLabel: email || "",
+        action: AUDIT_ACTIONS.LOGIN,
+        status: "failure",
+        reason: "Invalid credentials",
+      });
       return res.json({ success: false, message: "Invalid Credentials" });
     }
 
     const token = jwt.sign({ email }, process.env.JWT_SECRET);
+
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: email,
+      action: AUDIT_ACTIONS.LOGIN,
+      status: "success",
+    });
+
     res.json({ success: true, token });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// ✅ LOGOUT ADMIN (stateless JWT — this only records the audit entry)
+const logoutAdmin = async (req, res) => {
+  try {
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.LOGOUT,
+      status: "success",
+    });
+    res.json({ success: true, message: "Logged out" });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -343,11 +388,64 @@ const adminDashboard = async (req, res) => {
   }
 };
 
+// ✅ DELETE DOCTOR
+// Blocks deletion while the doctor has any active (non-cancelled,
+// non-completed) appointment — matches this codebase's existing
+// "upcoming/active" convention (see hospitalController.getHospitalSelfDashboard).
+// Otherwise hard-deletes the doctor and their reviews.
+const deleteDoctor = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const doctor = await doctorModel.findById(id);
+    if (!doctor) {
+      return res.json({ success: false, message: "Doctor not found" });
+    }
+
+    const activeAppointments = await appointmentModel.countDocuments({
+      docId: id,
+      cancelled: false,
+      isCompleted: false,
+    });
+
+    if (activeAppointments > 0) {
+      return res.json({
+        success: false,
+        message: `Cannot delete: this doctor has ${activeAppointments} active appointment${
+          activeAppointments !== 1 ? "s" : ""
+        }. Cancel or complete them first.`,
+      });
+    }
+
+    await reviewModel.deleteMany({ doctorId: id });
+    await doctorModel.findByIdAndDelete(id);
+
+    const { password, ...doctorSnapshot } = doctor.toObject();
+
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.DOCTOR_DELETED,
+      target: { type: "doctor", id, label: doctor.name },
+      previousValue: doctorSnapshot,
+      status: "success",
+    });
+
+    res.json({ success: true, message: "Doctor Deleted Successfully" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 export {
   addDoctor,
   loginAdmin,
+  logoutAdmin,
   allDoctors,
   appointmentsAdmin,
   appointmentCancel,
   adminDashboard,
+  deleteDoctor,
 };

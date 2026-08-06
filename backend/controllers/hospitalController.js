@@ -5,6 +5,7 @@ import { v2 as cloudinary } from "cloudinary";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import validator from "validator";
+import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 
 // Fields a hospital is allowed to edit about its own profile — everything
 // else (password, active, doctors, averageRating, totalReviews, media) is
@@ -117,6 +118,15 @@ const addHospital = async (req, res) => {
 
     await hospital.save();
 
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.HOSPITAL_CREATED,
+      target: { type: "hospital", id: hospital._id, label: hospital.name },
+      status: "success",
+    });
+
     res.json({
       success: true,
       message: "Hospital Added Successfully",
@@ -214,6 +224,18 @@ const updateHospital = async (req, res) => {
 
     await hospitalModel.findByIdAndUpdate(id, updateData);
 
+    const { password: _updatedPassword, ...updateLogValue } = updateData;
+
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.HOSPITAL_UPDATED,
+      target: { type: "hospital", id, label: updateData.name || "" },
+      newValue: updateLogValue,
+      status: "success",
+    });
+
     res.json({
       success: true,
       message: "Hospital Updated Successfully",
@@ -234,7 +256,20 @@ const deleteHospital = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await hospitalModel.findByIdAndDelete(id);
+    const hospital = await hospitalModel.findByIdAndDelete(id);
+    const hospitalSnapshot = hospital
+      ? (({ password, ...rest }) => rest)(hospital.toObject())
+      : null;
+
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.HOSPITAL_DELETED,
+      target: { type: "hospital", id, label: hospital?.name || "" },
+      previousValue: hospitalSnapshot,
+      status: "success",
+    });
 
     res.json({
       success: true,
@@ -270,6 +305,17 @@ const changeHospitalStatus = async (req, res) => {
       active: !hospital.active,
     });
 
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.HOSPITAL_STATUS_CHANGED,
+      target: { type: "hospital", id, label: hospital.name },
+      previousValue: { active: hospital.active },
+      newValue: { active: !hospital.active },
+      status: "success",
+    });
+
     res.json({
       success: true,
       message: "Hospital Status Updated",
@@ -293,16 +339,64 @@ const loginHospital = async (req, res) => {
 
     const hospital = await hospitalModel.findOne({ email });
     if (!hospital || !hospital.password) {
+      await logAction({
+        req,
+        actorType: "hospital",
+        actorLabel: email || "",
+        action: AUDIT_ACTIONS.LOGIN,
+        status: "failure",
+        reason: "Invalid credentials",
+      });
       return res.json({ success: false, message: "Invalid Credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, hospital.password);
     if (!isMatch) {
+      await logAction({
+        req,
+        actorType: "hospital",
+        actorId: hospital._id,
+        actorLabel: hospital.email,
+        action: AUDIT_ACTIONS.LOGIN,
+        status: "failure",
+        reason: "Invalid credentials",
+      });
       return res.json({ success: false, message: "Invalid Credentials" });
     }
 
     const token = jwt.sign({ id: hospital._id }, process.env.JWT_SECRET);
+
+    await logAction({
+      req,
+      actorType: "hospital",
+      actorId: hospital._id,
+      actorLabel: hospital.email,
+      action: AUDIT_ACTIONS.LOGIN,
+      status: "success",
+    });
+
     res.json({ success: true, token });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// =============================
+// Logout Hospital (stateless JWT — this only records the audit entry)
+// =============================
+const logoutHospital = async (req, res) => {
+  try {
+    const hospital = await hospitalModel.findById(req.hospitalId).select("email");
+    await logAction({
+      req,
+      actorType: "hospital",
+      actorId: req.hospitalId,
+      actorLabel: hospital?.email || "",
+      action: AUDIT_ACTIONS.LOGOUT,
+      status: "success",
+    });
+    res.json({ success: true, message: "Logged out" });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -383,6 +477,16 @@ const changeHospitalSelfPassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     hospital.password = await bcrypt.hash(newPassword, salt);
     await hospital.save();
+
+    await logAction({
+      req,
+      actorType: "hospital",
+      actorId: hospital._id,
+      actorLabel: hospital.email,
+      action: AUDIT_ACTIONS.PASSWORD_CHANGED,
+      target: { type: "hospital", id: hospital._id, label: hospital.name },
+      status: "success",
+    });
 
     res.json({ success: true, message: "Password updated" });
   } catch (error) {
@@ -696,6 +800,7 @@ export {
   deleteHospital,
   changeHospitalStatus,
   loginHospital,
+  logoutHospital,
   getHospitalSelfProfile,
   updateHospitalSelfProfile,
   changeHospitalSelfPassword,

@@ -1,12 +1,13 @@
 import express from 'express'
 
-import { bookAppointment, getProfie, loginUser, registerUser, updateProfile,listAppointment, cancelAppointment, paymentRazorpay, verifyRazorpay } from '../controllers/userController.js'
+import { bookAppointment, getProfie, loginUser, logoutUser, registerUser, updateProfile,listAppointment, cancelAppointment, paymentRazorpay, verifyRazorpay } from '../controllers/userController.js'
 import authUser from '../middlewares/authUser.js'
 import upload from '../middlewares/multer.js'
 
 const userRouter = express.Router()
 userRouter.post('/register', registerUser)
 userRouter.post('/login',loginUser)
+userRouter.post('/logout',authUser,logoutUser)
 userRouter.get('/get-profile',authUser , getProfie)
 userRouter.post('/update-profile',upload.single('image'),authUser ,updateProfile)
 userRouter.post('/book-appointment',authUser, bookAppointment)

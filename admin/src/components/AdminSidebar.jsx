@@ -119,6 +119,16 @@ const AdminSidebar = () => {
         name: 'Hospital Reviews',
         path: '/hospital-reviews',
         icon: assets.list_icon
+      },
+
+      // -------------------------
+      // Audit
+      // -------------------------
+
+      {
+        name: 'Audit Logs',
+        path: '/audit-logs',
+        icon: assets.list_icon
       }
 
     ], [])

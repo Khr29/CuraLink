@@ -7,6 +7,7 @@ import appointmentModel from "../models/appointmentModel.js";
 import doctorModel from "../models/doctorModel.js";
 import razorpay from "razorpay";
 import { sendEmail } from "../utils/email.js";
+import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 // api to register user
 
 const registerUser = async (req, res) => {
@@ -105,6 +106,17 @@ const registerUser = async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
+
+    await logAction({
+      req,
+      actorType: "user",
+      actorId: user._id,
+      actorLabel: user.email,
+      action: AUDIT_ACTIONS.USER_REGISTERED,
+      target: { type: "user", id: user._id, label: user.name },
+      status: "success",
+    });
+
     res.json({ success: true, token });
   } catch (error) {
     console.log(error);
@@ -133,6 +145,14 @@ const loginUser = async (req, res) => {
 
     const user = await userModel.findOne({ email });
     if (!user) {
+      await logAction({
+        req,
+        actorType: "user",
+        actorLabel: email,
+        action: AUDIT_ACTIONS.LOGIN,
+        status: "failure",
+        reason: "User does not exist",
+      });
       return res.json({ success: false, message: "User does not exist" });
     }
 
@@ -142,10 +162,46 @@ const loginUser = async (req, res) => {
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
         expiresIn: "7d",
       });
+      await logAction({
+        req,
+        actorType: "user",
+        actorId: user._id,
+        actorLabel: user.email,
+        action: AUDIT_ACTIONS.LOGIN,
+        status: "success",
+      });
       res.json({ success: true, token });
     } else {
+      await logAction({
+        req,
+        actorType: "user",
+        actorId: user._id,
+        actorLabel: user.email,
+        action: AUDIT_ACTIONS.LOGIN,
+        status: "failure",
+        reason: "Invalid credentials",
+      });
       res.json({ success: false, message: "Invalid Credentials" });
     }
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// api to log out a user (stateless JWT — this only records the audit entry)
+const logoutUser = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.userId).select("email");
+    await logAction({
+      req,
+      actorType: "user",
+      actorId: req.userId,
+      actorLabel: user?.email || "",
+      action: AUDIT_ACTIONS.LOGOUT,
+      status: "success",
+    });
+    res.json({ success: true, message: "Logged out" });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -553,6 +609,7 @@ const verifyRazorpay = async (req, res) => {
 export {
   registerUser,
   loginUser,
+  logoutUser,
   getProfie,
   updateProfile,
   bookAppointment,

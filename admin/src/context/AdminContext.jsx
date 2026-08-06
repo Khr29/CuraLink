@@ -122,6 +122,9 @@ const AdminContextProvider = (props) => {
 
     const [reviews, setReviews] = useState([])
 
+    const [auditLogs, setAuditLogs] = useState([])
+    const [auditLogsPagination, setAuditLogsPagination] = useState({ page: 1, limit: 25, total: 0, pages: 1 })
+
     const backendUrl = import.meta.env.VITE_BACKEND_URL
 
     // 🔥 common config (avoid repeat)
@@ -206,6 +209,27 @@ const changeHospitalStatus = async (hospitalId) => {
         toast.error(error.message)
     }
 }
+
+
+    // ✅ DELETE DOCTOR
+    const deleteDoctor = async (docId) => {
+        try {
+            const { data } = await axios.delete(
+                backendUrl + '/api/admin/delete-doctor/' + docId,
+                config
+            )
+
+            if (data.success) {
+                toast.success(data.message)
+                getAllDoctors()
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
 
 
     // ✅ CHANGE AVAILABILITY (optimistic UI 🚀)
@@ -394,6 +418,49 @@ const changeHospitalStatus = async (hospitalId) => {
     }
 
 
+    // ✅ AUDIT LOGS (paginated + filterable)
+    const getAuditLogs = useCallback(async (params = {}) => {
+        try {
+            const { data } = await axios.get(
+                backendUrl + '/api/admin/audit-logs',
+                { ...config, params }
+            )
+
+            if (data.success) {
+                setAuditLogs(data.logs)
+                setAuditLogsPagination(data.pagination)
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }, [aToken])
+
+
+    const exportAuditLogs = async (params = {}) => {
+        try {
+            const response = await axios.get(
+                backendUrl + '/api/admin/audit-logs/export',
+                { ...config, params, responseType: 'blob' }
+            )
+
+            const url = window.URL.createObjectURL(new Blob([response.data]))
+            const link = document.createElement('a')
+            link.href = url
+            link.setAttribute('download', `audit-logs-${Date.now()}.csv`)
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+            window.URL.revokeObjectURL(url)
+
+        } catch (error) {
+            toast.error(error.message || 'Export failed')
+        }
+    }
+
+
     const value = {
     aToken,
     setAToken,
@@ -404,6 +471,7 @@ const changeHospitalStatus = async (hospitalId) => {
     doctors,
     getAllDoctors,
     changeAvailability,
+    deleteDoctor,
 
     // Hospitals
     hospitals,
@@ -428,6 +496,12 @@ const changeHospitalStatus = async (hospitalId) => {
     // Dashboard
     getDashData,
     dashData,
+
+    // Audit Logs
+    auditLogs,
+    auditLogsPagination,
+    getAuditLogs,
+    exportAuditLogs,
 }
 
     return(

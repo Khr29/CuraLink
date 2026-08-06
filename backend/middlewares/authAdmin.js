@@ -44,6 +44,8 @@ const authAdmin = async (req, res, next) => {
             return res.json({ success: false, message: "Not Authorized Login Again" })
         }
 
+        req.adminEmail = decoded.email
+
         next()
 
     } catch (error) {

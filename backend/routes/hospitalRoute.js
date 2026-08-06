@@ -7,6 +7,7 @@ import {
   deleteHospital,
   changeHospitalStatus,
   loginHospital,
+  logoutHospital,
   getHospitalSelfProfile,
   updateHospitalSelfProfile,
   changeHospitalSelfPassword,
@@ -30,6 +31,7 @@ const hospitalRouter = express.Router();
 // =====================================
 
 hospitalRouter.post("/login", loginHospital);
+hospitalRouter.post("/logout", authHospital, logoutHospital);
 
 // =====================================
 // Hospital Portal — Self Service
