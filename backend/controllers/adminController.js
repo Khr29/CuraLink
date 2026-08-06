@@ -159,8 +159,10 @@ import hospitalModel from "../models/hospitalModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import userModel from "../models/userModels.js";
 import reviewModel from "../models/reviewModel.js";
+import medicalRecordModel from "../models/medicalRecordModel.js";
+import crypto from "crypto";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
-import { issueSession, revokeSession } from "../utils/session.js";
+import { issueSession, revokeSession, revokeAllSessions } from "../utils/session.js";
 import { signAccessToken } from "../utils/tokens.js";
 import { validatePasswordStrength } from "../utils/passwordSecurity.js";
 import { sanitizeText } from "../utils/sanitize.js";
@@ -534,6 +536,100 @@ const changeUserStatus = async (req, res) => {
   }
 };
 
+// ✅ DELETE USER
+// Mirrors deleteDoctor exactly: blocks deletion while the user has any
+// active (non-cancelled, non-completed) appointment; otherwise hard-deletes
+// the user and their reviews.
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await userModel.findById(id);
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    const activeAppointments = await appointmentModel.countDocuments({
+      userId: id,
+      cancelled: false,
+      isCompleted: false,
+    });
+
+    if (activeAppointments > 0) {
+      return res.json({
+        success: false,
+        message: `Cannot delete: this user has ${activeAppointments} active appointment${
+          activeAppointments !== 1 ? "s" : ""
+        }. Cancel or complete them first.`,
+      });
+    }
+
+    const { password, ...userSnapshot } = user.toObject();
+
+    // A patient with medical record history can't be hard-deleted — that
+    // would either cascade-delete a doctor's clinical records or leave them
+    // pointing at a missing patient. Anonymize instead: scrub every
+    // identifying field but keep the _id, so medical records (and any
+    // reviews left in place) keep resolving to a real — if blank — account
+    // instead of a broken reference.
+    const hasClinicalHistory = await medicalRecordModel.exists({ patientId: id });
+
+    if (hasClinicalHistory) {
+      user.name = "Deleted User";
+      user.email = `deleted-${user._id}@curalink.invalid`;
+      user.phone = "";
+      user.address = { line1: "", line2: "", city: "", state: "", country: "", pincode: "" };
+      user.gender = "Not Selected";
+      user.dob = "Not Selected";
+      user.bloodGroup = "";
+      user.emergencyContact = { name: "", phone: "" };
+      user.insurance = { provider: "", policyNumber: "", validTill: "" };
+      user.isActive = false;
+      // Unusable random hash — this account can never log in again.
+      user.password = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
+      user.previousPasswords = [];
+      await user.save();
+
+      await revokeAllSessions({ actorType: "user", actorId: user._id });
+
+      await logAction({
+        req,
+        actorType: "admin",
+        actorLabel: req.adminEmail || "",
+        action: AUDIT_ACTIONS.USER_DELETED,
+        target: { type: "user", id, label: userSnapshot.name },
+        previousValue: userSnapshot,
+        reason: "Anonymized — patient has medical record history that must be preserved",
+        status: "success",
+      });
+
+      return res.json({
+        success: true,
+        message: "User has medical records on file — account anonymized instead of deleted",
+      });
+    }
+
+    // No clinical history — safe to remove entirely.
+    await reviewModel.deleteMany({ userId: id });
+    await userModel.findByIdAndDelete(id);
+
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.USER_DELETED,
+      target: { type: "user", id, label: user.name },
+      previousValue: userSnapshot,
+      status: "success",
+    });
+
+    res.json({ success: true, message: "User Deleted Successfully" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 // ✅ DOCTOR VERIFICATION (Doctor Registration -> Pending -> Admin Review -> Verified)
 // Admin-added doctors already default to "verified"; this is mainly for the
 // hospital-added ("pending") entry point.
@@ -627,6 +723,7 @@ export {
   deleteDoctor,
   allUsers,
   changeUserStatus,
+  deleteUser,
   setDoctorVerification,
   setHospitalVerification,
 };

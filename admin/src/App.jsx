@@ -33,6 +33,8 @@ const DoctorHospitalAffiliation = lazy(() => import('./pages/Doctor/HospitalAffi
 // Lazy loaded Hospital Portal Pages
 const HospitalDashboard = lazy(() => import('./pages/Hospital/HospitalDashboard'))
 const HospitalDoctors = lazy(() => import('./pages/Hospital/HospitalDoctors'))
+const HospitalPatients = lazy(() => import('./pages/Hospital/HospitalPatients'))
+const HospitalPatientDetail = lazy(() => import('./pages/Hospital/HospitalPatientDetail'))
 const HospitalDoctorRequests = lazy(() => import('./pages/Hospital/DoctorRequests'))
 const HospitalAddDoctor = lazy(() => import('./pages/Hospital/HospitalAddDoctor'))
 const HospitalEditDoctor = lazy(() => import('./pages/Hospital/HospitalEditDoctor'))
@@ -141,6 +143,14 @@ const App = () => {
 
       <Route path="/hospital-my-doctors" element={
         <ProtectedRoute token={hToken}><PanelLayout><HospitalDoctors /></PanelLayout></ProtectedRoute>
+      } />
+
+      <Route path="/hospital-patients" element={
+        <ProtectedRoute token={hToken}><PanelLayout><HospitalPatients /></PanelLayout></ProtectedRoute>
+      } />
+
+      <Route path="/hospital-patients/:patientId" element={
+        <ProtectedRoute token={hToken}><PanelLayout><HospitalPatientDetail /></PanelLayout></ProtectedRoute>
       } />
 
       <Route path="/hospital-doctor-requests" element={

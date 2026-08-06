@@ -41,6 +41,11 @@ const userSchema =new mongoose.Schema({
     medical: {
         type: Object,
         default: {height: '', weight: '', allergies: '', chronicDiseases: '', medications: ''}
+    },
+    // Optional — purely informational, not used by any billing/claims logic.
+    insurance: {
+        type: Object,
+        default: {provider: '', policyNumber: '', validTill: ''}
     }
 },{minimize:false, timestamps:true})
 

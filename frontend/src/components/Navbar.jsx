@@ -13,9 +13,15 @@ const navLinks = [
 
 // Single source of truth for the account dropdown items, shared by the
 // desktop hover-menu and the mobile drawer so they never drift apart.
+// Mirrors the Patient Portal sidebar (components/PortalSidebar.jsx).
 const accountMenuItems = [
+  { label: "Dashboard", path: "/dashboard", icon: "🏠" },
   { label: "My Profile", path: "/my-profile", icon: "👤" },
+  { label: "Medical Records", path: "/medical-records", icon: "📋" },
   { label: "My Appointments", path: "/my-appointments", icon: "📅" },
+  { label: "Reviews", path: "/reviews", icon: "⭐" },
+  { label: "Notifications", path: "/notifications", icon: "🔔" },
+  { label: "Settings", path: "/settings", icon: "⚙️" },
 ];
 
 const Navbar = () => {

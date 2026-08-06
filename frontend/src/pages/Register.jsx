@@ -136,7 +136,7 @@ const Register = () => {
   };
 
   useEffect(() => {
-    if (token) navigate("/");
+    if (token) navigate("/dashboard");
   }, [token, navigate]);
 
   const imgSrc = image ? URL.createObjectURL(image) : null;

@@ -10,6 +10,7 @@ import {
   deleteDoctor,
   loginAdmin,
   logoutAdmin,
+  deleteUser,
   setDoctorVerification,
   setHospitalVerification,
 } from "../controllers/adminController.js";
@@ -123,6 +124,9 @@ adminRouter.get("/all-users", authAdmin, allUsers);
 
 // Change User Status
 adminRouter.patch("/user-status/:id", authAdmin, changeUserStatus);
+
+// Delete User
+adminRouter.delete("/delete-user/:id", authAdmin, deleteUser);
 
 // =====================================
 // Audit Logs

@@ -21,6 +21,11 @@ const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const MyProfile = lazy(() => import("./pages/MyProfile"));
 const MyAppointments = lazy(() => import("./pages/MyAppointments"));
+const Dashboard = lazy(() => import("./pages/Portal/Dashboard"));
+const MedicalRecordsPage = lazy(() => import("./pages/Portal/MedicalRecordsPage"));
+const ReviewsPage = lazy(() => import("./pages/Portal/ReviewsPage"));
+const NotificationsPage = lazy(() => import("./pages/Portal/NotificationsPage"));
+const SettingsPage = lazy(() => import("./pages/Portal/SettingsPage"));
 
 // Loading Spinner
 const PageLoader = () => (
@@ -31,52 +36,62 @@ const PageLoader = () => (
 
 const App = () => {
   return (
-    <div className="mx-4 sm:mx-[10%] flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen">
 
       <ToastContainer />
 
-      <Navbar />
+      {/* Site chrome (Navbar + routed pages) keeps its original constrained
+          width; only the Footer breaks out to full browser width below —
+          see Footer.jsx / the "detached footer" fix. */}
+      <div className="mx-4 sm:mx-[10%] flex flex-col flex-1">
+        <Navbar />
 
-      {/* Automatically scroll to top on every page change */}
-      <ScrollToTop />
+        {/* Automatically scroll to top on every page change */}
+        <ScrollToTop />
 
-      <main className="flex-grow">
-        <ErrorBoundary>
-          <Suspense fallback={<PageLoader />}>
+        <main className="flex-grow">
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoader />}>
 
-            <Routes>
+              <Routes>
 
-              {/* Home */}
-              <Route path="/" element={<Home />} />
+                {/* Home */}
+                <Route path="/" element={<Home />} />
 
-              {/* Doctors */}
-              <Route path="/doctors" element={<Doctors />} />
-              <Route path="/doctors/:speciality" element={<Doctors />} />
-              <Route path="/appointment/:docId" element={<Appointments />} />
+                {/* Doctors */}
+                <Route path="/doctors" element={<Doctors />} />
+                <Route path="/doctors/:speciality" element={<Doctors />} />
+                <Route path="/appointment/:docId" element={<Appointments />} />
 
-              {/* Hospitals */}
-              <Route path="/hospitals" element={<Hospitals />} />
-              <Route
-                path="/hospital/:hospitalId"
-                element={<HospitalDetails />}
-              />
+                {/* Hospitals */}
+                <Route path="/hospitals" element={<Hospitals />} />
+                <Route
+                  path="/hospital/:hospitalId"
+                  element={<HospitalDetails />}
+                />
 
-              {/* User */}
-              <Route path="/my-profile" element={<MyProfile />} />
-              <Route path="/my-appointments" element={<MyAppointments />} />
+                {/* User Portal */}
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/my-profile" element={<MyProfile />} />
+                <Route path="/medical-records" element={<MedicalRecordsPage />} />
+                <Route path="/my-appointments" element={<MyAppointments />} />
+                <Route path="/reviews" element={<ReviewsPage />} />
+                <Route path="/notifications" element={<NotificationsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
 
-              {/* Other */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
+                {/* Other */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
 
-            </Routes>
+              </Routes>
 
-          </Suspense>
-        </ErrorBoundary>
-      </main>
+            </Suspense>
+          </ErrorBoundary>
+        </main>
+      </div>
 
       <Footer />
 

@@ -1,6 +1,8 @@
 import hospitalModel from "../models/hospitalModel.js";
 import doctorModel from "../models/doctorModel.js";
 import appointmentModel from "../models/appointmentModel.js";
+import userModel from "../models/userModels.js";
+import medicalRecordModel from "../models/medicalRecordModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import bcrypt from "bcrypt";
 import validator from "validator";
@@ -865,6 +867,96 @@ const getHospitalSelfAppointments = async (req, res) => {
   }
 };
 
+// =============================
+// Own Patients — every patient who has ever booked an appointment at this
+// hospital (authHospital). Derived from appointments rather than a
+// separate collection, matching how getHospitalSelfDashboard already
+// computes "patientsServed".
+// =============================
+const getHospitalSelfPatients = async (req, res) => {
+  try {
+    const hospitalId = req.hospitalId;
+
+    const appointments = await appointmentModel
+      .find({ hospitalId })
+      .select("userId docId isCompleted")
+      .lean();
+
+    const summaryByPatient = new Map();
+    for (const appt of appointments) {
+      const uid = appt.userId.toString();
+      if (!summaryByPatient.has(uid)) {
+        summaryByPatient.set(uid, { appointmentCount: 0, completedCount: 0, doctorIds: new Set() });
+      }
+      const entry = summaryByPatient.get(uid);
+      entry.appointmentCount += 1;
+      if (appt.isCompleted) entry.completedCount += 1;
+      entry.doctorIds.add(appt.docId.toString());
+    }
+
+    const userIds = [...summaryByPatient.keys()];
+    const users = await userModel.find({ _id: { $in: userIds } }).select("-password").lean();
+
+    const patients = users.map((u) => {
+      const entry = summaryByPatient.get(u._id.toString());
+      return {
+        ...u,
+        appointmentCount: entry.appointmentCount,
+        completedCount: entry.completedCount,
+        doctorCount: entry.doctorIds.size,
+      };
+    });
+
+    res.json({ success: true, patients });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// =============================
+// Own Patient Detail — profile + appointment history + medical records +
+// assigned doctors, all scoped to THIS hospital only (authHospital).
+// Ownership gate: the patient must actually have an appointment at this
+// hospital, otherwise a hospital could probe arbitrary patient ids.
+// =============================
+const getHospitalSelfPatientDetail = async (req, res) => {
+  try {
+    const hospitalId = req.hospitalId;
+    const { patientId } = req.params;
+
+    const hasAppointmentHere = await appointmentModel.exists({ hospitalId, userId: patientId });
+    if (!hasAppointmentHere) {
+      return res.json({ success: false, message: "Patient not found" });
+    }
+
+    const [patient, appointments, records] = await Promise.all([
+      userModel.findById(patientId).select("-password"),
+      appointmentModel.find({ hospitalId, userId: patientId }).sort({ date: -1 }).lean(),
+      medicalRecordModel
+        .find({ hospitalId, patientId })
+        .populate("doctorId", "name speciality image")
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
+
+    if (!patient) {
+      return res.json({ success: false, message: "Patient not found" });
+    }
+
+    const assignedDoctorIds = [...new Set(appointments.map((a) => a.docId.toString()))];
+    const doctors = await doctorModel
+      .find({ _id: { $in: assignedDoctorIds } })
+      .select("name speciality image email")
+      .lean();
+
+    res.json({ success: true, patient, appointments, records, doctors });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 export {
   addHospital,
   getAllHospitals,
@@ -885,4 +977,6 @@ export {
   hospitalUpdateDoctor,
   hospitalDeleteDoctor,
   getHospitalSelfAppointments,
+  getHospitalSelfPatients,
+  getHospitalSelfPatientDetail,
 };

@@ -12,10 +12,12 @@ import {
   XCircle,
   X,
   MapPin,
+  Trash2,
 } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 import EmptyState from '../../components/EmptyState'
 import { SkeletonCard } from '../../components/Skeleton'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const selectStyle = {
   padding: '9px 12px',
@@ -30,12 +32,14 @@ const selectStyle = {
 }
 
 const UsersList = () => {
-  const { users, aToken, getAllUsers, changeUserStatus } = useContext(AdminContext)
+  const { users, aToken, getAllUsers, changeUserStatus, deleteUser } = useContext(AdminContext)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [sortBy, setSortBy] = useState('date')
   const [viewedUser, setViewedUser] = useState(null)
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (aToken) {
@@ -50,6 +54,18 @@ const UsersList = () => {
   const handleViewProfile = useCallback((user) => {
     setViewedUser(user)
   }, [])
+
+  const handleDeleteClick = useCallback((user) => {
+    setPendingDelete(user)
+  }, [])
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!pendingDelete) return
+    setDeleting(true)
+    await deleteUser(pendingDelete._id)
+    setDeleting(false)
+    setPendingDelete(null)
+  }, [pendingDelete, deleteUser])
 
   const filteredUsers = useMemo(() => {
     let list = users || []
@@ -93,9 +109,10 @@ const UsersList = () => {
         item={item}
         onStatusChange={handleStatusChange}
         onViewProfile={handleViewProfile}
+        onDeleteClick={handleDeleteClick}
       />
     ))
-  }, [filteredUsers, handleStatusChange, handleViewProfile])
+  }, [filteredUsers, handleStatusChange, handleViewProfile, handleDeleteClick])
 
   return (
     <div
@@ -190,13 +207,24 @@ const UsersList = () => {
       </div>
 
       <UserProfileModal user={viewedUser} onClose={() => setViewedUser(null)} />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete this user?"
+        message={pendingDelete ? `This will permanently remove ${pendingDelete.name} and their reviews. This cannot be undone.` : ''}
+        confirmLabel="Delete User"
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => !deleting && setPendingDelete(null)}
+      />
     </div>
   )
 }
 
 // CURALINK DESIGN SYSTEM USER CARD COMPONENT
-const UserCard = ({ item, onStatusChange, onViewProfile }) => {
+const UserCard = ({ item, onStatusChange, onViewProfile, onDeleteClick }) => {
   const [hovered, setHovered] = useState(false)
+  const [deleteHovered, setDeleteHovered] = useState(false)
   const isActive = item.isActive ?? true
   const registeredOn = item.createdAt
     ? new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
@@ -227,7 +255,7 @@ const UserCard = ({ item, onStatusChange, onViewProfile }) => {
             border: '2px solid #E2E8F0', flexShrink: 0,
           }}
         />
-        <div style={{ minWidth: 0 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
           <h3 style={{ fontSize: 15.5, fontWeight: 700, color: '#0F172A', margin: 0, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {item.name}
           </h3>
@@ -238,6 +266,21 @@ const UserCard = ({ item, onStatusChange, onViewProfile }) => {
             </span>
           </div>
         </div>
+        <button
+          onClick={() => onDeleteClick(item)}
+          onMouseEnter={() => setDeleteHovered(true)}
+          onMouseLeave={() => setDeleteHovered(false)}
+          title="Delete User"
+          style={{
+            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+            background: deleteHovered ? '#EF4444' : '#FEF2F2',
+            border: deleteHovered ? '1px solid #EF4444' : '1px solid #FEE2E2',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.2s ease',
+          }}
+        >
+          <Trash2 size={14} color={deleteHovered ? '#FFFFFF' : '#EF4444'} />
+        </button>
       </div>
 
       <div style={{ padding: '18px 20px', flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>

@@ -263,6 +263,24 @@ const changeHospitalStatus = async (hospitalId) => {
     }
 
 
+    // ✅ DELETE USER (mirrors deleteDoctor/deleteHospital exactly)
+    const deleteUser = async (userId) => {
+        try {
+            const { data } = await axios.delete(
+                backendUrl + '/api/admin/delete-user/' + userId,
+                config
+            )
+            if (data.success) {
+                toast.success(data.message)
+                getAllUsers()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
     // ✅ DOCTOR VERIFICATION
     const setDoctorVerification = async (docId, status) => {
         try {
@@ -690,6 +708,7 @@ const changeHospitalStatus = async (hospitalId) => {
     users,
     getAllUsers,
     changeUserStatus,
+    deleteUser,
 
     // Appointments
     appointments,

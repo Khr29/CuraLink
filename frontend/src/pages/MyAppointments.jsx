@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import ReviewForm from "../components/ReviewForm";
 import EmptyState from "../components/EmptyState";
+import PortalLayout from "../components/PortalLayout";
 import { CalendarX2 } from "lucide-react";
 
 const months = [" ", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -130,46 +131,50 @@ const MyAppointments = () => {
 
   if (loading) {
     return (
-      <div className="py-8">
-        <h1 className="section-title mb-8">My Appointments</h1>
-        <div className="flex flex-col gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="appt-card animate-pulse">
-              <div className="flex gap-4">
-                <div className="w-24 h-28 bg-slate-100 rounded-xl" />
-                <div className="flex-1 space-y-3 pt-1">
-                  <div className="h-4 bg-slate-100 rounded w-1/3" />
-                  <div className="h-3 bg-slate-100 rounded w-1/4" />
-                  <div className="h-3 bg-slate-100 rounded w-1/2" />
+      <PortalLayout>
+        <div>
+          <h1 className="section-title mb-8" style={{ fontSize: "1.85rem" }}>My Appointments</h1>
+          <div className="flex flex-col gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="appt-card animate-pulse">
+                <div className="flex gap-4">
+                  <div className="w-24 h-28 bg-slate-100 rounded-xl" />
+                  <div className="flex-1 space-y-3 pt-1">
+                    <div className="h-4 bg-slate-100 rounded w-1/3" />
+                    <div className="h-3 bg-slate-100 rounded w-1/4" />
+                    <div className="h-3 bg-slate-100 rounded w-1/2" />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      </PortalLayout>
     );
   }
 
   if (appointments.length === 0) {
     return (
-      <div className="py-8">
-        <h1 className="section-title mb-8">My Appointments</h1>
-        <div className="flex flex-col items-center justify-center text-center">
-          <EmptyState
-            icon={CalendarX2}
-            title="No Appointments Yet"
-            subtitle="You haven't booked any appointments. Find a doctor and schedule your first consultation!"
-          />
-          <button onClick={() => navigate("/doctors")} className="btn btn-primary mt-2">
-            Find a Doctor
-          </button>
+      <PortalLayout>
+        <div>
+          <h1 className="section-title mb-8" style={{ fontSize: "1.85rem" }}>My Appointments</h1>
+          <div className="flex flex-col items-center justify-center text-center">
+            <EmptyState
+              icon={CalendarX2}
+              title="No Appointments Yet"
+              subtitle="You haven't booked any appointments. Find a doctor and schedule your first consultation!"
+            />
+            <button onClick={() => navigate("/doctors")} className="btn btn-primary mt-2">
+              Find a Doctor
+            </button>
+          </div>
         </div>
-      </div>
+      </PortalLayout>
     );
   }
 
   return (
-    <div className="py-8 animate-fade-in">
+    <PortalLayout>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -322,7 +327,7 @@ const MyAppointments = () => {
         appointmentId={reviewModal?.appointmentId}
         onSuccess={getMyReviews}
       />
-    </div>
+    </PortalLayout>
   );
 };
 

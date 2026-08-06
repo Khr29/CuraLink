@@ -19,6 +19,8 @@ import {
   hospitalUpdateDoctor,
   hospitalDeleteDoctor,
   getHospitalSelfAppointments,
+  getHospitalSelfPatients,
+  getHospitalSelfPatientDetail,
 } from "../controllers/hospitalController.js";
 import {
   getHospitalDoctorRequests,
@@ -105,6 +107,9 @@ hospitalRouter.put(
 hospitalRouter.delete("/self/doctors/:doctorId", authHospital, hospitalDeleteDoctor);
 
 hospitalRouter.get("/self/appointments", authHospital, getHospitalSelfAppointments);
+
+hospitalRouter.get("/self/patients", authHospital, getHospitalSelfPatients);
+hospitalRouter.get("/self/patients/:patientId", authHospital, getHospitalSelfPatientDetail);
 
 hospitalRouter.get("/self/doctor-requests", authHospital, getHospitalDoctorRequests);
 hospitalRouter.patch("/self/doctor-requests/:id/approve", authHospital, approveHospitalDoctorRequest);

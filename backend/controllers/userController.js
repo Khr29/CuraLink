@@ -66,6 +66,9 @@ const registerUser = async (req, res) => {
       allergies,
       chronicDiseases,
       medications,
+      insuranceProvider,
+      insurancePolicyNumber,
+      insuranceValidTill,
       address,
     } = req.body;
 
@@ -85,6 +88,13 @@ const registerUser = async (req, res) => {
       userData.emergencyContact = {
         name: sanitizeText(emergencyContactName || "", { maxLength: 80 }),
         phone: emergencyContactPhone || "",
+      };
+    }
+    if (insuranceProvider || insurancePolicyNumber || insuranceValidTill) {
+      userData.insurance = {
+        provider: sanitizeText(insuranceProvider || "", { maxLength: 120 }),
+        policyNumber: sanitizeText(insurancePolicyNumber || "", { maxLength: 60 }),
+        validTill: insuranceValidTill || "",
       };
     }
     if (height || weight || allergies || chronicDiseases || medications) {
@@ -355,6 +365,9 @@ const updateProfile = async (req, res) => {
       allergies,
       chronicDiseases,
       medications,
+      insuranceProvider,
+      insurancePolicyNumber,
+      insuranceValidTill,
     } = req.body;
     const imageFile = req.file;
     if (!name || !phone || !dob || !gender) {
@@ -392,6 +405,17 @@ const updateProfile = async (req, res) => {
         allergies: sanitizeText(allergies || "", { maxLength: 1000 }),
         chronicDiseases: sanitizeText(chronicDiseases || "", { maxLength: 1000 }),
         medications: sanitizeText(medications || "", { maxLength: 1000 }),
+      };
+    }
+    if (
+      insuranceProvider !== undefined ||
+      insurancePolicyNumber !== undefined ||
+      insuranceValidTill !== undefined
+    ) {
+      updateData.insurance = {
+        provider: sanitizeText(insuranceProvider || "", { maxLength: 120 }),
+        policyNumber: sanitizeText(insurancePolicyNumber || "", { maxLength: 60 }),
+        validTill: insuranceValidTill || "",
       };
     }
 

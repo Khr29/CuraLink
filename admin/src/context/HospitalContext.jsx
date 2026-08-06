@@ -14,6 +14,8 @@ const HospitalContextProvider = (props) => {
     const [dashData, setDashData] = useState(false)
     const [doctors, setDoctors] = useState([])
     const [appointments, setAppointments] = useState([])
+    const [patients, setPatients] = useState([])
+    const [patientDetail, setPatientDetail] = useState(null)
 
     // Silently refreshes the 15-min access token using the httpOnly refresh
     // cookie whenever a request comes back 401.
@@ -228,6 +230,38 @@ const HospitalContextProvider = (props) => {
         }
     }, [backendUrl, hToken, getDoctorRequests])
 
+    // ✅ PATIENTS — every patient who has booked at this hospital
+    const getHospitalPatients = useCallback(async () => {
+        try {
+            const { data } = await axios.get(backendUrl + '/api/hospital/self/patients', { headers: { htoken: hToken } })
+            if (data.success) {
+                setPatients(data.patients)
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+    }, [backendUrl, hToken])
+
+    // Patient List -> Patient Profile -> Appointment History -> Medical Records
+    const getHospitalPatientDetail = useCallback(async (patientId) => {
+        try {
+            const { data } = await axios.get(backendUrl + '/api/hospital/self/patients/' + patientId, { headers: { htoken: hToken } })
+            if (data.success) {
+                setPatientDetail(data)
+            } else {
+                toast.error(data.message)
+            }
+            return data
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+            return { success: false }
+        }
+    }, [backendUrl, hToken])
+
     const value = {
         backendUrl,
         hToken, setHToken,
@@ -239,6 +273,8 @@ const HospitalContextProvider = (props) => {
         replyToReview, editReviewReply,
         doctorRequests, getDoctorRequests, approveDoctorRequest, rejectDoctorRequest,
         allDoctors, getAllDoctorsForInvite, inviteDoctor,
+        patients, getHospitalPatients,
+        patientDetail, setPatientDetail, getHospitalPatientDetail,
     }
 
     return (

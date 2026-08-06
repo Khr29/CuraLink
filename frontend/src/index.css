@@ -6,7 +6,10 @@
 /* ─── Base ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; font-size: 16px; }
+/* overflow-x: hidden guards against the 100vw full-bleed technique used by
+   PortalLayout (its breakout width can include the scrollbar gutter and
+   introduce a hairline horizontal scroll otherwise). */
+html { scroll-behavior: smooth; font-size: 16px; overflow-x: hidden; }
 
 body {
   font-family: "Inter", system-ui, sans-serif;

@@ -10,7 +10,8 @@ import {
   UserCog,
   Settings,
   LogOut,
-  UserCheck
+  UserCheck,
+  Users
 } from 'lucide-react'
 import { HospitalContext } from '../context/HospitalContext'
 
@@ -25,6 +26,7 @@ const HospitalSidebar = () => {
     { name: 'Doctor Requests', path: '/hospital-doctor-requests', icon: UserCheck },
     { name: 'Departments', path: '/hospital-departments', icon: Building2 },
     { name: 'Appointments', path: '/hospital-appointments', icon: CalendarDays },
+    { name: 'Patients', path: '/hospital-patients', icon: Users },
     { name: 'Reviews', path: '/hospital-my-reviews', icon: MessageSquare },
     { name: 'Gallery', path: '/hospital-gallery', icon: Images },
     { name: 'Profile', path: '/hospital-profile', icon: UserCog },

@@ -136,7 +136,7 @@ const Login = () => {
   }
 
   useEffect(() => {
-    if (token) navigate('/')
+    if (token) navigate('/dashboard')
   }, [token, navigate])
 
   return (
