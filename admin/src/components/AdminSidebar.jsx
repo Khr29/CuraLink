@@ -106,6 +106,16 @@ const AdminSidebar = () => {
       },
 
       // -------------------------
+      // User Management
+      // -------------------------
+
+      {
+        name: 'Users',
+        path: '/user-list',
+        icon: assets.people_icon
+      },
+
+      // -------------------------
       // Review Moderation
       // -------------------------
 

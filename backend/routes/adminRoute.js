@@ -3,8 +3,10 @@ import {
   addDoctor,
   adminDashboard,
   allDoctors,
+  allUsers,
   appointmentCancel,
   appointmentsAdmin,
+  changeUserStatus,
   deleteDoctor,
   loginAdmin,
   logoutAdmin,
@@ -79,6 +81,16 @@ adminRouter.delete("/delete-hospital/:id", authAdmin, deleteHospital);
 
 // Change Hospital Status
 adminRouter.patch("/hospital-status/:id", authAdmin, changeHospitalStatus);
+
+// =====================================
+// User Management
+// =====================================
+
+// Get All Users
+adminRouter.get("/all-users", authAdmin, allUsers);
+
+// Change User Status
+adminRouter.patch("/user-status/:id", authAdmin, changeUserStatus);
 
 // =====================================
 // Audit Logs

@@ -120,6 +120,8 @@ const AdminContextProvider = (props) => {
 
     const [hospitals, setHospitals] = useState([])
 
+    const [users, setUsers] = useState([])
+
     const [reviews, setReviews] = useState([])
 
     const [auditLogs, setAuditLogs] = useState([])
@@ -209,6 +211,47 @@ const changeHospitalStatus = async (hospitalId) => {
         toast.error(error.message)
     }
 }
+
+
+    // ✅ GET ALL USERS
+    const getAllUsers = useCallback(async () => {
+        try {
+            const { data } = await axios.get(
+                backendUrl + '/api/admin/all-users',
+                config
+            )
+
+            if (data.success) {
+                setUsers(data.users)
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }, [aToken])
+
+
+    const changeUserStatus = async (userId) => {
+        try {
+            const { data } = await axios.patch(
+                backendUrl + '/api/admin/user-status/' + userId,
+                {},
+                config
+            )
+
+            if (data.success) {
+                toast.success(data.message)
+                getAllUsers()
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
 
 
     // ✅ DELETE DOCTOR
@@ -479,6 +522,11 @@ const changeHospitalStatus = async (hospitalId) => {
     getAllHospitals,
     deleteHospital,
     changeHospitalStatus,
+
+    // Users
+    users,
+    getAllUsers,
+    changeUserStatus,
 
     // Appointments
     appointments,

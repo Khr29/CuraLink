@@ -8,8 +8,12 @@ const userSchema =new mongoose.Schema({
     address:{type: Object, default:{line1: '', line2:''}},
     gender: {type: String, default:"Not Selected"},
     dob: {type: String, default:'Not Selected'},
-    phone:{type: String, default: "000000000"}
-},{minimize:false})
+    phone:{type: String, default: "000000000"},
+
+    // Admin can suspend an account without deleting it — default true so
+    // every existing user row remains valid/active with no migration.
+    isActive: {type: Boolean, default: true}
+},{minimize:false, timestamps:true})
 
 const userModel = mongoose.models.user || mongoose.model('user' , userSchema)
 export default userModel

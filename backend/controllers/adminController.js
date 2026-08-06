@@ -439,6 +439,76 @@ const deleteDoctor = async (req, res) => {
   }
 };
 
+// ✅ GET ALL USERS
+// Matches the allDoctors/getAllHospitals convention: return the full list
+// (client does search/filter/sort) rather than introducing a new
+// server-side pagination convention just for this one list.
+const allUsers = async (req, res) => {
+  try {
+    const [users, appointmentCounts, reviewCounts] = await Promise.all([
+      userModel.find({}).select("-password").lean(),
+      appointmentModel.aggregate([
+        { $group: { _id: "$userId", count: { $sum: 1 } } },
+      ]),
+      reviewModel.aggregate([
+        { $group: { _id: "$userId", count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const appointmentCountMap = new Map(
+      appointmentCounts.map((a) => [a._id.toString(), a.count]),
+    );
+    const reviewCountMap = new Map(
+      reviewCounts.map((r) => [r._id.toString(), r.count]),
+    );
+
+    const usersWithCounts = users.map((user) => ({
+      ...user,
+      // Legacy rows created before {timestamps:true} was enabled have no
+      // createdAt — fall back to the id's embedded creation time rather
+      // than backfilling every existing document.
+      createdAt: user.createdAt || user._id.getTimestamp(),
+      appointmentCount: appointmentCountMap.get(user._id.toString()) || 0,
+      reviewCount: reviewCountMap.get(user._id.toString()) || 0,
+    }));
+
+    res.json({ success: true, users: usersWithCounts });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// ✅ CHANGE USER STATUS (mirrors changeHospitalStatus)
+const changeUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await userModel.findById(id);
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    await userModel.findByIdAndUpdate(id, { isActive: !user.isActive });
+
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.USER_STATUS_CHANGED,
+      target: { type: "user", id, label: user.name },
+      previousValue: { isActive: user.isActive },
+      newValue: { isActive: !user.isActive },
+      status: "success",
+    });
+
+    res.json({ success: true, message: "User Status Updated" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 export {
   addDoctor,
   loginAdmin,
@@ -448,4 +518,6 @@ export {
   appointmentCancel,
   adminDashboard,
   deleteDoctor,
+  allUsers,
+  changeUserStatus,
 };
