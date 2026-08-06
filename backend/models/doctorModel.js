@@ -101,6 +101,43 @@ const doctorSchema = new mongoose.Schema(
     },
 
     // ==========================
+    // Account Security
+    // ==========================
+    emailVerified: {
+      type: Boolean,
+      default: true,
+    },
+    passwordChangedAt: {
+      type: Date,
+      default: null,
+    },
+    previousPasswords: {
+      type: [String],
+      default: [],
+    },
+
+    // ==========================
+    // Verification (Doctor Registration -> Pending -> Hospital/Admin
+    // Verification -> Verified). Defaults to "verified" so every doctor
+    // added by Admin (an already-trusted path) works immediately with no
+    // migration; hospitalAddDoctor explicitly sets "pending" since that is
+    // this app's actual doctor-registration entry point.
+    // ==========================
+    verificationStatus: {
+      type: String,
+      enum: ["pending", "verified", "rejected"],
+      default: "verified",
+    },
+    verifiedAt: {
+      type: Date,
+      default: null,
+    },
+    verifiedBy: {
+      type: String,
+      default: "",
+    },
+
+    // ==========================
     // Appointment Slots
     // ==========================
     slots_booked: {

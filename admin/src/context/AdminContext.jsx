@@ -106,14 +106,23 @@
 
 
 import axios from "axios";
-import { createContext, useState, useCallback } from "react";
+import { createContext, useState, useCallback, useEffect } from "react";
 import { toast } from "react-toastify";
+import { installAuthInterceptor, registerTokenSetter } from "../utils/axiosAuth.js";
 
 export const AdminContext = createContext()
 
 const AdminContextProvider = (props) => {
 
     const [aToken, setAToken] = useState(localStorage.getItem('aToken') || '')
+    const backendUrlForAuth = import.meta.env.VITE_BACKEND_URL
+
+    // Silently refreshes the 15-min access token using the httpOnly refresh
+    // cookie whenever a request comes back 401.
+    useEffect(() => {
+        installAuthInterceptor(backendUrlForAuth)
+        registerTokenSetter('atoken', setAToken)
+    }, [backendUrlForAuth])
     const [doctors, setDoctors] = useState([])
     const [appointments,setAppointments] = useState([])
     const [dashData, setDashData] = useState(false)
@@ -253,6 +262,44 @@ const changeHospitalStatus = async (hospitalId) => {
         }
     }
 
+
+    // ✅ DOCTOR VERIFICATION
+    const setDoctorVerification = async (docId, status) => {
+        try {
+            const { data } = await axios.patch(
+                backendUrl + '/api/admin/doctor-verification/' + docId,
+                { status },
+                config
+            )
+            if (data.success) {
+                toast.success(data.message)
+                getAllDoctors()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+    // ✅ HOSPITAL VERIFICATION
+    const setHospitalVerification = async (hospitalId, status) => {
+        try {
+            const { data } = await axios.patch(
+                backendUrl + '/api/admin/hospital-verification/' + hospitalId,
+                { status },
+                config
+            )
+            if (data.success) {
+                toast.success(data.message)
+                getAllHospitals()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
 
     // ✅ DELETE DOCTOR
     const deleteDoctor = async (docId) => {
@@ -629,6 +676,7 @@ const changeHospitalStatus = async (hospitalId) => {
     getAllDoctors,
     changeAvailability,
     deleteDoctor,
+    setDoctorVerification,
 
     // Hospitals
     hospitals,
@@ -636,6 +684,7 @@ const changeHospitalStatus = async (hospitalId) => {
     getAllHospitals,
     deleteHospital,
     changeHospitalStatus,
+    setHospitalVerification,
 
     // Users
     users,

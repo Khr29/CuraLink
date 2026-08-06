@@ -16,11 +16,14 @@ const appointmentSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Hospital
+    // Hospital — nullable: an independent doctor (doctorModel.employmentType
+    // === "independent") has no hospitalId, so an appointment with one
+    // can't require it either.
     hospitalId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "hospital",
-      required: true,
+      required: false,
+      default: null,
     },
 
     // Appointment Details

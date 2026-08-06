@@ -104,6 +104,7 @@ const Login = () => {
     email: '',
     password: ''
   })
+  const [rememberMe, setRememberMe] = useState(false)
 
   const { email, password } = formData
 
@@ -120,7 +121,7 @@ const Login = () => {
 
     try {
 
-      const { data } = await axios.post(`${backendUrl}/api/user/login`, { email, password })
+      const { data } = await axios.post(`${backendUrl}/api/user/login`, { email, password, rememberMe })
 
       if (data.success) {
         localStorage.setItem("token", data.token)
@@ -173,6 +174,21 @@ const Login = () => {
             onChange={handleChange}
             required
           />
+        </div>
+
+        <div className='w-full flex items-center justify-between text-xs'>
+          <label className='flex items-center gap-1.5 cursor-pointer select-none'>
+            <input
+              type='checkbox'
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className='cursor-pointer'
+            />
+            Remember me
+          </label>
+          <Link to="/forgot-password" className='text-primary underline cursor-pointer'>
+            Forgot password?
+          </Link>
         </div>
 
         <button

@@ -1,29 +1,5 @@
-// import jwt from 'jsonwebtoken'
-
-// //user authenctiaction
-
-// const authDoctor = async (req, res, next) => {
-//     try {
-
-//         const { dtoken} = req.headers
-//         if(!dtoken) {
-//             return res.json({success:false, message:"Not authorized Login again"})
-//         }
-//         const token_decode = jwt.verify(dtoken,process.env.JWT_SECRET)
-
-//          //req.body.userId = token_decode.id
-//           req.docId = token_decode.id  
-//         next()
-
-//     } catch (error) {
-//         console.log(error)
-//         res.json({ success: false, message: error.message })
-//     }
-
-// }
-// export default authDoctor
-
 import jwt from 'jsonwebtoken'
+import doctorModel from '../models/doctorModel.js'
 
 // doctor authentication middleware
 const authDoctor = async (req, res, next) => {
@@ -41,15 +17,36 @@ const authDoctor = async (req, res, next) => {
     // 2. verify token
     const decoded = jwt.verify(dtoken, process.env.JWT_SECRET)
 
-    // 3. attach doctor id to request
-    req.docId = decoded?.id
-
-    if (!req.docId) {
+    if (!decoded?.id) {
       return res.status(403).json({
         success: false,
         message: "Invalid token"
       })
     }
+
+    const doctor = await doctorModel.findById(decoded.id).select('passwordChangedAt verificationStatus')
+    if (!doctor) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized, login again"
+      })
+    }
+    if (doctor.verificationStatus === "rejected") {
+      return res.status(403).json({
+        success: false,
+        message: "This account is not authorized to access the doctor portal"
+      })
+    }
+    // Any access token issued before the last password change is stale.
+    if (doctor.passwordChangedAt && decoded.iat * 1000 < doctor.passwordChangedAt.getTime()) {
+      return res.status(401).json({
+        success: false,
+        message: "Session expired, please login again"
+      })
+    }
+
+    // 3. attach doctor id to request
+    req.docId = decoded.id
 
     // 4. move to next
     next()

@@ -18,6 +18,19 @@ const userSchema =new mongoose.Schema({
     isActive: {type: Boolean, default: true},
 
     // ==========================
+    // Account Security
+    // ==========================
+    // Defaults to true so every pre-existing account reads as verified with
+    // no migration — only newly registered accounts are explicitly set to
+    // false (see registerUser), gated by EMAIL_VERIFICATION_REQUIRED.
+    emailVerified: {type: Boolean, default: true},
+    // Timestamp of the last password change. JWT access tokens issued
+    // before this instant are rejected by authUser (see middlewares/authUser.js).
+    passwordChangedAt: {type: Date, default: null},
+    // Hashes of the last few passwords, used to block re-use on change/reset.
+    previousPasswords: {type: [String], default: []},
+
+    // ==========================
     // Medical Profile (optional — collected at registration or added later)
     // ==========================
     bloodGroup: {type: String, default: ""},

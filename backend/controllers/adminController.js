@@ -155,11 +155,15 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
 import doctorModel from "../models/doctorModel.js";
-import jwt from "jsonwebtoken";
+import hospitalModel from "../models/hospitalModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import userModel from "../models/userModels.js";
 import reviewModel from "../models/reviewModel.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
+import { issueSession, revokeSession } from "../utils/session.js";
+import { signAccessToken } from "../utils/tokens.js";
+import { validatePasswordStrength } from "../utils/passwordSecurity.js";
+import { sanitizeText } from "../utils/sanitize.js";
 
 // ✅ ADD DOCTOR (optimized)
 const addDoctor = async (req, res) => {
@@ -202,11 +206,9 @@ const addDoctor = async (req, res) => {
       return res.json({ success: false, message: "Please enter valid email" });
     }
 
-    if (password.length < 8) {
-      return res.json({
-        success: false,
-        message: "Please enter strong password",
-      });
+    const strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+      return res.json({ success: false, message: strength.message });
     }
 
     // 🔥 parallel: hash + upload
@@ -225,7 +227,7 @@ const addDoctor = async (req, res) => {
       speciality,
       degree,
       experience,
-      about,
+      about: sanitizeText(about, { maxLength: 3000 }),
       fees,
       address: JSON.parse(address),
 
@@ -234,6 +236,9 @@ const addDoctor = async (req, res) => {
       employmentType: isIndependent ? "independent" : "hospital",
 
       date: Date.now(),
+      // Admin is already a trusted vetting authority — doctors added here
+      // are immediately verified (see doctorModel's default too).
+      verificationStatus: "verified",
     };
 
     const doctor = await doctorModel.create(doctorData);
@@ -274,7 +279,16 @@ const loginAdmin = async (req, res) => {
       return res.json({ success: false, message: "Invalid Credentials" });
     }
 
-    const token = jwt.sign({ email }, process.env.JWT_SECRET);
+    const rememberMe = req.body.rememberMe === true || req.body.rememberMe === "true";
+    await issueSession({
+      req,
+      res,
+      actorType: "admin",
+      actorId: null,
+      actorLabel: email,
+      rememberMe,
+    });
+    const token = signAccessToken({ email });
 
     await logAction({
       req,
@@ -291,9 +305,10 @@ const loginAdmin = async (req, res) => {
   }
 };
 
-// ✅ LOGOUT ADMIN (stateless JWT — this only records the audit entry)
+// ✅ LOGOUT ADMIN — revokes the refresh-token session and clears its cookie
 const logoutAdmin = async (req, res) => {
   try {
+    await revokeSession({ req, res, actorType: "admin" });
     await logAction({
       req,
       actorType: "admin",
@@ -519,6 +534,88 @@ const changeUserStatus = async (req, res) => {
   }
 };
 
+// ✅ DOCTOR VERIFICATION (Doctor Registration -> Pending -> Admin Review -> Verified)
+// Admin-added doctors already default to "verified"; this is mainly for the
+// hospital-added ("pending") entry point.
+const setDoctorVerification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["verified", "rejected", "pending"].includes(status)) {
+      return res.json({ success: false, message: "Invalid verification status" });
+    }
+
+    const doctor = await doctorModel.findById(id);
+    if (!doctor) {
+      return res.json({ success: false, message: "Doctor not found" });
+    }
+
+    doctor.verificationStatus = status;
+    doctor.verifiedAt = status === "verified" ? new Date() : null;
+    doctor.verifiedBy = status === "verified" ? req.adminEmail || "" : "";
+    await doctor.save();
+
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action:
+        status === "verified"
+          ? AUDIT_ACTIONS.DOCTOR_VERIFIED
+          : AUDIT_ACTIONS.DOCTOR_VERIFICATION_REJECTED,
+      target: { type: "doctor", id, label: doctor.name },
+      newValue: { verificationStatus: status },
+      status: "success",
+    });
+
+    res.json({ success: true, message: `Doctor marked as ${status}` });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// ✅ HOSPITAL VERIFICATION (Hospital Registration -> Pending -> Admin Review -> Approved -> Public Listing)
+const setHospitalVerification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["approved", "rejected", "pending"].includes(status)) {
+      return res.json({ success: false, message: "Invalid verification status" });
+    }
+
+    const hospital = await hospitalModel.findById(id);
+    if (!hospital) {
+      return res.json({ success: false, message: "Hospital not found" });
+    }
+
+    hospital.verificationStatus = status;
+    hospital.verifiedAt = status === "approved" ? new Date() : null;
+    hospital.verifiedBy = status === "approved" ? req.adminEmail || "" : "";
+    await hospital.save();
+
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action:
+        status === "approved"
+          ? AUDIT_ACTIONS.HOSPITAL_VERIFIED
+          : AUDIT_ACTIONS.HOSPITAL_VERIFICATION_REJECTED,
+      target: { type: "hospital", id, label: hospital.name },
+      newValue: { verificationStatus: status },
+      status: "success",
+    });
+
+    res.json({ success: true, message: `Hospital marked as ${status}` });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 export {
   addDoctor,
   loginAdmin,
@@ -530,4 +627,6 @@ export {
   deleteDoctor,
   allUsers,
   changeUserStatus,
+  setDoctorVerification,
+  setHospitalVerification,
 };

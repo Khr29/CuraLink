@@ -189,6 +189,42 @@ const hospitalSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    // ==========================
+    // Account Security
+    // ==========================
+    emailVerified: {
+      type: Boolean,
+      default: true,
+    },
+    passwordChangedAt: {
+      type: Date,
+      default: null,
+    },
+    previousPasswords: {
+      type: [String],
+      default: [],
+    },
+
+    // ==========================
+    // Verification (Hospital Registration -> Pending -> Admin Review ->
+    // Approved -> Public Listing). Defaults to "approved" so every
+    // admin-added hospital (today's only creation path) is public
+    // immediately with no migration.
+    // ==========================
+    verificationStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "approved",
+    },
+    verifiedAt: {
+      type: Date,
+      default: null,
+    },
+    verifiedBy: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

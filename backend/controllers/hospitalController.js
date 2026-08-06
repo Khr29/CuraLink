@@ -3,9 +3,18 @@ import doctorModel from "../models/doctorModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import validator from "validator";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
+import { issueSession, revokeSession, revokeAllSessions } from "../utils/session.js";
+import { signAccessToken } from "../utils/tokens.js";
+import {
+  validatePasswordStrength,
+  applyNewPassword,
+  isPasswordReused,
+} from "../utils/passwordSecurity.js";
+import { sendEmail } from "../utils/email.js";
+import { passwordChangedEmailHtml } from "../utils/securityEmails.js";
+import { sanitizeText } from "../utils/sanitize.js";
 
 // Fields a hospital is allowed to edit about its own profile — everything
 // else (password, active, doctors, averageRating, totalReviews, media) is
@@ -53,16 +62,18 @@ const addHospital = async (req, res) => {
     // Portal login password is optional at creation time (admin can set it
     // later via Edit) — hash it now if provided so it's never stored plain.
     if (hospitalData.password) {
-      if (hospitalData.password.length < 8) {
-        return res.json({
-          success: false,
-          message: "Please enter a stronger portal password (min 8 characters)",
-        });
+      const strength = validatePasswordStrength(hospitalData.password);
+      if (!strength.valid) {
+        return res.json({ success: false, message: strength.message });
       }
       const salt = await bcrypt.genSalt(10);
       hospitalData.password = await bcrypt.hash(hospitalData.password, salt);
     } else {
       delete hospitalData.password;
+    }
+
+    if (hospitalData.description) {
+      hospitalData.description = sanitizeText(hospitalData.description, { maxLength: 5000 });
     }
 
     if (!req.files?.image?.length) {
@@ -210,16 +221,19 @@ const updateHospital = async (req, res) => {
     // Admin resetting/setting the hospital's portal login password —
     // never persist it in plain text.
     if (updateData.password) {
-      if (updateData.password.length < 8) {
-        return res.json({
-          success: false,
-          message: "Please enter a stronger portal password (min 8 characters)",
-        });
+      const strength = validatePasswordStrength(updateData.password);
+      if (!strength.valid) {
+        return res.json({ success: false, message: strength.message });
       }
       const salt = await bcrypt.genSalt(10);
       updateData.password = await bcrypt.hash(updateData.password, salt);
+      updateData.passwordChangedAt = new Date();
     } else {
       delete updateData.password;
+    }
+
+    if (updateData.description) {
+      updateData.description = sanitizeText(updateData.description, { maxLength: 5000 });
     }
 
     await hospitalModel.findByIdAndUpdate(id, updateData);
@@ -364,7 +378,29 @@ const loginHospital = async (req, res) => {
       return res.json({ success: false, message: "Invalid Credentials" });
     }
 
-    const token = jwt.sign({ id: hospital._id }, process.env.JWT_SECRET);
+    if (!hospital.active) {
+      await logAction({
+        req,
+        actorType: "hospital",
+        actorId: hospital._id,
+        actorLabel: hospital.email,
+        action: AUDIT_ACTIONS.LOGIN,
+        status: "failure",
+        reason: "Account deactivated",
+      });
+      return res.json({ success: false, message: "This hospital account has been deactivated" });
+    }
+
+    const rememberMe = req.body.rememberMe === true || req.body.rememberMe === "true";
+    await issueSession({
+      req,
+      res,
+      actorType: "hospital",
+      actorId: hospital._id,
+      actorLabel: hospital.email,
+      rememberMe,
+    });
+    const token = signAccessToken({ id: hospital._id.toString() });
 
     await logAction({
       req,
@@ -383,10 +419,11 @@ const loginHospital = async (req, res) => {
 };
 
 // =============================
-// Logout Hospital (stateless JWT — this only records the audit entry)
+// Logout Hospital — revokes the refresh-token session and clears its cookie
 // =============================
 const logoutHospital = async (req, res) => {
   try {
+    await revokeSession({ req, res, actorType: "hospital" });
     const hospital = await hospitalModel.findById(req.hospitalId).select("email");
     await logAction({
       req,
@@ -434,6 +471,9 @@ const updateHospitalSelfProfile = async (req, res) => {
     }
 
     if (updateData.beds !== undefined) updateData.beds = Number(updateData.beds);
+    if (updateData.description !== undefined) {
+      updateData.description = sanitizeText(updateData.description, { maxLength: 5000 });
+    }
 
     await hospitalModel.findByIdAndUpdate(req.hospitalId, updateData);
 
@@ -453,13 +493,17 @@ const updateHospitalSelfProfile = async (req, res) => {
 // =============================
 const changeHospitalSelfPassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
 
-    if (!newPassword || newPassword.length < 8) {
-      return res.json({
-        success: false,
-        message: "New password must be at least 8 characters",
-      });
+    if (!newPassword || !confirmPassword) {
+      return res.json({ success: false, message: "Missing details" });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.json({ success: false, message: "Passwords do not match" });
+    }
+    const strength = validatePasswordStrength(newPassword);
+    if (!strength.valid) {
+      return res.json({ success: false, message: strength.message });
     }
 
     const hospital = await hospitalModel.findById(req.hospitalId);
@@ -474,9 +518,15 @@ const changeHospitalSelfPassword = async (req, res) => {
       }
     }
 
-    const salt = await bcrypt.genSalt(10);
-    hospital.password = await bcrypt.hash(newPassword, salt);
-    await hospital.save();
+    if (await isPasswordReused(hospital, newPassword)) {
+      return res.json({
+        success: false,
+        message: "Please choose a password you haven't used recently",
+      });
+    }
+
+    await applyNewPassword(hospital, newPassword);
+    await revokeAllSessions({ actorType: "hospital", actorId: hospital._id });
 
     await logAction({
       req,
@@ -488,7 +538,15 @@ const changeHospitalSelfPassword = async (req, res) => {
       status: "success",
     });
 
-    res.json({ success: true, message: "Password updated" });
+    try {
+      await sendEmail(
+        hospital.email,
+        "Your CuraLink password was changed",
+        passwordChangedEmailHtml(hospital.name || "")
+      );
+    } catch (e) {}
+
+    res.json({ success: true, message: "Password updated. Please log in again." });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -675,11 +733,9 @@ const hospitalAddDoctor = async (req, res) => {
       return res.json({ success: false, message: "Please enter valid email" });
     }
 
-    if (password.length < 8) {
-      return res.json({
-        success: false,
-        message: "Please enter strong password",
-      });
+    const strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+      return res.json({ success: false, message: strength.message });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -697,18 +753,32 @@ const hospitalAddDoctor = async (req, res) => {
       speciality,
       degree,
       experience,
-      about,
+      about: sanitizeText(about, { maxLength: 3000 }),
       fees,
       address: JSON.parse(address),
       // The hospital is never chosen manually — it's always the
       // authenticated hospital's own id.
       hospitalId: req.hospitalId,
       date: Date.now(),
+      // Doctors added through the hospital self-service portal are this
+      // app's actual "doctor registration" entry point — they start
+      // unverified until Admin reviews them (see doctor-verification
+      // endpoints in adminController.js).
+      verificationStatus: "pending",
     };
 
-    await doctorModel.create(doctorData);
+    const doctor = await doctorModel.create(doctorData);
 
-    res.json({ success: true, message: "Doctor Added" });
+    await logAction({
+      req,
+      actorType: "hospital",
+      actorId: req.hospitalId,
+      action: AUDIT_ACTIONS.DOCTOR_CREATED,
+      target: { type: "doctor", id: doctor._id, label: doctor.name },
+      status: "success",
+    });
+
+    res.json({ success: true, message: "Doctor Added — pending admin verification" });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -730,6 +800,9 @@ const hospitalUpdateDoctor = async (req, res) => {
     const updateData = {};
     for (const field of DOCTOR_SELF_EDITABLE_FIELDS) {
       if (req.body[field] !== undefined) updateData[field] = req.body[field];
+    }
+    if (updateData.about !== undefined) {
+      updateData.about = sanitizeText(updateData.about, { maxLength: 3000 });
     }
 
     if (updateData.address !== undefined && typeof updateData.address === "string") {

@@ -98,14 +98,14 @@
 // export default React.memo(DoctorsList)
 import React, { useContext, useEffect, useCallback, useMemo, useState } from 'react'
 import { AdminContext } from '../../context/AdminContext'
-import { Users, Stethoscope, CheckCircle2, XCircle, Star, Trash2 } from 'lucide-react'
+import { Users, Stethoscope, CheckCircle2, XCircle, Star, Trash2, ShieldCheck, ShieldAlert } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 import EmptyState from '../../components/EmptyState'
 import { SkeletonCard } from '../../components/Skeleton'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
 const DoctorsList = () => {
-  const { doctors, aToken, getAllDoctors, changeAvailability, deleteDoctor } = useContext(AdminContext)
+  const { doctors, aToken, getAllDoctors, changeAvailability, deleteDoctor, setDoctorVerification } = useContext(AdminContext)
   const [loading, setLoading] = useState(true)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
@@ -145,9 +145,10 @@ const DoctorsList = () => {
         item={item}
         onToggleAvailability={handleAvailability}
         onDeleteClick={handleDeleteClick}
+        onSetVerification={setDoctorVerification}
       />
     ))
-  }, [doctors, handleAvailability, handleDeleteClick])
+  }, [doctors, handleAvailability, handleDeleteClick, setDoctorVerification])
 
   return (
     <div
@@ -239,7 +240,7 @@ const DoctorsList = () => {
 }
 
 // CURALINK DESIGN SYSTEM DOCTOR CARD COMPONENT
-const DoctorCard = ({ item, onToggleAvailability, onDeleteClick }) => {
+const DoctorCard = ({ item, onToggleAvailability, onDeleteClick, onSetVerification }) => {
   const [hovered, setHovered] = useState(false)
   const [deleteHovered, setDeleteHovered] = useState(false)
 
@@ -331,6 +332,22 @@ const DoctorCard = ({ item, onToggleAvailability, onDeleteClick }) => {
             {item.speciality}
           </span>
         </div>
+
+        {/* VERIFICATION BADGE */}
+        {item.verificationStatus && item.verificationStatus !== 'verified' && (
+          <div
+            style={{
+              position: 'absolute', top: 12, right: 12,
+              background: item.verificationStatus === 'pending' ? 'rgba(245,158,11,0.95)' : 'rgba(239,68,68,0.95)',
+              color: '#fff', padding: '5px 10px', borderRadius: 99,
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              fontSize: 11, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.12)'
+            }}
+          >
+            {item.verificationStatus === 'pending' ? <ShieldAlert size={12} /> : <XCircle size={12} />}
+            {item.verificationStatus === 'pending' ? 'Pending Verification' : 'Rejected'}
+          </div>
+        )}
       </div>
 
       {/* CARD DETAILS */}
@@ -350,10 +367,16 @@ const DoctorCard = ({ item, onToggleAvailability, onDeleteClick }) => {
               fontWeight: 700,
               color: '#0F172A',
               margin: 0,
-              letterSpacing: '-0.01em'
+              letterSpacing: '-0.01em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
             }}
           >
             {item.name}
+            {item.verificationStatus === 'verified' && (
+              <ShieldCheck size={15} color="#2563EB" title="Verified" />
+            )}
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
             <Star size={13} color="#FBBF24" fill="#FBBF24" />
@@ -439,6 +462,24 @@ const DoctorCard = ({ item, onToggleAvailability, onDeleteClick }) => {
             </span>
           </label>
         </div>
+
+        {/* VERIFICATION ACTIONS (pending doctors only) */}
+        {item.verificationStatus === 'pending' && (
+          <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => onSetVerification(item._id, 'verified')}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '8px', background: '#ECFDF5', border: '1px solid #D1FAE5', color: '#16A34A', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+            >
+              <CheckCircle2 size={14} /> Verify
+            </button>
+            <button
+              onClick={() => onSetVerification(item._id, 'rejected')}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '8px', background: '#FEF2F2', border: '1px solid #FEE2E2', color: '#DC2626', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+            >
+              <XCircle size={14} /> Reject
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

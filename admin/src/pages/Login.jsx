@@ -160,7 +160,7 @@ import { DoctorContext } from '../context/DoctorContext'
 import { HospitalContext } from '../context/HospitalContext'
 import axios from 'axios'
 import { toast } from 'react-toastify'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 const LOGIN_ROUTES = {
   Admin: { url: '/api/admin/login', tokenKey: 'aToken', dashboard: '/admin-dashboard' },
@@ -180,6 +180,7 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
 
   const { setAToken, backendUrl } = useContext(AdminContext)
   const { setDToken } = useContext(DoctorContext)
@@ -192,7 +193,7 @@ const Login = () => {
     try {
       const { url, tokenKey, dashboard } = LOGIN_ROUTES[state]
 
-      const { data } = await axios.post(`${backendUrl}${url}`, { email, password })
+      const { data } = await axios.post(`${backendUrl}${url}`, { email, password, rememberMe })
 
       if (data.success) {
         // Only one role is ever logged in at a time — clear the other tokens.
@@ -216,7 +217,7 @@ const Login = () => {
     } finally {
       setLoading(false)
     }
-  }, [state, email, password, backendUrl, setAToken, setDToken, setHToken, navigate])
+  }, [state, email, password, rememberMe, backendUrl, setAToken, setDToken, setHToken, navigate])
 
   const accent = ROLE_ACCENT[state]
 
@@ -387,6 +388,24 @@ const Login = () => {
                   {showPass ? '🙈' : '👁️'}
                 </button>
               </div>
+            </div>
+
+            {/* Remember me / Forgot password */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, fontSize: 13 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#475569', cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  style={{ accentColor: accent.dot, width: 14, height: 14, cursor: 'pointer' }}
+                />
+                Remember me
+              </label>
+              {state !== 'Admin' && (
+                <Link to="/forgot-password" state={{ role: state }} style={{ color: accent.text, fontWeight: 600, textDecoration: 'none' }}>
+                  Forgot password?
+                </Link>
+              )}
             </div>
 
             {/* Submit */}

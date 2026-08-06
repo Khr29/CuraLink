@@ -3,6 +3,8 @@ import reviewModel from "../models/reviewModel.js";
 import doctorModel from "../models/doctorModel.js";
 import hospitalModel from "../models/hospitalModel.js";
 import appointmentModel from "../models/appointmentModel.js";
+import { sanitizeText } from "../utils/sanitize.js";
+import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 
 // Recalculates and persists averageRating/totalReviews for a doctor and/or
 // hospital from their currently-visible reviews. Called after any review
@@ -172,8 +174,8 @@ const addReview = async (req, res) => {
       doctorId: doctorId || null,
       hospitalId: hospitalId || null,
       rating: numericRating,
-      title,
-      comment,
+      title: sanitizeText(title, { maxLength: 150 }),
+      comment: sanitizeText(comment, { maxLength: 2000 }),
       verifiedPatient: true,
     });
 
@@ -338,8 +340,8 @@ const editMyReview = async (req, res) => {
       }
       review.rating = numericRating;
     }
-    if (title !== undefined) review.title = title.trim();
-    if (comment !== undefined) review.comment = comment.trim();
+    if (title !== undefined) review.title = sanitizeText(title, { maxLength: 150 });
+    if (comment !== undefined) review.comment = sanitizeText(comment, { maxLength: 2000 });
 
     await review.save();
     await updateAverageRating(review.doctorId, review.hospitalId);
@@ -436,13 +438,22 @@ const replyToReview = async (req, res) => {
 
     const review = await reviewModel.findByIdAndUpdate(
       reviewId,
-      { adminReply: reply || "" },
+      { adminReply: sanitizeText(reply || "", { maxLength: MAX_REPLY_LENGTH }) },
       { new: true },
     );
 
     if (!review) {
       return res.json({ success: false, message: "Review not found" });
     }
+
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.REVIEW_REPLIED,
+      target: { type: "review", id: review._id, label: "admin" },
+      status: "success",
+    });
 
     res.json({ success: true, message: "Reply saved", review });
   } catch (error) {
@@ -471,7 +482,7 @@ const submitOwnerReply = async (req, res, { role, mode }) => {
       return res.json({ success: false, message: "Reply cannot be empty" });
     }
 
-    const trimmedText = text.trim();
+    const trimmedText = sanitizeText(text, { maxLength: MAX_REPLY_LENGTH });
     if (trimmedText.length > MAX_REPLY_LENGTH) {
       return res.json({
         success: false,
@@ -511,6 +522,15 @@ const submitOwnerReply = async (req, res, { role, mode }) => {
     };
 
     await review.save();
+
+    await logAction({
+      req,
+      actorType: role,
+      actorId: ownerId,
+      action: AUDIT_ACTIONS.REVIEW_REPLIED,
+      target: { type: "review", id: review._id, label: mode },
+      status: "success",
+    });
 
     res.json({
       success: true,

@@ -10,12 +10,22 @@ import {
   deleteDoctor,
   loginAdmin,
   logoutAdmin,
+  setDoctorVerification,
+  setHospitalVerification,
 } from "../controllers/adminController.js";
 
 import upload from "../middlewares/multer.js";
 import authAdmin from "../middlewares/authAdmin.js";
 
 import { changeAvailability } from "../controllers/doctorController.js";
+
+import {
+  makeRefreshTokenHandler,
+  makeLogoutAllHandler,
+  makeListSessionsHandler,
+  makeRevokeSessionHandler,
+} from "../controllers/authSharedController.js";
+import { loginLimiter } from "../middlewares/rateLimiters.js";
 
 import {
   getAllHospitals,
@@ -38,13 +48,20 @@ import {
 } from "../controllers/hospitalRequestController.js";
 
 const adminRouter = express.Router();
+const getAdminId = () => null; // admin has no DB row — a single shared account
 
 // =====================================
 // Admin Authentication
 // =====================================
 
-adminRouter.post("/login", loginAdmin);
+adminRouter.post("/login", loginLimiter, loginAdmin);
 adminRouter.post("/logout", authAdmin, logoutAdmin);
+
+// Session / Token Management
+adminRouter.post("/refresh-token", makeRefreshTokenHandler("admin"));
+adminRouter.post("/logout-all", authAdmin, makeLogoutAllHandler("admin", getAdminId));
+adminRouter.get("/sessions", authAdmin, makeListSessionsHandler("admin", getAdminId));
+adminRouter.delete("/sessions/:sessionId", authAdmin, makeRevokeSessionHandler("admin", getAdminId));
 
 // =====================================
 // Dashboard
@@ -68,6 +85,9 @@ adminRouter.post("/change-availability", authAdmin, changeAvailability);
 // Delete Doctor
 adminRouter.delete("/delete-doctor/:id", authAdmin, deleteDoctor);
 
+// Doctor Verification (Registration -> Pending -> Admin Review -> Verified)
+adminRouter.patch("/doctor-verification/:id", authAdmin, setDoctorVerification);
+
 // =====================================
 // Appointment Management
 // =====================================
@@ -90,6 +110,9 @@ adminRouter.delete("/delete-hospital/:id", authAdmin, deleteHospital);
 
 // Change Hospital Status
 adminRouter.patch("/hospital-status/:id", authAdmin, changeHospitalStatus);
+
+// Hospital Verification (Registration -> Pending -> Admin Review -> Approved -> Public Listing)
+adminRouter.patch("/hospital-verification/:id", authAdmin, setHospitalVerification);
 
 // =====================================
 // User Management

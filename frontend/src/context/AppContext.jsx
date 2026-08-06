@@ -1,13 +1,14 @@
 import { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import axios from 'axios'
+import { installAuthInterceptor, registerUserTokenSetter } from '../utils/axiosAuth.js'
 
 // create context
 export const AppContext = createContext()
 
 
 const AppContextProvider = (props) => {
-  
+
 
     const currencySymbol = '$'
 
@@ -17,6 +18,14 @@ const AppContextProvider = (props) => {
       const [platformStats, setPlatformStats] = useState(null)
       const [token, setToken] = useState(localStorage.getItem('token')? localStorage.getItem('token'): false)
       const [userData, setUserData] = useState(false)
+
+      // Silently refreshes the 15-min access token using the httpOnly
+      // refresh cookie whenever a request comes back 401, so the short TTL
+      // never surfaces as an unexpected logout.
+      useEffect(() => {
+        installAuthInterceptor(backendUrl)
+        registerUserTokenSetter(setToken)
+      }, [backendUrl])
 
 
 

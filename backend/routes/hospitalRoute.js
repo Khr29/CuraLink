@@ -29,15 +29,41 @@ import {
 import upload from "../middlewares/multer.js";
 import authHospital from "../middlewares/authHospital.js";
 import authAdmin from "../middlewares/authAdmin.js";
+import {
+  makeRefreshTokenHandler,
+  makeLogoutAllHandler,
+  makeListSessionsHandler,
+  makeRevokeSessionHandler,
+  makeForgotPasswordHandler,
+  makeResetPasswordHandler,
+  makeSendVerificationOtpHandler,
+  makeVerifyEmailHandler,
+} from "../controllers/authSharedController.js";
+import { loginLimiter, forgotPasswordLimiter, otpVerifyLimiter } from "../middlewares/rateLimiters.js";
 
 const hospitalRouter = express.Router();
+const getHospitalId = (req) => req.hospitalId;
 
 // =====================================
 // Hospital Portal Authentication
 // =====================================
 
-hospitalRouter.post("/login", loginHospital);
+hospitalRouter.post("/login", loginLimiter, loginHospital);
 hospitalRouter.post("/logout", authHospital, logoutHospital);
+
+// Session / Token Management
+hospitalRouter.post("/refresh-token", makeRefreshTokenHandler("hospital"));
+hospitalRouter.post("/logout-all", authHospital, makeLogoutAllHandler("hospital", getHospitalId));
+hospitalRouter.get("/sessions", authHospital, makeListSessionsHandler("hospital", getHospitalId));
+hospitalRouter.delete("/sessions/:sessionId", authHospital, makeRevokeSessionHandler("hospital", getHospitalId));
+
+// Password Security (change-password already exists below as /self/password)
+hospitalRouter.post("/forgot-password", forgotPasswordLimiter, makeForgotPasswordHandler("hospital"));
+hospitalRouter.post("/reset-password", otpVerifyLimiter, makeResetPasswordHandler("hospital"));
+
+// Email Verification
+hospitalRouter.post("/send-verification-otp", authHospital, forgotPasswordLimiter, makeSendVerificationOtpHandler("hospital", getHospitalId));
+hospitalRouter.post("/verify-email", authHospital, otpVerifyLimiter, makeVerifyEmailHandler("hospital", getHospitalId));
 
 // =====================================
 // Hospital Portal — Self Service

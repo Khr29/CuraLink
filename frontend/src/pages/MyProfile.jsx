@@ -161,6 +161,163 @@ const MyReviews = () => {
   );
 };
 
+// Security — change password (current-password-verified, invalidates every
+// other active session per the platform's session-invalidation policy).
+const ChangePassword = () => {
+  const { backendUrl, token, setToken } = useContext(AppContext);
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const { data } = await axios.post(`${backendUrl}/api/user/change-password`, form, {
+        headers: { token },
+      });
+      if (data.success) {
+        toast.success(data.message);
+        setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        localStorage.removeItem("token");
+        setToken(false);
+        navigate("/login");
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Something went wrong");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="profile-section">
+      <form onSubmit={submit} className="flex flex-col gap-3 max-w-sm">
+        <input
+          type="password"
+          className="input text-sm"
+          placeholder="Current password"
+          value={form.currentPassword}
+          onChange={(e) => setForm((p) => ({ ...p, currentPassword: e.target.value }))}
+          required
+        />
+        <input
+          type="password"
+          className="input text-sm"
+          placeholder="New password"
+          value={form.newPassword}
+          onChange={(e) => setForm((p) => ({ ...p, newPassword: e.target.value }))}
+          required
+        />
+        <input
+          type="password"
+          className="input text-sm"
+          placeholder="Confirm new password"
+          value={form.confirmPassword}
+          onChange={(e) => setForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+          required
+        />
+        <button type="submit" disabled={saving} className="btn btn-secondary btn-sm w-fit">
+          {saving ? "Updating..." : "Update Password"}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+// Medical Records — read-only, patient-owned view of every finalized
+// record tied to their appointments (see backend medicalRecordController.js).
+const MyMedicalRecords = () => {
+  const { backendUrl, token } = useContext(AppContext);
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [openId, setOpenId] = useState(null);
+
+  useEffect(() => {
+    if (!token) return;
+    (async () => {
+      try {
+        const { data } = await axios.get(`${backendUrl}/api/medical-records/mine`, { headers: { token } });
+        if (data.success) setRecords(data.records);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [backendUrl, token]);
+
+  if (loading) {
+    return (
+      <div className="profile-section animate-pulse">
+        <div className="h-4 bg-slate-100 rounded w-1/4 mb-3" />
+        <div className="h-16 bg-slate-100 rounded" />
+      </div>
+    );
+  }
+
+  if (records.length === 0) {
+    return (
+      <div className="profile-section">
+        <p className="text-sm text-text-muted">Records from your completed appointments will show up here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {records.map((record) => {
+        const open = openId === record._id;
+        return (
+          <div key={record._id} className="profile-section">
+            <div className="flex items-center justify-between gap-3 flex-wrap cursor-pointer" onClick={() => setOpenId(open ? null : record._id)}>
+              <div>
+                <p className="text-sm font-bold text-text-primary">Dr. {record.doctorId?.name}</p>
+                <p className="text-xs text-text-muted">{record.doctorId?.speciality}{record.hospitalId?.name ? ` · ${record.hospitalId.name}` : ""}</p>
+              </div>
+              <span className={`badge text-[10px] ${record.status === "finalized" ? "badge-green" : "badge-slate"}`}>
+                {record.status === "finalized" ? "Finalized" : "Draft"}
+              </span>
+            </div>
+            {open && (
+              <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2">
+                <InfoRow label="Diagnosis" value={record.diagnosis} />
+                <InfoRow label="Notes" value={record.notes} />
+                {record.prescription?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Prescription</p>
+                    <ul className="flex flex-col gap-1">
+                      {record.prescription.map((item, i) => (
+                        <li key={i} className="text-sm text-text-secondary">
+                          {item.medicine} {item.dosage && `· ${item.dosage}`} {item.duration && `· ${item.duration}`}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {record.attachments?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Attachments</p>
+                    <div className="flex flex-wrap gap-2">
+                      {record.attachments.map((a, i) => (
+                        <a key={i} href={a.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">
+                          {a.fileName || `File ${i + 1}`}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const InfoRow = ({ label, value }) => (
   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-3 border-b border-slate-100 last:border-b-0">
     <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">{label}</p>
@@ -648,6 +805,17 @@ const MyProfile = () => {
         </div>
       </div>
 
+      {/* Medical Records */}
+      <div className="mb-8">
+        <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
+          <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+          Medical Records
+        </h3>
+        <MyMedicalRecords />
+      </div>
+
       {/* Recent Appointments */}
       <div className="mb-8">
         <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -668,6 +836,17 @@ const MyProfile = () => {
           My Reviews
         </h3>
         <MyReviews />
+      </div>
+
+      {/* Security */}
+      <div className="mb-8">
+        <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
+          <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+          Change Password
+        </h3>
+        <ChangePassword />
       </div>
 
       {/* Save / Cancel */}

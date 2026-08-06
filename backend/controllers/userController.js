@@ -1,28 +1,42 @@
 import validator from "validator";
 import bcrypt from "bcrypt";
 import userModel from "../models/userModels.js";
-import jwt from "jsonwebtoken";
 import { v2 as cloudinary } from "cloudinary";
 import appointmentModel from "../models/appointmentModel.js";
 import doctorModel from "../models/doctorModel.js";
+import hospitalModel from "../models/hospitalModel.js";
 import razorpay from "razorpay";
 import { sendEmail } from "../utils/email.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
+import { validatePasswordStrength } from "../utils/passwordSecurity.js";
+import { sanitizeText, isSafeName } from "../utils/sanitize.js";
+import { issueSession, revokeSession } from "../utils/session.js";
+import { signAccessToken } from "../utils/tokens.js";
+import { issueEmailVerificationOtp } from "./authSharedController.js";
 // api to register user
+
+const EMAIL_VERIFICATION_REQUIRED = process.env.EMAIL_VERIFICATION_REQUIRED === "true";
 
 const registerUser = async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const { name, password, confirmPassword } = req.body;
     const email = req.body.email?.trim().toLowerCase();
 
     if (!name || !password || !email) {
       return res.json({ success: false, message: "Missing Details" });
     }
+    if (!isSafeName(name)) {
+      return res.json({ success: false, message: "Please enter a valid name" });
+    }
     if (!validator.isEmail(email)) {
       return res.json({ success: false, message: "Enter a Valid email" });
     }
-    if (password.length < 8) {
-      return res.json({ success: false, message: "Enter a Strong password" });
+    if (confirmPassword !== undefined && password !== confirmPassword) {
+      return res.json({ success: false, message: "Passwords do not match" });
+    }
+    const strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+      return res.json({ success: false, message: strength.message });
     }
 
     const existingUser = await userModel.findOne({ email });
@@ -56,10 +70,12 @@ const registerUser = async (req, res) => {
     } = req.body;
 
     const userData = {
-      name,
+      name: sanitizeText(name, { maxLength: 80 }),
       email,
       password: hashedPassword,
     };
+
+    if (EMAIL_VERIFICATION_REQUIRED) userData.emailVerified = false;
 
     if (phone) userData.phone = phone;
     if (dob) userData.dob = dob;
@@ -67,7 +83,7 @@ const registerUser = async (req, res) => {
     if (bloodGroup) userData.bloodGroup = bloodGroup;
     if (emergencyContactName || emergencyContactPhone) {
       userData.emergencyContact = {
-        name: emergencyContactName || "",
+        name: sanitizeText(emergencyContactName || "", { maxLength: 80 }),
         phone: emergencyContactPhone || "",
       };
     }
@@ -75,9 +91,9 @@ const registerUser = async (req, res) => {
       userData.medical = {
         height: height || "",
         weight: weight || "",
-        allergies: allergies || "",
-        chronicDiseases: chronicDiseases || "",
-        medications: medications || "",
+        allergies: sanitizeText(allergies || "", { maxLength: 1000 }),
+        chronicDiseases: sanitizeText(chronicDiseases || "", { maxLength: 1000 }),
+        medications: sanitizeText(medications || "", { maxLength: 1000 }),
       };
     }
     if (address) {
@@ -155,10 +171,25 @@ const registerUser = async (req, res) => {
       console.log("Welcome Email failed:", e.message);
     }
 
-    //create token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+    if (EMAIL_VERIFICATION_REQUIRED) {
+      try {
+        await issueEmailVerificationOtp("user", user);
+      } catch (e) {
+        console.log("Verification OTP failed:", e.message);
+      }
+    }
+
+    // short-lived access token + httpOnly refresh-token cookie
+    const rememberMe = req.body.rememberMe === true || req.body.rememberMe === "true";
+    await issueSession({
+      req,
+      res,
+      actorType: "user",
+      actorId: user._id,
+      actorLabel: user.email,
+      rememberMe,
     });
+    const token = signAccessToken({ id: user._id.toString() });
 
     await logAction({
       req,
@@ -170,7 +201,7 @@ const registerUser = async (req, res) => {
       status: "success",
     });
 
-    res.json({ success: true, token });
+    res.json({ success: true, token, emailVerificationRequired: EMAIL_VERIFICATION_REQUIRED });
   } catch (error) {
     console.log(error);
     // Race-condition fallback: two simultaneous registrations with the same
@@ -209,12 +240,41 @@ const loginUser = async (req, res) => {
       return res.json({ success: false, message: "User does not exist" });
     }
 
+    if (!user.isActive) {
+      await logAction({
+        req,
+        actorType: "user",
+        actorId: user._id,
+        actorLabel: user.email,
+        action: AUDIT_ACTIONS.LOGIN,
+        status: "failure",
+        reason: "Account suspended",
+      });
+      return res.json({ success: false, message: "This account has been suspended" });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: "7d",
+      if (EMAIL_VERIFICATION_REQUIRED && !user.emailVerified) {
+        return res.json({
+          success: false,
+          message: "Please verify your email before logging in",
+          code: "EMAIL_NOT_VERIFIED",
+        });
+      }
+
+      const rememberMe = req.body.rememberMe === true || req.body.rememberMe === "true";
+      await issueSession({
+        req,
+        res,
+        actorType: "user",
+        actorId: user._id,
+        actorLabel: user.email,
+        rememberMe,
       });
+      const token = signAccessToken({ id: user._id.toString() });
+
       await logAction({
         req,
         actorType: "user",
@@ -242,9 +302,10 @@ const loginUser = async (req, res) => {
   }
 };
 
-// api to log out a user (stateless JWT — this only records the audit entry)
+// api to log out a user — revokes the refresh-token session and clears its cookie
 const logoutUser = async (req, res) => {
   try {
+    await revokeSession({ req, res, actorType: "user" });
     const user = await userModel.findById(req.userId).select("email");
     await logAction({
       req,
@@ -299,9 +360,12 @@ const updateProfile = async (req, res) => {
     if (!name || !phone || !dob || !gender) {
       return res.json({ success: false, message: "Data Missing" });
     }
+    if (!isSafeName(name)) {
+      return res.json({ success: false, message: "Please enter a valid name" });
+    }
 
     const updateData = {
-      name,
+      name: sanitizeText(name, { maxLength: 80 }),
       phone,
       address: JSON.parse(address),
       dob,
@@ -311,7 +375,7 @@ const updateProfile = async (req, res) => {
     if (bloodGroup !== undefined) updateData.bloodGroup = bloodGroup;
     if (emergencyContactName !== undefined || emergencyContactPhone !== undefined) {
       updateData.emergencyContact = {
-        name: emergencyContactName || "",
+        name: sanitizeText(emergencyContactName || "", { maxLength: 80 }),
         phone: emergencyContactPhone || "",
       };
     }
@@ -325,9 +389,9 @@ const updateProfile = async (req, res) => {
       updateData.medical = {
         height: height || "",
         weight: weight || "",
-        allergies: allergies || "",
-        chronicDiseases: chronicDiseases || "",
-        medications: medications || "",
+        allergies: sanitizeText(allergies || "", { maxLength: 1000 }),
+        chronicDiseases: sanitizeText(chronicDiseases || "", { maxLength: 1000 }),
+        medications: sanitizeText(medications || "", { maxLength: 1000 }),
       };
     }
 
@@ -362,34 +426,115 @@ const updateProfile = async (req, res) => {
 
 //api to book appointment
 
+// Backend is authoritative for booking rules — the frontend's slot picker
+// only generates 10:00-21:00 slots, but a direct API call must be blocked
+// too. Window is intentionally a bit wider than the picker's to tolerate
+// locale-formatted time strings without false-rejecting real bookings.
+const WORKING_HOURS_START = 7;
+const WORKING_HOURS_END = 21;
+const MAX_ADVANCE_BOOKING_DAYS = 90;
+
+// slotDate is this codebase's "D_M_YYYY" convention (see getHospitalSelfDashboard).
+const parseSlotDate = (slotDate) => {
+  if (typeof slotDate !== "string") return null;
+  const parts = slotDate.split("_");
+  if (parts.length !== 3) return null;
+  const [day, month, year] = parts.map(Number);
+  if (!day || !month || !year) return null;
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+// Accepts both "10:00 AM" and 24h "14:00" — whichever the client's locale
+// produced (see frontend Appointments.jsx toLocaleTimeString call).
+const parseSlotTime = (slotTime) => {
+  if (typeof slotTime !== "string") return null;
+  const trimmed = slotTime.trim();
+  let match = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (match) {
+    let hour = parseInt(match[1], 10);
+    const minute = parseInt(match[2], 10);
+    const meridiem = match[3].toUpperCase();
+    if (meridiem === "PM" && hour !== 12) hour += 12;
+    if (meridiem === "AM" && hour === 12) hour = 0;
+    return { hour, minute };
+  }
+  match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (match) return { hour: parseInt(match[1], 10), minute: parseInt(match[2], 10) };
+  return null;
+};
+
 const bookAppointment = async (req, res) => {
   try {
-    //const {userId, docId, slotDate, slotTime} = req.body
     const { docId, slotDate, slotTime } = req.body;
     const userId = req.userId;
 
-    const docData = await doctorModel.findById(docId).select("-password");
+    if (!docId || !slotDate || !slotTime) {
+      return res.json({ success: false, message: "Missing Details" });
+    }
 
+    const docData = await doctorModel.findById(docId).select("-password");
+    if (!docData) {
+      return res.json({ success: false, message: "Doctor not found" });
+    }
     if (!docData.available) {
       return res.json({ success: false, message: "Doctor not available" });
     }
-    let slots_booked = docData.slots_booked;
+    if (docData.verificationStatus === "rejected") {
+      return res.json({ success: false, message: "This doctor is not currently accepting bookings" });
+    }
 
-    //CHECK FOR SLOT AVAILABILTY
-
-    if (slots_booked[slotDate]) {
-      if (slots_booked[slotDate].includes(slotTime)) {
-        return res.json({ success: false, message: "Slot not available" });
-      } else {
-        slots_booked[slotDate].push(slotTime);
+    if (docData.hospitalId) {
+      const hospitalData = await hospitalModel
+        .findById(docData.hospitalId)
+        .select("active verificationStatus");
+      if (!hospitalData || !hospitalData.active || hospitalData.verificationStatus === "rejected") {
+        return res.json({ success: false, message: "This hospital is not currently accepting bookings" });
       }
-    } else {
-      slots_booked[slotDate] = [];
-      slots_booked[slotDate].push(slotTime);
+    }
+
+    const dateOnly = parseSlotDate(slotDate);
+    if (!dateOnly) {
+      return res.json({ success: false, message: "Invalid appointment date" });
+    }
+    const now = new Date();
+    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (dateOnly < todayOnly) {
+      return res.json({ success: false, message: "Cannot book an appointment in the past" });
+    }
+    const maxAdvance = new Date(todayOnly);
+    maxAdvance.setDate(maxAdvance.getDate() + MAX_ADVANCE_BOOKING_DAYS);
+    if (dateOnly > maxAdvance) {
+      return res.json({ success: false, message: "This date is too far in advance to book" });
+    }
+
+    const time = parseSlotTime(slotTime);
+    if (time) {
+      if (time.hour < WORKING_HOURS_START || time.hour >= WORKING_HOURS_END) {
+        return res.json({ success: false, message: "Selected time is outside working hours" });
+      }
+      const appointmentDateTime = new Date(dateOnly);
+      appointmentDateTime.setHours(time.hour, time.minute, 0, 0);
+      if (appointmentDateTime < now) {
+        return res.json({ success: false, message: "This slot has already passed" });
+      }
+    }
+
+    // Atomic reservation: the filter only matches while the slot is still
+    // free, so two concurrent requests for the same slot can't both win
+    // (fixes a read-then-write race in the previous implementation).
+    const reserved = await doctorModel.findOneAndUpdate(
+      { _id: docId, [`slots_booked.${slotDate}`]: { $ne: slotTime } },
+      { $push: { [`slots_booked.${slotDate}`]: slotTime } },
+      { new: true }
+    );
+    if (!reserved) {
+      return res.json({ success: false, message: "Slot not available" });
     }
 
     const userData = await userModel.findById(userId).select("-password");
-    delete docData.slots_booked;
+    const docDataSnapshot = docData.toObject();
+    delete docDataSnapshot.slots_booked;
     const appointmentData = {
       userId,
       docId,
@@ -397,7 +542,7 @@ const bookAppointment = async (req, res) => {
       hospitalId: docData.hospitalId,
 
       userData,
-      docData,
+      docData: docDataSnapshot,
 
       amount: docData.fees,
 
@@ -408,7 +553,17 @@ const bookAppointment = async (req, res) => {
     };
 
     const newAppointment = new appointmentModel(appointmentData);
-    await newAppointment.save();
+    try {
+      await newAppointment.save();
+    } catch (saveError) {
+      // The slot was already reserved atomically above — if the appointment
+      // itself fails to save, release it instead of leaking a permanently
+      // "booked" slot with no appointment behind it.
+      await doctorModel.findByIdAndUpdate(docId, {
+        $pull: { [`slots_booked.${slotDate}`]: slotTime },
+      });
+      throw saveError;
+    }
 
     // ✅ EMAIL SEND (ADDED)
     try {
@@ -474,8 +629,6 @@ const bookAppointment = async (req, res) => {
       console.log("Email failed but appointment booked");
     }
 
-    //save new slots data in docData
-    await doctorModel.findByIdAndUpdate(docId, { slots_booked });
     res.json({ success: true, message: "Appointment Booked" });
   } catch (error) {
     console.log(error);
@@ -508,7 +661,10 @@ const cancelAppointment = async (req, res) => {
     const appointmentData = await appointmentModel.findById(appointmentId);
 
     //verify appointment user
-    if (appointmentData.userId !== userId) {
+    // (ObjectId vs string must be compared via .toString() — `!==` on an
+    // ObjectId object and a string is always true, which would reject the
+    // rightful owner too.)
+    if (!appointmentData || appointmentData.userId.toString() !== userId) {
       return res.json({ success: false, message: "Unauthorized Action" });
     }
     await appointmentModel.findByIdAndUpdate(appointmentId, {

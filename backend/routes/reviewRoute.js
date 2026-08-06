@@ -20,13 +20,14 @@ import authUser from "../middlewares/authUser.js";
 import authAdmin from "../middlewares/authAdmin.js";
 import authDoctor from "../middlewares/authDoctor.js";
 import authHospital from "../middlewares/authHospital.js";
+import { reviewLimiter } from "../middlewares/rateLimiters.js";
 
 const reviewRouter = express.Router();
 
 // =====================================
 // Patient
 // =====================================
-reviewRouter.post("/add", authUser, addReview);
+reviewRouter.post("/add", reviewLimiter, authUser, addReview);
 reviewRouter.get("/my-reviews", authUser, getMyReviews);
 reviewRouter.patch("/:reviewId", authUser, editMyReview);
 reviewRouter.delete("/:reviewId", authUser, deleteMyReview);

@@ -1,7 +1,7 @@
 import React, { useContext, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
-import { SearchX } from "lucide-react";
+import { SearchX, ShieldCheck } from "lucide-react";
 import StarRating from "../components/StarRating";
 import EmptyState from "../components/EmptyState";
 
@@ -39,7 +39,12 @@ const DoctorCard = React.memo(({ item, onClick }) => (
       </div>
     </div>
     <div className="p-4 flex flex-col flex-1">
-      <h3 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors leading-tight truncate">{item.name}</h3>
+      <h3 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors leading-tight truncate flex items-center gap-1">
+        {item.name}
+        {item.verificationStatus === "verified" && (
+          <ShieldCheck size={13} className="text-primary flex-shrink-0" aria-label="Verified doctor" />
+        )}
+      </h3>
       <p className="text-xs text-text-muted mt-1 truncate">{item.speciality}</p>
       <div className="flex-1" />
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">

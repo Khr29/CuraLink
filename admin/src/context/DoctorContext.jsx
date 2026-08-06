@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from 'react-toastify'
 import { createContext } from "react";
 import axios from 'axios'
+import { installAuthInterceptor, registerTokenSetter } from "../utils/axiosAuth.js";
 export const DoctorContext = createContext()
 
 const DoctorContextProvider = (props) => {
@@ -10,6 +11,13 @@ const DoctorContextProvider = (props) => {
     const [dToken, setDToken] = useState(localStorage.getItem('dToken') || '')
     const [dashData, setDashData] = useState(false)
      const [profileData, setProfileData] = useState(false)
+
+    // Silently refreshes the 15-min access token using the httpOnly refresh
+    // cookie whenever a request comes back 401.
+    useEffect(() => {
+        installAuthInterceptor(backendUrl)
+        registerTokenSetter('dtoken', setDToken)
+    }, [backendUrl])
 
 
     const [appointments, setAppointments] = useState([])

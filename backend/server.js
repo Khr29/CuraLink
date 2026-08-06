@@ -46,11 +46,14 @@ import hospitalRouter from "./routes/hospitalRoute.js";
 import userRouter from "./routes/userRoute.js";
 import reviewRouter from "./routes/reviewRoute.js";
 import statsRouter from "./routes/statsRoute.js";
+import medicalRecordRouter from "./routes/medicalRecordRoute.js";
 
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
+import multer from "multer";
 
 // app config
 const app = express();
@@ -74,6 +77,7 @@ app.use(compression()); // Compress responses
 app.use(morgan("dev")); // HTTP request logger
 app.use(express.json({ limit: "10kb" })); // prevent large payload attacks
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // reads the httpOnly refresh-token cookies
 // A literal "*" origin is invalid alongside credentials: true (the CORS
 // spec forbids sending credentials to a wildcard origin). Use an explicit
 // allowlist from CORS_ORIGIN in production; fall back to reflecting the
@@ -104,11 +108,15 @@ app.use("/api/user", userRouter);
 app.use("/api/hospital", hospitalRouter);
 app.use("/api/review", reviewRouter);
 app.use("/api/stats", statsRouter);
+app.use("/api/medical-records", medicalRecordRouter);
 
 // global error handler (reliability)
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(err.status || 500).json({
+  // Multer's own errors (e.g. LIMIT_FILE_SIZE) don't set .status — surface
+  // them as 400s instead of a generic 500.
+  const status = err.status || (err instanceof multer.MulterError ? 400 : 500);
+  res.status(status).json({
     success: false,
     message: err.message || "Internal Server Error",
   });

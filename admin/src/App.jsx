@@ -1,6 +1,7 @@
 import ProtectedRoute from './components/ProtectedRoute'
 import React, { useContext, Suspense, lazy } from 'react'
 import Login from './pages/Login'
+import ForgotPassword from './pages/ForgotPassword'
 import { ToastContainer } from 'react-toastify'
 import { AdminContext } from './context/AdminContext'
 import { DoctorContext } from './context/DoctorContext'
@@ -69,6 +70,7 @@ const App = () => {
 
       {/* Login */}
       <Route path="/" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* Admin */}
       <Route path="/admin-dashboard" element={

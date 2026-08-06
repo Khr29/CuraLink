@@ -225,19 +225,198 @@
 // export default DoctorAppointment
 
 import React, { useContext, useEffect, useState, useMemo } from 'react'
+import axios from 'axios'
+import { toast } from 'react-toastify'
 import { DoctorContext } from '../../context/DoctorContext'
 import { AppContext } from '../../context/AppContext'
-import { CalendarDays, Clock, Wallet, CreditCard, Banknote, CheckCircle2, XCircle, Ban } from 'lucide-react'
+import { CalendarDays, Clock, Wallet, CreditCard, Banknote, CheckCircle2, XCircle, Ban, FileText, Lock, X } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 import EmptyState from '../../components/EmptyState'
 import { SkeletonRow } from '../../components/Skeleton'
 
+// Doctor-facing medical record editor for one appointment. Draft freely,
+// then Finalize locks it (backend rejects further plain edits); after
+// finalization only "Amend" is offered, which archives the prior state
+// server-side rather than overwriting it silently.
+const MedicalRecordModal = ({ appointment, dToken, backendUrl, onClose }) => {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [record, setRecord] = useState(null)
+  const [diagnosis, setDiagnosis] = useState('')
+  const [notes, setNotes] = useState('')
+  const [prescription, setPrescription] = useState([{ medicine: '', dosage: '', duration: '', instructions: '' }])
+  const [amendReason, setAmendReason] = useState('')
+
+  const config = { headers: { dtoken: dToken } }
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axios.get(`${backendUrl}/api/medical-records/appointment/${appointment._id}`, config)
+        if (data.success) {
+          setRecord(data.record)
+          setDiagnosis(data.record.diagnosis || '')
+          setNotes(data.record.notes || '')
+          if (data.record.prescription?.length) setPrescription(data.record.prescription)
+        }
+      } catch (error) {
+        // 404 just means no draft exists yet — that's fine, form starts empty.
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [appointment._id])
+
+  const updatePrescriptionRow = (i, field, value) => {
+    setPrescription((prev) => prev.map((row, idx) => (idx === i ? { ...row, [field]: value } : row)))
+  }
+  const addPrescriptionRow = () => setPrescription((prev) => [...prev, { medicine: '', dosage: '', duration: '', instructions: '' }])
+  const removePrescriptionRow = (i) => setPrescription((prev) => prev.filter((_, idx) => idx !== i))
+
+  const cleanPrescription = () => prescription.filter((p) => p.medicine.trim())
+
+  const saveDraft = async () => {
+    setSaving(true)
+    try {
+      const { data } = await axios.post(`${backendUrl}/api/medical-records/draft`, {
+        appointmentId: appointment._id, diagnosis, notes, prescription: cleanPrescription(),
+      }, config)
+      if (data.success) {
+        toast.success(data.message)
+        setRecord(data.record)
+      } else {
+        toast.error(data.message)
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const finalize = async () => {
+    if (!diagnosis.trim()) return toast.error('Diagnosis is required before finalizing')
+    setSaving(true)
+    try {
+      await axios.post(`${backendUrl}/api/medical-records/draft`, {
+        appointmentId: appointment._id, diagnosis, notes, prescription: cleanPrescription(),
+      }, config)
+      const { data } = await axios.post(`${backendUrl}/api/medical-records/finalize`, { appointmentId: appointment._id }, config)
+      if (data.success) {
+        toast.success(data.message)
+        setRecord(data.record)
+      } else {
+        toast.error(data.message)
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const amend = async () => {
+    setSaving(true)
+    try {
+      const { data } = await axios.post(`${backendUrl}/api/medical-records/amend`, {
+        appointmentId: appointment._id, diagnosis, notes, prescription: cleanPrescription(), reason: amendReason,
+      }, config)
+      if (data.success) {
+        toast.success(data.message)
+        setRecord(data.record)
+        setAmendReason('')
+      } else {
+        toast.error(data.message)
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const isFinalized = record?.status === 'finalized'
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 20 }} onClick={onClose}>
+      <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 560, maxHeight: '85vh', overflowY: 'auto', padding: 28 }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <FileText size={18} color="#2563EB" /> Medical Record
+          </h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}><X size={20} /></button>
+        </div>
+        <p style={{ fontSize: 13, color: '#64748B', marginBottom: 18 }}>{appointment.userData?.name} · {appointment.slotDate}</p>
+
+        {loading ? (
+          <p style={{ color: '#94A3B8', fontSize: 13 }}>Loading...</p>
+        ) : (
+          <>
+            {isFinalized && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FFFBEB', border: '1px solid #FDE68A', color: '#B45309', borderRadius: 10, padding: '8px 12px', fontSize: 12.5, fontWeight: 600, marginBottom: 16 }}>
+                <Lock size={14} /> Finalized on {new Date(record.finalizedAt).toLocaleString()} — further edits are recorded as amendments.
+              </div>
+            )}
+
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Diagnosis</label>
+            <textarea value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} rows={2}
+              style={{ width: '100%', marginTop: 6, marginBottom: 14, padding: 10, border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: 13, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }} />
+
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Notes</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
+              style={{ width: '100%', marginTop: 6, marginBottom: 14, padding: 10, border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: 13, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }} />
+
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Prescription</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6, marginBottom: 10 }}>
+              {prescription.map((row, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr auto', gap: 6 }}>
+                  <input placeholder="Medicine" value={row.medicine} onChange={(e) => updatePrescriptionRow(i, 'medicine', e.target.value)} style={{ padding: 8, border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 12.5 }} />
+                  <input placeholder="Dosage" value={row.dosage} onChange={(e) => updatePrescriptionRow(i, 'dosage', e.target.value)} style={{ padding: 8, border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 12.5 }} />
+                  <input placeholder="Duration" value={row.duration} onChange={(e) => updatePrescriptionRow(i, 'duration', e.target.value)} style={{ padding: 8, border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 12.5 }} />
+                  <button onClick={() => removePrescriptionRow(i)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}><X size={16} /></button>
+                </div>
+              ))}
+              <button onClick={addPrescriptionRow} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#2563EB', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}>+ Add medicine</button>
+            </div>
+
+            {isFinalized && (
+              <>
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Reason for amendment</label>
+                <input value={amendReason} onChange={(e) => setAmendReason(e.target.value)} placeholder="e.g. corrected dosage"
+                  style={{ width: '100%', marginTop: 6, marginBottom: 14, padding: 10, border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: 13, boxSizing: 'border-box' }} />
+              </>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+              {!isFinalized ? (
+                <>
+                  <button onClick={saveDraft} disabled={saving} style={{ flex: 1, padding: '10px', background: '#F1F5F9', color: '#334155', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                    {saving ? 'Saving...' : 'Save Draft'}
+                  </button>
+                  <button onClick={finalize} disabled={saving} style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                    {saving ? 'Finalizing...' : 'Finalize & Lock'}
+                  </button>
+                </>
+              ) : (
+                <button onClick={amend} disabled={saving} style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                  {saving ? 'Saving amendment...' : 'Save Amendment'}
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const cols = '48px 1.6fr 100px 70px 1.4fr 90px 150px'
 
 const DoctorAppointment = () => {
-  const { dToken, appointments, getAllAppointments, completeAppointment, cancelAppointment } = useContext(DoctorContext)
+  const { dToken, backendUrl, appointments, getAllAppointments, completeAppointment, cancelAppointment } = useContext(DoctorContext)
   const { calculateAge, slotDateFormat, currency } = useContext(AppContext)
   const [loading, setLoading] = useState(true)
+  const [recordAppointment, setRecordAppointment] = useState(null)
 
   useEffect(() => {
     if (dToken) getAllAppointments().finally(() => setLoading(false))
@@ -302,6 +481,7 @@ const DoctorAppointment = () => {
                   currency={currency}
                   onCancel={cancelAppointment}
                   onComplete={completeAppointment}
+                  onOpenRecord={setRecordAppointment}
                 />
               ))
             ) : (
@@ -314,11 +494,20 @@ const DoctorAppointment = () => {
           </div>
         </div>
       </div>
+
+      {recordAppointment && (
+        <MedicalRecordModal
+          appointment={recordAppointment}
+          dToken={dToken}
+          backendUrl={backendUrl}
+          onClose={() => setRecordAppointment(null)}
+        />
+      )}
     </div>
   )
 }
 
-const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency, onCancel, onComplete }) => {
+const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency, onCancel, onComplete, onOpenRecord }) => {
   const [hovered, setHovered] = useState(false)
 
   return (
@@ -370,8 +559,17 @@ const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency, o
             <Ban size={14} /> Cancelled
           </div>
         ) : item.isCompleted ? (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#10B981', background: '#ECFDF5', border: '1px solid #D1FAE5', padding: '6px 12px', borderRadius: 99 }}>
-            <CheckCircle2 size={14} /> Completed
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#10B981', background: '#ECFDF5', border: '1px solid #D1FAE5', padding: '6px 12px', borderRadius: 99 }}>
+              <CheckCircle2 size={14} /> Completed
+            </div>
+            <button
+              onClick={() => onOpenRecord(item)}
+              title="Medical Record"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#2563EB', borderRadius: 99, padding: '6px 10px', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}
+            >
+              <FileText size={13} /> Record
+            </button>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 6 }}>

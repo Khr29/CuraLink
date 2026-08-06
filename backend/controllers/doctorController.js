@@ -158,9 +158,10 @@
 
 import doctorModel from "../models/doctorModel.js"
 import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken'
 import appointmentModel from "../models/appointmentModel.js"
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js"
+import { issueSession, revokeSession } from "../utils/session.js"
+import { signAccessToken } from "../utils/tokens.js"
 
 // Change Availability
 const changeAvailability = async (req, res) => {
@@ -225,7 +226,16 @@ const loginDoctor = async (req, res) => {
             return res.json({ success: false, message: "Invalid Credentials" })
         }
 
-        const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET)
+        const rememberMe = req.body.rememberMe === true || req.body.rememberMe === "true"
+        await issueSession({
+            req,
+            res,
+            actorType: "doctor",
+            actorId: doctor._id,
+            actorLabel: doctor.email,
+            rememberMe,
+        })
+        const token = signAccessToken({ id: doctor._id.toString() })
 
         await logAction({
             req,
@@ -244,9 +254,10 @@ const loginDoctor = async (req, res) => {
     }
 }
 
-// Logout Doctor (stateless JWT — this only records the audit entry)
+// Logout Doctor — revokes the refresh-token session and clears its cookie
 const logoutDoctor = async (req, res) => {
     try {
+        await revokeSession({ req, res, actorType: "doctor" })
         const doctor = await doctorModel.findById(req.docId).select("email")
         await logAction({
             req,
@@ -291,6 +302,15 @@ const appointmentComplete = async (req, res) => {
 
         await appointmentModel.findByIdAndUpdate(appointmentId, { isCompleted: true })
 
+        await logAction({
+            req,
+            actorType: "doctor",
+            actorId: docId,
+            action: AUDIT_ACTIONS.APPOINTMENT_UPDATED,
+            target: { type: "appointment", id: appointmentId, label: "isCompleted -> true" },
+            status: "success",
+        })
+
         res.json({ success: true, message: 'Appointment Completed' })
 
     } catch (error) {
@@ -312,6 +332,15 @@ const appointmentCancel = async (req, res) => {
         }
 
         await appointmentModel.findByIdAndUpdate(appointmentId, { cancelled: true })
+
+        await logAction({
+            req,
+            actorType: "doctor",
+            actorId: docId,
+            action: AUDIT_ACTIONS.APPOINTMENT_UPDATED,
+            target: { type: "appointment", id: appointmentId, label: "cancelled -> true" },
+            status: "success",
+        })
 
         res.json({ success: true, message: 'Appointment Cancelled' })
 

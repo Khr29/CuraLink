@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import hospitalModel from '../models/hospitalModel.js'
 
 // hospital authentication middleware
 const authHospital = async (req, res, next) => {
@@ -14,14 +15,34 @@ const authHospital = async (req, res, next) => {
 
     const decoded = jwt.verify(htoken, process.env.JWT_SECRET)
 
-    req.hospitalId = decoded?.id
-
-    if (!req.hospitalId) {
+    if (!decoded?.id) {
       return res.status(403).json({
         success: false,
         message: "Invalid token"
       })
     }
+
+    const hospital = await hospitalModel.findById(decoded.id).select('active passwordChangedAt')
+    if (!hospital) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized, login again"
+      })
+    }
+    if (!hospital.active) {
+      return res.status(403).json({
+        success: false,
+        message: "This hospital account has been deactivated"
+      })
+    }
+    if (hospital.passwordChangedAt && decoded.iat * 1000 < hospital.passwordChangedAt.getTime()) {
+      return res.status(401).json({
+        success: false,
+        message: "Session expired, please login again"
+      })
+    }
+
+    req.hospitalId = decoded.id
 
     next()
 
