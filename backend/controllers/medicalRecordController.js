@@ -315,11 +315,20 @@ export const getRecordByAppointment = async (req, res) => {
   }
 };
 
-// Patient: every record belonging to them
+// Patient: every record belonging to them. Optional ?status= and
+// ?hasPrescription=true narrow the query — omitting both keeps the original
+// unfiltered behavior, so existing callers (Medical Records page) are
+// unaffected. Used by the Prescriptions page to fetch only finalized
+// records that actually have medicines on them.
 export const getMyRecords = async (req, res) => {
   try {
+    const { status, hasPrescription } = req.query;
+    const filter = { patientId: req.userId };
+    if (status) filter.status = status;
+    if (hasPrescription === "true") filter["prescription.0"] = { $exists: true };
+
     const records = await medicalRecordModel
-      .find({ patientId: req.userId })
+      .find(filter)
       .populate("doctorId", "name speciality image")
       .populate("hospitalId", "name")
       .sort({ createdAt: -1 });

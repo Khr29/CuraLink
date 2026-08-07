@@ -283,7 +283,7 @@ const MedicalRecordModal = ({ appointment, dToken, backendUrl, onClose }) => {
       try {
         const { data } = await axios.get(`${backendUrl}/api/medical-records/prescription-options`)
         if (data.success) setOptions(data.options)
-      } catch (error) {
+      } catch {
         // Falls back to a Tablet/Oral/Anytime-only form if this fails — not fatal.
       }
     })()
@@ -310,10 +310,10 @@ const MedicalRecordModal = ({ appointment, dToken, backendUrl, onClose }) => {
   const updatePrescriptionRow = (i, field, value) => {
     setPrescription((prev) => prev.map((row, idx) => (idx === i ? { ...row, [field]: value } : row)))
   }
-  const addPrescriptionRow = () => setPrescription((prev) => [...prev, { medicine: '', dosage: '', duration: '', instructions: '' }])
+  const addPrescriptionRow = () => setPrescription((prev) => [...prev, { ...EMPTY_ROW }])
   const removePrescriptionRow = (i) => setPrescription((prev) => prev.filter((_, idx) => idx !== i))
 
-  const cleanPrescription = () => prescription.filter((p) => p.medicine.trim())
+  const cleanPrescription = () => prescription.filter((p) => p.medicineName.trim())
 
   const saveDraft = async () => {
     setSaving(true)
@@ -379,7 +379,7 @@ const MedicalRecordModal = ({ appointment, dToken, backendUrl, onClose }) => {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 20 }} onClick={onClose}>
-      <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 560, maxHeight: '85vh', overflowY: 'auto', padding: 28 }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 740, maxHeight: '85vh', overflowY: 'auto', padding: 28 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             <FileText size={18} color="#2563EB" /> Medical Record
@@ -407,15 +407,52 @@ const MedicalRecordModal = ({ appointment, dToken, backendUrl, onClose }) => {
               style={{ width: '100%', marginTop: 6, marginBottom: 14, padding: 10, border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: 13, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }} />
 
             <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Prescription</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6, marginBottom: 10 }}>
-              {prescription.map((row, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr auto', gap: 6 }}>
-                  <input placeholder="Medicine" value={row.medicine} onChange={(e) => updatePrescriptionRow(i, 'medicine', e.target.value)} style={{ padding: 8, border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 12.5 }} />
-                  <input placeholder="Dosage" value={row.dosage} onChange={(e) => updatePrescriptionRow(i, 'dosage', e.target.value)} style={{ padding: 8, border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 12.5 }} />
-                  <input placeholder="Duration" value={row.duration} onChange={(e) => updatePrescriptionRow(i, 'duration', e.target.value)} style={{ padding: 8, border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 12.5 }} />
-                  <button onClick={() => removePrescriptionRow(i)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}><X size={16} /></button>
-                </div>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 6, marginBottom: 10 }}>
+              {prescription.map((row, i) => {
+                const rowInput = { padding: 8, border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 12.5, width: '100%', boxSizing: 'border-box', fontFamily: 'Inter, sans-serif' }
+                const summary = composePrescriptionSummary(row)
+                return (
+                  <div key={i} style={{ border: '1px solid #E2E8F0', borderRadius: 12, padding: 12, position: 'relative' }}>
+                    <button
+                      onClick={() => removePrescriptionRow(i)}
+                      style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex' }}
+                    ><X size={15} /></button>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, marginBottom: 8, paddingRight: 24 }}>
+                      <input placeholder="Medicine name" value={row.medicineName} onChange={(e) => updatePrescriptionRow(i, 'medicineName', e.target.value)} style={rowInput} />
+                      <input placeholder="Strength (e.g. 500mg)" value={row.strength} onChange={(e) => updatePrescriptionRow(i, 'strength', e.target.value)} style={rowInput} />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 8 }}>
+                      <select value={row.form} onChange={(e) => updatePrescriptionRow(i, 'form', e.target.value)} style={rowInput}>
+                        {(options.forms.length ? options.forms : [row.form]).map((f) => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                      <select value={row.frequency} onChange={(e) => updatePrescriptionRow(i, 'frequency', e.target.value)} style={rowInput}>
+                        <option value="">Frequency</option>
+                        {options.frequencies.map((f) => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                      <select value={row.route} onChange={(e) => updatePrescriptionRow(i, 'route', e.target.value)} style={rowInput}>
+                        {(options.routes.length ? options.routes : [row.route]).map((r) => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <select value={row.timing} onChange={(e) => updatePrescriptionRow(i, 'timing', e.target.value)} style={rowInput}>
+                        {(options.timings.length ? options.timings : [row.timing]).map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 8 }}>
+                      <input placeholder="Dose (e.g. 1 tablet)" value={row.dose} onChange={(e) => updatePrescriptionRow(i, 'dose', e.target.value)} style={rowInput} />
+                      <input placeholder="Duration (e.g. 5 days)" value={row.duration} onChange={(e) => updatePrescriptionRow(i, 'duration', e.target.value)} style={rowInput} />
+                      <input placeholder="Quantity" value={row.quantity} onChange={(e) => updatePrescriptionRow(i, 'quantity', e.target.value)} style={rowInput} />
+                    </div>
+
+                    <input placeholder="Special instructions" value={row.instructions} onChange={(e) => updatePrescriptionRow(i, 'instructions', e.target.value)} style={{ ...rowInput, marginBottom: summary ? 8 : 0 }} />
+
+                    {summary && (
+                      <p style={{ fontSize: 11.5, color: '#0D9488', background: '#F0FDFA', borderRadius: 8, padding: '6px 10px', margin: 0 }}>{summary}</p>
+                    )}
+                  </div>
+                )
+              })}
               <button onClick={addPrescriptionRow} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#2563EB', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}>+ Add medicine</button>
             </div>
 

@@ -1,7 +1,8 @@
 import React, { useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppContext } from "../../context/AppContext";
 import axios from "axios";
-import { FileText, Lock, Stethoscope, Building2, Pill, Paperclip, X } from "lucide-react";
+import { FileText, Lock, Stethoscope, Building2, Pill, Paperclip, X, ArrowRight } from "lucide-react";
 import PortalLayout from "../../components/PortalLayout";
 import EmptyState from "../../components/EmptyState";
 
@@ -22,6 +23,7 @@ const InfoBlock = ({ label, value }) => (
 // Full-record detail — read-only for patients (they can view every field
 // but never edit; only the doctor who created it can via the doctor portal).
 const RecordDetailModal = ({ record, onClose }) => {
+  const navigate = useNavigate();
   if (!record) return null;
   return (
     <div
@@ -80,17 +82,23 @@ const RecordDetailModal = ({ record, onClose }) => {
               <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <Pill size={12} /> Prescription
               </p>
-              <div className="flex flex-col gap-2">
-                {record.prescription.map((item, i) => (
-                  <div key={i} className="bg-slate-50 rounded-xl px-3.5 py-2.5 border border-slate-100">
-                    <p className="text-sm font-semibold text-text-primary">{item.medicine}</p>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      {[item.dosage, item.duration].filter(Boolean).join(" · ")}
-                    </p>
-                    {item.instructions && <p className="text-xs text-text-secondary mt-1">{item.instructions}</p>}
-                  </div>
-                ))}
-              </div>
+              {record.status === "finalized" ? (
+                <button
+                  onClick={() => navigate(`/prescriptions?record=${record._id}`)}
+                  className="w-full flex items-center justify-between bg-slate-50 rounded-xl px-3.5 py-2.5 border border-slate-100 hover:border-primary/40 transition-colors text-left"
+                >
+                  <span className="text-sm text-text-secondary">
+                    {record.prescription.length} medicine{record.prescription.length !== 1 ? "s" : ""} prescribed
+                  </span>
+                  <span className="text-xs font-semibold text-primary flex items-center gap-1 flex-shrink-0">
+                    View full prescription <ArrowRight size={12} />
+                  </span>
+                </button>
+              ) : (
+                <p className="text-xs text-text-muted bg-slate-50 rounded-xl px-3.5 py-2.5 border border-slate-100">
+                  {record.prescription.length} medicine{record.prescription.length !== 1 ? "s" : ""} drafted — available on the Prescriptions page once finalized.
+                </p>
+              )}
             </div>
           )}
 

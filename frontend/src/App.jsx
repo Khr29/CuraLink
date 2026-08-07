@@ -23,6 +23,7 @@ const MyProfile = lazy(() => import("./pages/MyProfile"));
 const MyAppointments = lazy(() => import("./pages/MyAppointments"));
 const Dashboard = lazy(() => import("./pages/Portal/Dashboard"));
 const MedicalRecordsPage = lazy(() => import("./pages/Portal/MedicalRecordsPage"));
+const PrescriptionsPage = lazy(() => import("./pages/Portal/PrescriptionsPage"));
 const ReviewsPage = lazy(() => import("./pages/Portal/ReviewsPage"));
 const NotificationsPage = lazy(() => import("./pages/Portal/NotificationsPage"));
 const SettingsPage = lazy(() => import("./pages/Portal/SettingsPage"));
@@ -79,6 +80,7 @@ const App = () => {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/my-profile" element={<MyProfile />} />
                 <Route path="/medical-records" element={<MedicalRecordsPage />} />
+                <Route path="/prescriptions" element={<PrescriptionsPage />} />
                 <Route path="/my-appointments" element={<MyAppointments />} />
                 <Route path="/reviews" element={<ReviewsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
