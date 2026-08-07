@@ -1,5 +1,11 @@
 import React, { lazy, Suspense, useState } from "react";
 import Header from "../components/Header";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 const SpecialityMenu = lazy(() => import("../components/SpecialityMenu"));
 const FeaturedHospitals = lazy(() => import("../components/FeaturedHospitals"));
@@ -154,7 +160,7 @@ const FAQS = [
 ];
 
 const FAQ = () => {
-  const [open, setOpen] = useState(null);
+  const [openValues, setOpenValues] = useState([]);
   return (
     <section className="py-20 md:py-24 px-4 bg-gradient-section">
       <div className="max-w-3xl mx-auto">
@@ -165,30 +171,22 @@ const FAQ = () => {
             Everything you need to know about CuraLink.
           </p>
         </div>
-        <div className="flex flex-col gap-3">
+        <Accordion
+          value={openValues}
+          onValueChange={(val) => setOpenValues(val.length ? [val[val.length - 1]] : [])}
+          className="gap-3"
+        >
           {FAQS.map((faq, i) => (
-            <div key={i} className="faq-item">
-              <button
-                className="faq-question w-full"
-                onClick={() => setOpen(open === i ? null : i)}
-                aria-expanded={open === i}
-              >
+            <AccordionItem key={i} value={i} className="faq-item border-none">
+              <AccordionTrigger className="faq-question w-full py-0 hover:no-underline [&_svg]:text-text-muted [&_svg]:w-5 [&_svg]:h-5">
                 <span>{faq.q}</span>
-                <svg
-                  className={`w-5 h-5 text-text-muted flex-shrink-0 transition-transform duration-200 ${open === i ? "rotate-180" : ""}`}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                </svg>
-              </button>
-              {open === i && (
-                <div className="faq-answer animate-fade-in">
-                  {faq.a}
-                </div>
-              )}
-            </div>
+              </AccordionTrigger>
+              <AccordionContent className="faq-answer p-0 pb-0">
+                {faq.a}
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
       </div>
     </section>
   );

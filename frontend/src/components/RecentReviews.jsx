@@ -3,6 +3,8 @@ import axios from "axios";
 import { AppContext } from "../context/AppContext";
 import StarRating from "./StarRating";
 import timeAgo from "../utils/timeAgo";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const LIMIT = 6;
 
@@ -20,15 +22,12 @@ const ReviewCard = React.memo(({ review }) => {
         "{review.comment}"
       </p>
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-card flex-shrink-0">
-          {review.userId?.image ? (
-            <img src={review.userId.image} alt={review.userId?.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-primary font-bold">
-              {review.userId?.name?.[0]?.toUpperCase() || "?"}
-            </div>
-          )}
-        </div>
+        <Avatar className="w-10 h-10 flex-shrink-0 bg-gradient-card">
+          <AvatarImage src={review.userId?.image} alt={review.userId?.name} />
+          <AvatarFallback className="bg-transparent text-primary font-bold">
+            {review.userId?.name?.[0]?.toUpperCase() || "?"}
+          </AvatarFallback>
+        </Avatar>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-text-primary truncate">{review.userId?.name || "Patient"}</p>
           <p className="text-xs text-text-muted truncate">
@@ -79,7 +78,7 @@ const RecentReviews = () => {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="testimonial-card animate-pulse h-40" />
+            <Skeleton key={i} className="h-40 rounded-2xl" />
           ))}
         </div>
       ) : (

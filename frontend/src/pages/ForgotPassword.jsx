@@ -3,6 +3,10 @@ import { AppContext } from '../context/AppContext'
 import { toast } from 'react-toastify'
 import { useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const ForgotPassword = () => {
   const { backendUrl } = useContext(AppContext)
@@ -43,69 +47,75 @@ const ForgotPassword = () => {
   }
 
   return (
-    <div className='min-h-[8vh] flex items-center mt-11'>
-      <div className='flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-zinc-600 text-sm shadow-lg'>
-        <p className='text-2xl font-semibold'>Reset Password</p>
-        <p>{step === 'request' ? "We'll email you a 6-digit code." : `Enter the code sent to ${email}.`}</p>
+    <div className='min-h-[70vh] flex items-center justify-center py-12'>
+      <Card className="w-full max-w-sm shadow-card-lg">
+        <CardHeader>
+          <CardTitle className="text-2xl font-semibold text-text-primary">Reset Password</CardTitle>
+          <CardDescription>
+            {step === 'request' ? "We'll email you a 6-digit code." : `Enter the code sent to ${email}.`}
+          </CardDescription>
+        </CardHeader>
 
-        {step === 'request' ? (
-          <form onSubmit={requestCode} className='w-full flex flex-col gap-3'>
-            <div className='w-full'>
-              <p>Email</p>
-              <input
-                className='border border-zinc-300 rounded w-full p-2 mt-1'
-                type='email'
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <button type='submit' className='bg-primary text-white w-full py-2 rounded-md text-base'>
-              Send reset code
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={resetPassword} className='w-full flex flex-col gap-3'>
-            <div className='w-full'>
-              <p>Verification Code</p>
-              <input
-                className='border border-zinc-300 rounded w-full p-2 mt-1'
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                maxLength={6}
-                required
-              />
-            </div>
-            <div className='w-full'>
-              <p>New Password</p>
-              <input
-                className='border border-zinc-300 rounded w-full p-2 mt-1'
-                type='password'
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className='w-full'>
-              <p>Confirm Password</p>
-              <input
-                className='border border-zinc-300 rounded w-full p-2 mt-1'
-                type='password'
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-            <button type='submit' className='bg-primary text-white w-full py-2 rounded-md text-base'>
-              Reset password
-            </button>
-          </form>
-        )}
+        <CardContent>
+          {step === 'request' ? (
+            <form onSubmit={requestCode} className='flex flex-col gap-4'>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="fp-email">Email</Label>
+                <Input
+                  id="fp-email"
+                  type='email'
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" variant="gradient" className="w-full">
+                Send reset code
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={resetPassword} className='flex flex-col gap-4'>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="fp-otp">Verification Code</Label>
+                <Input
+                  id="fp-otp"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  maxLength={6}
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="fp-new-password">New Password</Label>
+                <Input
+                  id="fp-new-password"
+                  type='password'
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="fp-confirm-password">Confirm Password</Label>
+                <Input
+                  id="fp-confirm-password"
+                  type='password'
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" variant="gradient" className="w-full">
+                Reset password
+              </Button>
+            </form>
+          )}
 
-        <p>
-          <Link to="/login" className='text-primary underline cursor-pointer'>Back to login</Link>
-        </p>
-      </div>
+          <p className="text-center text-sm text-text-muted mt-4">
+            <Link to="/login" className='text-primary underline cursor-pointer'>Back to login</Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import StarRating from "./StarRating";
 import { formatExperience } from "../utils/experience";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const FEATURED_COUNT = 6;
 
@@ -27,10 +29,10 @@ const DoctorCard = React.memo(({ item, onClick }) => (
       <div className="absolute inset-0 bg-gradient-to-t from-primary/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
       {/* Availability badge */}
       <div className="absolute top-3 left-3">
-        <span className={`badge ${item.available ? "badge-green" : "badge-slate"}`}>
+        <Badge variant={item.available ? "green" : "slate"}>
           <span className={`w-1.5 h-1.5 rounded-full ${item.available ? "bg-accent" : "bg-slate-400"}`} />
           {item.available ? "Available" : "Unavailable"}
-        </span>
+        </Badge>
       </div>
     </div>
 
@@ -72,9 +74,9 @@ const DoctorCard = React.memo(({ item, onClick }) => (
           ${item.fees}
           <span className="text-[11px] font-medium text-text-muted"> /visit</span>
         </span>
-        <button className="btn btn-primary btn-sm">
+        <Button variant="gradient" size="sm">
           View Profile
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -121,15 +123,12 @@ const TopDoctors = () => {
             Our highest-rated, verified specialists — ready to help you.
           </p>
         </div>
-        <button
-          onClick={handleMoreDoctors}
-          className="btn btn-secondary flex-shrink-0"
-        >
+        <Button onClick={handleMoreDoctors} variant="brand-outline" className="flex-shrink-0">
           View All Doctors
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Grid */}

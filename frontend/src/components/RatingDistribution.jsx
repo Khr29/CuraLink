@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
 import StarRating from "./StarRating";
+import { ProgressTrack, ProgressIndicator } from "@/components/ui/progress";
 
 // Animated 5→1 star breakdown bars, used on Doctor/Hospital profile pages.
 // `distribution` is a { 5: n, 4: n, 3: n, 2: n, 1: n } count map.
@@ -39,17 +41,18 @@ const RatingDistribution = ({ distribution, total = 0, averageRating = 0 }) => {
               <span className="text-xs font-semibold text-text-muted w-8 flex-shrink-0">
                 {star} ★
               </span>
-              <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: animate ? `${percent}%` : "0%",
-                    background: "linear-gradient(135deg, #2563EB, #14B8A6)",
-                    transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
-                    transitionDelay: `${(5 - star) * 0.08}s`,
-                  }}
-                />
-              </div>
+              <ProgressPrimitive.Root value={percent} className="flex-1">
+                <ProgressTrack className="h-2 bg-slate-100">
+                  <ProgressIndicator
+                    style={{
+                      width: animate ? `${percent}%` : "0%",
+                      background: "linear-gradient(135deg, #2563EB, #14B8A6)",
+                      transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
+                      transitionDelay: `${(5 - star) * 0.08}s`,
+                    }}
+                  />
+                </ProgressTrack>
+              </ProgressPrimitive.Root>
               <span className="text-xs text-text-muted w-6 flex-shrink-0 text-right">
                 {count}
               </span>

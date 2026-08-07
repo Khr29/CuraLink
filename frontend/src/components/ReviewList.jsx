@@ -6,6 +6,10 @@ import StarRating from "./StarRating";
 import WriteReviewCTA from "./WriteReviewCTA";
 import EmptyState from "./EmptyState";
 import timeAgo from "../utils/timeAgo";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const LIMIT = 5;
 
@@ -57,7 +61,7 @@ const ReviewList = ({ targetType, targetId, refreshKey, onStats, eligibility, on
     return (
       <div className="flex flex-col gap-3">
         {[1, 2].map((i) => (
-          <div key={i} className="appt-card animate-pulse h-24" />
+          <Skeleton key={i} className="h-24 rounded-2xl" />
         ))}
       </div>
     );
@@ -85,20 +89,17 @@ const ReviewList = ({ targetType, targetId, refreshKey, onStats, eligibility, on
       {reviews.map((review) => (
         <div key={review._id} className="profile-section">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-card flex-shrink-0">
-              {review.userId?.image ? (
-                <img src={review.userId.image} alt={review.userId?.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-primary font-bold">
-                  {review.userId?.name?.[0]?.toUpperCase() || "?"}
-                </div>
-              )}
-            </div>
+            <Avatar className="w-10 h-10 flex-shrink-0 bg-gradient-card">
+              <AvatarImage src={review.userId?.image} alt={review.userId?.name} />
+              <AvatarFallback className="bg-transparent text-primary font-bold">
+                {review.userId?.name?.[0]?.toUpperCase() || "?"}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center flex-wrap gap-2">
                 <span className="text-sm font-bold text-text-primary">{review.userId?.name || "Patient"}</span>
                 {review.verifiedPatient && (
-                  <span className="badge badge-teal text-[10px]">✓ Verified Patient</span>
+                  <Badge variant="teal" className="text-[10px]">✓ Verified Patient</Badge>
                 )}
               </div>
               <div className="flex items-center gap-2 mt-1">
@@ -118,7 +119,7 @@ const ReviewList = ({ targetType, targetId, refreshKey, onStats, eligibility, on
               {review.reply?.text && (
                 <div className="mt-3 bg-secondary/5 rounded-xl p-3 border border-secondary/20">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="badge badge-teal text-[10px]">✓ Verified</span>
+                    <Badge variant="teal" className="text-[10px]">✓ Verified</Badge>
                     <p className="text-xs font-bold text-secondary">
                       {review.reply.repliedBy === "hospital" ? "Hospital Response" : "Doctor Response"}
                     </p>
@@ -133,13 +134,15 @@ const ReviewList = ({ targetType, targetId, refreshKey, onStats, eligibility, on
       ))}
 
       {reviews.length < total && (
-        <button
+        <Button
+          variant="brand-ghost"
+          size="sm"
           onClick={() => fetchReviews(page + 1)}
           disabled={loading}
-          className="btn btn-ghost btn-sm self-center"
+          className="self-center"
         >
           {loading ? "Loading..." : `Load More (${total - reviews.length} more)`}
-        </button>
+        </Button>
       )}
     </div>
   );

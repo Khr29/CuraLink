@@ -1,70 +1,38 @@
-// import React from 'react'
-// import { assets } from '../assets/assets'
-
-// const Contact = () => {
-//   return (
-//     <div>
-
-//       <div className='text-center text-2xl pt-10 text-gray-500'>
-//         <p>CONTACT <span className='text-gray-700 font-semibold'>US</span></p>
-//       </div>
-//       <div className='my-10 flex flex-col justify-center md:flex-row gap-10 mb-28 text-sm'>
-//         <img className='w-full md:max-w-[360px]' src={assets.contact_image} alt=''/>
-
-//         <div className='flex flex-col justify-center items-start gap-6'>
-//           <p className='font-semibold text-lg text-gray-600 '>OUR OFFICE</p>
-//           <p className='text-gray-500'>00000 Willms Station <br/>Suite 000, Washington, USA</p>
-//           <p className='text-gray-500'>Tel: (000) 000-0000 <br />Email: greatstackdev@gmail.com</p>
-//           <p className='font-semibold text-lg text-gray-600'>CAREERS AT CuraLink</p>
-//           <p className='text-gray-500'>Learn more about our teams and job openings.</p>
-//           <button className='border border-black px-8 py-4 text-sm hover:bg-black hover:text-white transition-all duration-500'>Explore Jobs</button>
-//         </div>
-//       </div>
-//     </div>
-//   )
-// }
-
-// export default Contact
-
 import React from "react";
 import { assets } from "../assets/assets";
+import { Button } from "@/components/ui/button";
 
 const ContactInfo = ({ title, children }) => {
   return (
     <div className="flex flex-col gap-2">
-      <p className="font-semibold text-lg text-gray-600">{title}</p>
-      <div className="text-gray-500 text-sm">{children}</div>
+      <p className="font-semibold text-lg text-text-primary">{title}</p>
+      <div className="text-text-muted text-sm">{children}</div>
     </div>
   );
 };
 
 const Contact = () => {
   return (
-    <div className="px-4 sm:px-8 md:px-10">
+    <div className="py-8 animate-fade-in">
 
       {/* Heading */}
-
-      <div className="text-center text-2xl pt-10 text-gray-500">
-        <p>
-          CONTACT <span className="text-gray-700 font-semibold">US</span>
-        </p>
+      <div className="text-center mb-10">
+        <span className="section-tag">Get In Touch</span>
+        <h1 className="section-title">Contact Us</h1>
       </div>
 
       {/* Content */}
-
-      <div className="my-10 flex flex-col md:flex-row items-center md:items-start gap-10 mb-20 text-sm">
+      <div className="profile-section flex flex-col md:flex-row items-center md:items-start gap-10 p-8 text-sm">
 
         {/* Image */}
-
         <img
-          className="w-full max-w-[320px] md:max-w-[360px] rounded-lg"
+          className="w-full max-w-[320px] md:max-w-[360px] rounded-2xl"
           src={assets.contact_image}
           alt="Contact CuraLink"
           loading="lazy"
         />
 
         {/* Info Section */}
-
         <div className="flex flex-col justify-center items-start gap-6 text-center md:text-left">
 
           <ContactInfo title="OUR OFFICE">
@@ -85,9 +53,9 @@ const Contact = () => {
             <p>Learn more about our teams and job openings.</p>
           </ContactInfo>
 
-          <button className="border border-black px-8 py-3 text-sm rounded-md hover:bg-black hover:text-white transition-all duration-300">
+          <Button variant="brand-outline">
             Explore Jobs
-          </button>
+          </Button>
 
         </div>
 

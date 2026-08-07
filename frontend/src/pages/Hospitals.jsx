@@ -4,6 +4,8 @@ import { AppContext } from "../context/AppContext";
 import { Building2 } from "lucide-react";
 import StarRating from "../components/StarRating";
 import EmptyState from "../components/EmptyState";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const departments = [
   "Cardiology",
@@ -43,24 +45,11 @@ const HospitalCard = ({ item }) => {
 
 
         <div className="absolute top-3 left-3">
-        <div
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-sm ${
-            item.active
-              ? "bg-green-100 text-green-700"
-              : "bg-white text-gray-700"
-          }`}
-        >
-          <span
-            className={`w-2.5 h-2.5 rounded-full ${
-              item.active
-                ? "bg-green-500"
-                : "bg-gray-400"
-            }`}
-          ></span>
-
-          {item.active ? "OPEN" : "CLOSED"}
+          <Badge variant={item.active ? "green" : "slate"} className="px-4 py-2 h-auto text-sm">
+            <span className={`w-2.5 h-2.5 rounded-full ${item.active ? "bg-green-500" : "bg-gray-400"}`} />
+            {item.active ? "OPEN" : "CLOSED"}
+          </Badge>
         </div>
-      </div>
       </div>
 
       {/* Content */}
@@ -96,12 +85,9 @@ const HospitalCard = ({ item }) => {
 
           </div>
 
-          <button
-            onClick={handleView}
-            className="btn btn-primary btn-sm"
-          >
+          <Button onClick={handleView} variant="gradient" size="sm">
             View Details
-          </button>
+          </Button>
 
         </div>
 
@@ -161,14 +147,14 @@ const Hospitals = () => {
 
         <aside className="sm:w-56 flex-shrink-0">
 
-          <button
+          <Button
             onClick={toggleFilter}
-            className={`sm:hidden flex items-center gap-2 btn btn-sm mb-4 ${
-              showFilter ? "btn-primary" : "btn-ghost"
-            }`}
+            variant={showFilter ? "gradient" : "brand-ghost"}
+            size="sm"
+            className="sm:hidden mb-4"
           >
             {showFilter ? "Hide" : "Show"} Filters
-          </button>
+          </Button>
 
           <div
             className={`${
@@ -231,12 +217,9 @@ const Hospitals = () => {
               subtitle={<>We couldn't find any hospitals for{" "}<strong>{selectedDepartment}</strong>. Try a different departments.</>}
             />
 
-            <button
-              onClick={() => setSelectedDepartment("")}
-              className="btn btn-primary mt-2"
-            >
+            <Button onClick={() => setSelectedDepartment("")} variant="gradient" className="mt-2">
               View All Hospitals
-            </button>
+            </Button>
 
           </div>
 

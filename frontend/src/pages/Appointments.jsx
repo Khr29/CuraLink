@@ -14,6 +14,8 @@ import axios from "axios";
 import { formatExperience } from "../utils/experience";
 import EmptyState from "../components/EmptyState";
 import { CalendarX2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -155,7 +157,7 @@ const Appointments = () => {
                 <p className="text-text-secondary text-sm">
                   {docInfo.degree} · {docInfo.speciality}
                 </p>
-                <span className="badge badge-teal">{formatExperience(docInfo.experience)}</span>
+                <Badge variant="teal">{formatExperience(docInfo.experience)}</Badge>
               </div>
             </div>
           </div>
@@ -198,10 +200,10 @@ const Appointments = () => {
             </div>
             <div className="text-right">
               <p className="text-xs text-text-muted mb-0.5">Availability</p>
-              <span className={`badge ${docInfo.available ? "badge-green" : "badge-slate"}`}>
+              <Badge variant={docInfo.available ? "green" : "slate"}>
                 <span className={`w-1.5 h-1.5 rounded-full ${docInfo.available ? "bg-accent animate-pulse" : "bg-slate-400"}`} />
                 {docInfo.available ? "Available Today" : "Unavailable"}
-              </span>
+              </Badge>
             </div>
           </div>
         </div>
@@ -247,10 +249,12 @@ const Appointments = () => {
         )}
 
         {/* Book button */}
-        <button
+        <Button
           onClick={bookAppointment}
           disabled={booking || !slotTime}
-          className="btn btn-primary btn-lg shine w-full sm:w-auto"
+          variant="gradient"
+          size="xl"
+          className="shine w-full sm:w-auto"
         >
           {booking ? (
             <>
@@ -265,7 +269,7 @@ const Appointments = () => {
               Confirm Appointment
             </>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Reviews */}

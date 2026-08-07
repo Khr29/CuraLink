@@ -1,9 +1,11 @@
 import React, { useContext, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
-import { SearchX, ShieldCheck } from "lucide-react";
+import { SearchX, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import StarRating from "../components/StarRating";
 import EmptyState from "../components/EmptyState";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const specialities = [
   "General physician",
@@ -32,10 +34,10 @@ const DoctorCard = React.memo(({ item, onClick }) => (
       />
       <div className="absolute inset-0 bg-gradient-to-t from-primary/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       <div className="absolute top-3 left-3">
-        <span className={`badge ${item.available ? "badge-green" : "badge-slate"}`}>
+        <Badge variant={item.available ? "green" : "slate"}>
           <span className={`w-1.5 h-1.5 rounded-full ${item.available ? "bg-accent" : "bg-slate-400"}`} />
           {item.available ? "Available" : "Unavailable"}
-        </span>
+        </Badge>
       </div>
     </div>
     <div className="p-4 flex flex-col flex-1">
@@ -54,11 +56,9 @@ const DoctorCard = React.memo(({ item, onClick }) => (
             {item.totalReviews > 0 ? item.averageRating.toFixed(1) : "New"}
           </span>
         </div>
-        <button
-  className="btn btn-primary btn-sm"
->
+        <Button variant="gradient" size="sm">
           View Profile
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -104,15 +104,15 @@ const Doctors = () => {
         {/* Sidebar */}
         <aside className="sm:w-56 flex-shrink-0">
           {/* Mobile toggle */}
-          <button
+          <Button
             onClick={toggleFilter}
-            className={`sm:hidden flex items-center gap-2 btn btn-sm mb-4 ${showFilter ? "btn-primary" : "btn-ghost"}`}
+            variant={showFilter ? "gradient" : "brand-ghost"}
+            size="sm"
+            className="sm:hidden mb-4"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
-            </svg>
+            <SlidersHorizontal className="w-4 h-4" />
             {showFilter ? "Hide" : "Show"} Filters
-          </button>
+          </Button>
 
           <div className={`flex-col gap-1 ${showFilter ? "flex" : "hidden sm:flex"}`}>
             <div className="profile-section mb-2">
@@ -147,9 +147,9 @@ const Doctors = () => {
                 title="No Doctors Found"
                 subtitle={<>We couldn't find any doctors for <strong>{speciality}</strong>. Try a different speciality.</>}
               />
-              <button onClick={() => navigate("/doctors")} className="btn btn-primary mt-2">
+              <Button onClick={() => navigate("/doctors")} variant="gradient" className="mt-2">
                 View All Doctors
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

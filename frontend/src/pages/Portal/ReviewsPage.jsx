@@ -7,6 +7,20 @@ import StarRating from "../../components/StarRating";
 import ReviewForm from "../../components/ReviewForm";
 import EmptyState from "../../components/EmptyState";
 import PortalLayout from "../../components/PortalLayout";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 const months = [" ", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const formatSlotDate = (slotDate) => {
@@ -37,7 +51,7 @@ const ReviewCard = ({ review, onEdit, onDelete, deleting }) => {
         <StarRating rating={review.rating} size="sm" />
       </div>
 
-      {!review.isVisible && <span className="badge badge-slate text-[10px] mb-2">Hidden by admin</span>}
+      {!review.isVisible && <Badge variant="slate" className="text-[10px] mb-2">Hidden by admin</Badge>}
 
       <h4 className="text-sm font-semibold text-text-primary mt-2">{review.title}</h4>
       <p className="text-sm text-text-secondary mt-1 leading-relaxed">{review.comment}</p>
@@ -57,17 +71,19 @@ const ReviewCard = ({ review, onEdit, onDelete, deleting }) => {
 
       <div className="flex items-center gap-3 mt-3">
         {review.editable ? (
-          <button onClick={() => onEdit(review)} className="btn btn-ghost btn-sm">Edit</button>
+          <Button onClick={() => onEdit(review)} variant="brand-ghost" size="sm">Edit</Button>
         ) : (
           <span className="text-xs text-text-muted">Edit window expired</span>
         )}
-        <button
+        <Button
           onClick={() => onDelete(review._id)}
           disabled={deleting === review._id}
-          className="btn btn-ghost btn-sm border-danger/30 text-danger hover:bg-red-50"
+          variant="brand-ghost"
+          size="sm"
+          className="border-danger/30 text-danger hover:bg-red-50"
         >
           {deleting === review._id ? "Deleting..." : "Delete"}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -80,6 +96,7 @@ const ReviewsPage = () => {
   const [tab, setTab] = useState("doctor");
   const [editingReview, setEditingReview] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   const fetchMyReviews = useCallback(async () => {
     try {
@@ -97,7 +114,6 @@ const ReviewsPage = () => {
   }, [token, fetchMyReviews]);
 
   const handleDelete = async (reviewId) => {
-    if (!window.confirm("Delete this review? This cannot be undone.")) return;
     setDeletingId(reviewId);
     try {
       const { data } = await axios.delete(`${backendUrl}/api/review/${reviewId}`, { headers: { token } });
@@ -125,24 +141,26 @@ const ReviewsPage = () => {
         <p className="text-text-muted mt-1">Everything you've written for doctors and hospitals.</p>
       </div>
 
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setTab("doctor")}
-          className={`filter-pill w-auto inline-flex items-center gap-1.5 ${tab === "doctor" ? "active" : ""}`}
-        >
-          <Stethoscope size={14} /> Doctor Reviews ({doctorReviews.length})
-        </button>
-        <button
-          onClick={() => setTab("hospital")}
-          className={`filter-pill w-auto inline-flex items-center gap-1.5 ${tab === "hospital" ? "active" : ""}`}
-        >
-          <Building2 size={14} /> Hospital Reviews ({hospitalReviews.length})
-        </button>
-      </div>
+      <Tabs value={tab} onValueChange={setTab} className="mb-6">
+        <TabsList variant="line" className="gap-2 p-0 h-auto bg-transparent">
+          <TabsTrigger
+            value="doctor"
+            className={`filter-pill w-auto flex-none inline-flex items-center gap-1.5 h-auto py-2.5 ${tab === "doctor" ? "active" : ""}`}
+          >
+            <Stethoscope size={14} /> Doctor Reviews ({doctorReviews.length})
+          </TabsTrigger>
+          <TabsTrigger
+            value="hospital"
+            className={`filter-pill w-auto flex-none inline-flex items-center gap-1.5 h-auto py-2.5 ${tab === "hospital" ? "active" : ""}`}
+          >
+            <Building2 size={14} /> Hospital Reviews ({hospitalReviews.length})
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {loading ? (
         <div className="flex flex-col gap-4">
-          {[1, 2].map((i) => <div key={i} className="profile-section animate-pulse h-24" />)}
+          {[1, 2].map((i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
         </div>
       ) : activeList.length === 0 ? (
         <div className="profile-section">
@@ -160,7 +178,7 @@ const ReviewsPage = () => {
               key={review._id}
               review={review}
               onEdit={setEditingReview}
-              onDelete={handleDelete}
+              onDelete={setConfirmDeleteId}
               deleting={deletingId}
             />
           ))}
@@ -176,6 +194,28 @@ const ReviewsPage = () => {
         editReview={editingReview}
         onSuccess={fetchMyReviews}
       />
+
+      <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this review?</AlertDialogTitle>
+            <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Review</AlertDialogCancel>
+            <AlertDialogAction
+              variant="solid-destructive"
+              onClick={() => {
+                const id = confirmDeleteId;
+                setConfirmDeleteId(null);
+                if (id) handleDelete(id);
+              }}
+            >
+              Yes, Delete It
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PortalLayout>
   );
 };

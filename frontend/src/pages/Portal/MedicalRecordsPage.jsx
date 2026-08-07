@@ -1,9 +1,13 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "../../context/AppContext";
 import axios from "axios";
-import { FileText, Lock, Stethoscope, Building2, Pill, Paperclip, X } from "lucide-react";
+import { FileText, Lock, Stethoscope, Building2, Pill, Paperclip } from "lucide-react";
 import PortalLayout from "../../components/PortalLayout";
 import EmptyState from "../../components/EmptyState";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const formatDate = (date) =>
   date
@@ -22,40 +26,29 @@ const InfoBlock = ({ label, value }) => (
 // Full-record detail — read-only for patients (they can view every field
 // but never edit; only the doctor who created it can via the doctor portal).
 const RecordDetailModal = ({ record, onClose }) => {
-  if (!record) return null;
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-[100] bg-slate-900/55 backdrop-blur-sm flex items-center justify-center p-5"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl border border-slate-100 shadow-card-lg w-full max-w-lg max-h-[85vh] overflow-y-auto p-7 relative"
-      >
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
-        >
-          <X size={16} className="text-text-muted" />
-        </button>
-
-        <div className="flex items-center gap-3 mb-1">
-          <span className="w-11 h-11 rounded-xl bg-gradient-card flex items-center justify-center flex-shrink-0">
-            <FileText size={19} className="text-primary" />
-          </span>
-          <div>
-            <h3 className="text-lg font-bold text-text-primary">Medical Record</h3>
-            <p className="text-xs text-text-muted">{formatDate(record.createdAt)}</p>
+    <Dialog open={!!record} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto p-7">
+        {record && (
+        <>
+        <DialogHeader className="mb-1">
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-xl bg-gradient-card flex items-center justify-center flex-shrink-0">
+              <FileText size={19} className="text-primary" />
+            </span>
+            <div>
+              <DialogTitle className="text-lg font-bold text-text-primary">Medical Record</DialogTitle>
+              <p className="text-xs text-text-muted">{formatDate(record.createdAt)}</p>
+            </div>
           </div>
-        </div>
+        </DialogHeader>
 
         {record.status === "finalized" ? (
           <div className="mt-4 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold">
             <Lock size={13} /> Finalized on {formatDate(record.finalizedAt)} — this record is locked
           </div>
         ) : (
-          <div className="mt-4 badge badge-slate w-fit">Draft</div>
+          <Badge variant="slate" className="mt-4 w-fit">Draft</Badge>
         )}
 
         <div className="flex items-center gap-4 mt-5 pb-5 border-b border-slate-100">
@@ -101,9 +94,9 @@ const RecordDetailModal = ({ record, onClose }) => {
               </p>
               <div className="flex flex-wrap gap-2">
                 {record.attachments.map((a, i) => (
-                  <a key={i} href={a.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">
+                  <Button key={i} variant="brand-ghost" size="sm" render={<a href={a.url} target="_blank" rel="noreferrer" />}>
                     {a.fileName || `File ${i + 1}`}
-                  </a>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -120,8 +113,10 @@ const RecordDetailModal = ({ record, onClose }) => {
             </div>
           )}
         </div>
-      </div>
-    </div>
+        </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -155,7 +150,7 @@ const MedicalRecordsPage = () => {
       {loading ? (
         <div className="flex flex-col gap-4">
           {[1, 2].map((i) => (
-            <div key={i} className="profile-section animate-pulse h-24" />
+            <Skeleton key={i} className="h-24 rounded-2xl" />
           ))}
         </div>
       ) : records.length === 0 ? (
@@ -182,9 +177,9 @@ const MedicalRecordsPage = () => {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="text-sm font-bold text-text-primary">{record.doctorId?.name}</span>
-                        <span className={`badge text-[10px] ${record.status === "finalized" ? "badge-green" : "badge-slate"}`}>
+                        <Badge variant={record.status === "finalized" ? "green" : "slate"} className="text-[10px]">
                           {record.status === "finalized" ? "Finalized" : "Draft"}
-                        </span>
+                        </Badge>
                       </div>
                       <p className="text-xs text-text-muted">
                         {record.doctorId?.speciality}
@@ -192,9 +187,9 @@ const MedicalRecordsPage = () => {
                       </p>
                     </div>
                     {record.prescription?.length > 0 && (
-                      <span className="badge badge-teal text-[10px]">
+                      <Badge variant="teal" className="text-[10px]">
                         <Pill size={10} /> {record.prescription.length} medicine{record.prescription.length !== 1 ? "s" : ""}
-                      </span>
+                      </Badge>
                     )}
                   </div>
                   <p className="text-sm text-text-secondary mt-3 line-clamp-2">
