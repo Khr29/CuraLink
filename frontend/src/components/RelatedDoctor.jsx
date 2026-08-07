@@ -43,7 +43,6 @@
 import React, { useContext, useMemo } from "react";
 import { AppContext } from "../context/AppContext";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 
 const RelatedDoctor = ({ speciality, docId }) => {
 
@@ -125,17 +124,15 @@ const RelatedDoctor = ({ speciality, docId }) => {
 
       {/* More button */}
 
-      <Button
-        variant="brand-outline"
-        pill
-        className="px-12 py-3 h-auto mt-10"
+      <button
         onClick={() => {
           navigate("/doctors");
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
+        className="bg-blue-50 text-gray-600 px-12 py-3 rounded-full mt-10 hover:bg-blue-100 transition"
       >
         More
-      </Button>
+      </button>
 
     </div>
   );

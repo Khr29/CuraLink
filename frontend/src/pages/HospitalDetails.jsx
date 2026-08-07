@@ -12,8 +12,6 @@ import { formatExperience } from "../utils/experience";
 import EmptyState from "../components/EmptyState";
 import { Stethoscope, Images, MapPin } from "lucide-react";
 import useReviewEligibility from "../hooks/useReviewEligibility";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 const HospitalDetails = () => {
   const { hospitalId } = useParams();
@@ -105,7 +103,7 @@ const HospitalDetails = () => {
                 <p className="text-text-secondary text-sm">
                   {hospital.address?.city}, {hospital.address?.state}
                 </p>
-                <Badge variant="teal">{hospital.hospitalType}</Badge>
+                <span className="badge badge-teal">{hospital.hospitalType}</span>
               </div>
             </div>
           </div>
@@ -148,10 +146,10 @@ const HospitalDetails = () => {
             </div>
             <div className="bg-gradient-card rounded-xl p-4 flex flex-col justify-center items-center text-center">
               <p className="text-xs text-text-muted mb-1.5">Status</p>
-              <Badge variant={hospital.active ? "green" : "slate"}>
+              <span className={`badge ${hospital.active ? "badge-green" : "badge-slate"}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${hospital.active ? "bg-accent animate-pulse" : "bg-slate-400"}`} />
                 {hospital.active ? "Open" : "Closed"}
-              </Badge>
+              </span>
             </div>
             <div className="bg-gradient-card rounded-xl p-4 flex flex-col justify-center items-center text-center">
               <p className="text-xs text-text-muted mb-0.5">Beds</p>
@@ -170,13 +168,9 @@ const HospitalDetails = () => {
         <h2 className="text-lg font-bold text-text-primary mb-4">Departments</h2>
         <div className="flex flex-wrap gap-2">
           {hospital.departments?.map((dept, index) => (
-            <Badge
-              key={index}
-              variant="outline"
-              className="bg-slate-50 text-text-secondary border-slate-200 px-4 py-2 h-auto rounded-full text-sm font-medium normal-case tracking-normal"
-            >
+            <span key={index} className="badge bg-slate-50 text-text-secondary border border-slate-200 px-4 py-2 rounded-full text-sm font-medium">
               {dept}
-            </Badge>
+            </span>
           ))}
         </div>
       </div>
@@ -212,9 +206,9 @@ const HospitalDetails = () => {
                 </div>
                 <div className="p-5 flex flex-col flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="green">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Available
-                    </Badge>
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-green-500 bg-green-50 px-2 py-1 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Available
+                    </div>
                   </div>
                   <h3 className="font-extrabold text-lg text-text-primary truncate">{doctor.name}</h3>
                   <p className="text-sm text-text-secondary mb-4">{doctor.speciality}</p>
@@ -224,13 +218,12 @@ const HospitalDetails = () => {
                     <p className="text-xs text-text-muted">{formatExperience(doctor.experience)}</p>
                   </div>
                   
-                  <Button
+                  <button
                     onClick={() => navigate(`/appointment/${doctor._id}`)}
-                    variant="gradient"
-                    className="mt-4 w-full shine text-sm py-2.5"
+                    className="mt-4 btn btn-primary w-full shine text-sm py-2.5"
                   >
                     Book Appointment
-                  </Button>
+                  </button>
                 </div>
               </div>
             ))}
@@ -312,21 +305,15 @@ const HospitalDetails = () => {
                 <div className="w-14 h-14 bg-white shadow-sm text-accent rounded-full flex items-center justify-center mb-1">
                   <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
                 </div>
-                <Button
-                  variant="gradient"
-                  size="xl"
-                  className="shine w-full sm:w-auto"
-                  render={
-                    <a
-                      href={`https://www.google.com/maps?q=${hospital.location.latitude},${hospital.location.longitude}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    />
-                  }
+                <a
+                  href={`https://www.google.com/maps?q=${hospital.location.latitude},${hospital.location.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-primary btn-lg shine w-full sm:w-auto"
                 >
                   <svg className="w-5 h-5 mr-1.5 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   Open in Google Maps
-                </Button>
+                </a>
               </>
             ) : (
               <EmptyState icon={MapPin} title="No Location Data" subtitle="This hospital hasn't added map coordinates yet." compact />

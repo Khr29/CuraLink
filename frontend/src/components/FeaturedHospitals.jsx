@@ -2,8 +2,6 @@ import React, { useCallback, useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import StarRating from "./StarRating";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 const FEATURED_COUNT = 6;
 
@@ -33,7 +31,7 @@ const HospitalCard = React.memo(({ item, onClick, doctorCount }) => {
         {/* Hospital type badge */}
         {item.hospitalType && (
           <div className="absolute top-3 right-3">
-            <Badge variant="blue">{item.hospitalType}</Badge>
+            <span className="badge badge-blue">{item.hospitalType}</span>
           </div>
         )}
       </div>
@@ -57,7 +55,7 @@ const HospitalCard = React.memo(({ item, onClick, doctorCount }) => {
 
         <div className="flex flex-wrap gap-1.5 mt-3 min-h-[26px]">
           {departments.slice(0, 3).map((d) => (
-            <Badge key={d} variant="teal">{d}</Badge>
+            <span key={d} className="badge badge-teal">{d}</span>
           ))}
           {departments.length > 3 && (
             <span className="text-[11px] text-text-muted self-center">+{departments.length - 3} more</span>
@@ -83,9 +81,9 @@ const HospitalCard = React.memo(({ item, onClick, doctorCount }) => {
           )}
         </div>
 
-        <Button variant="gradient" size="sm" className="w-full mt-3">
+        <button className="btn btn-primary btn-sm w-full mt-3">
           View Hospital
-        </Button>
+        </button>
       </div>
     </div>
   );
@@ -144,12 +142,12 @@ const FeaturedHospitals = () => {
             Our highest-rated hospitals by speciality, ratings, and location.
           </p>
         </div>
-        <Button onClick={handleMoreHospitals} variant="brand-outline" className="flex-shrink-0">
+        <button onClick={handleMoreHospitals} className="btn btn-secondary flex-shrink-0">
           Explore Hospitals
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
-        </Button>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

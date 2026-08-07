@@ -5,20 +5,6 @@ import { toast } from "react-toastify";
 import { Lock, Monitor, Smartphone, LogOut, ShieldCheck } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import PortalLayout from "../../components/PortalLayout";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
 
 const deviceLabel = (userAgent = "") => {
   if (/mobile/i.test(userAgent)) return { label: "Mobile device", Icon: Smartphone };
@@ -60,30 +46,33 @@ const ChangePasswordCard = () => {
         <Lock size={15} className="text-primary" /> Change Password
       </h3>
       <form onSubmit={submit} className="flex flex-col gap-3 max-w-sm">
-        <Input
+        <input
           type="password"
+          className="input text-sm"
           placeholder="Current password"
           value={form.currentPassword}
           onChange={(e) => setForm((p) => ({ ...p, currentPassword: e.target.value }))}
           required
         />
-        <Input
+        <input
           type="password"
+          className="input text-sm"
           placeholder="New password"
           value={form.newPassword}
           onChange={(e) => setForm((p) => ({ ...p, newPassword: e.target.value }))}
           required
         />
-        <Input
+        <input
           type="password"
+          className="input text-sm"
           placeholder="Confirm new password"
           value={form.confirmPassword}
           onChange={(e) => setForm((p) => ({ ...p, confirmPassword: e.target.value }))}
           required
         />
-        <Button type="submit" disabled={saving} variant="brand-outline" size="sm" className="w-fit">
+        <button type="submit" disabled={saving} className="btn btn-secondary btn-sm w-fit">
           {saving ? "Updating..." : "Update Password"}
-        </Button>
+        </button>
       </form>
     </div>
   );
@@ -96,7 +85,6 @@ const SessionsCard = () => {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [loggingOutAll, setLoggingOutAll] = useState(false);
-  const [confirmLogoutAll, setConfirmLogoutAll] = useState(false);
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -131,6 +119,7 @@ const SessionsCard = () => {
   };
 
   const logoutAllSessions = async () => {
+    if (!window.confirm("Log out of every device, including this one?")) return;
     setLoggingOutAll(true);
     try {
       await axios.post(`${backendUrl}/api/user/logout-all`, {}, { headers: { token } });
@@ -150,19 +139,13 @@ const SessionsCard = () => {
         <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
           <ShieldCheck size={15} className="text-primary" /> Active Sessions
         </h3>
-        <Button
-          onClick={() => setConfirmLogoutAll(true)}
-          disabled={loggingOutAll}
-          variant="brand-ghost"
-          size="sm"
-          className="border-danger/30 text-danger hover:bg-red-50"
-        >
+        <button onClick={logoutAllSessions} disabled={loggingOutAll} className="btn btn-ghost btn-sm border-danger/30 text-danger hover:bg-red-50">
           <LogOut size={13} /> {loggingOutAll ? "Logging out..." : "Log Out All Devices"}
-        </Button>
+        </button>
       </div>
 
       {loading ? (
-        <Skeleton className="h-16 rounded-xl" />
+        <div className="h-16 bg-slate-100 rounded-xl animate-pulse" />
       ) : sessions.length === 0 ? (
         <p className="text-sm text-text-muted">No active sessions found.</p>
       ) : (
@@ -177,52 +160,27 @@ const SessionsCard = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-text-primary flex items-center gap-2">
                     {label}
-                    {session.isCurrent && <Badge variant="teal" className="text-[10px]">This device</Badge>}
-                    {session.rememberMe && <Badge variant="slate" className="text-[10px]">Remembered</Badge>}
+                    {session.isCurrent && <span className="badge badge-teal text-[10px]">This device</span>}
+                    {session.rememberMe && <span className="badge badge-slate text-[10px]">Remembered</span>}
                   </p>
                   <p className="text-xs text-text-muted mt-0.5">
                     Signed in {new Date(session.createdAt).toLocaleString()} {session.ip ? `· ${session.ip}` : ""}
                   </p>
                 </div>
                 {!session.isCurrent && (
-                  <Button
+                  <button
                     onClick={() => revokeSession(session._id)}
                     disabled={busyId === session._id}
-                    variant="brand-ghost"
-                    size="sm"
-                    className="border-danger/30 text-danger hover:bg-red-50 flex-shrink-0"
+                    className="btn btn-ghost btn-sm border-danger/30 text-danger hover:bg-red-50 flex-shrink-0"
                   >
                     {busyId === session._id ? "..." : "Revoke"}
-                  </Button>
+                  </button>
                 )}
               </div>
             );
           })}
         </div>
       )}
-
-      <AlertDialog open={confirmLogoutAll} onOpenChange={setConfirmLogoutAll}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Log out of every device?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This includes the device you're using right now — you'll need to log in again.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="solid-destructive"
-              onClick={() => {
-                setConfirmLogoutAll(false);
-                logoutAllSessions();
-              }}
-            >
-              Log Out All Devices
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

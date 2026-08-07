@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 // Drives the "Write Review" entry point shared by the compact header button
 // (Doctor/Hospital Profile reviews section) and the large empty-state CTA
@@ -22,7 +20,7 @@ const WriteReviewCTA = ({ eligibility, onOpenModal, size = "default", label, tar
 
   if (alreadyReviewed) {
     return (
-      <Badge variant="teal">✓ You've reviewed this</Badge>
+      <span className="badge badge-teal">✓ You've reviewed this</span>
     );
   }
 
@@ -44,14 +42,12 @@ const WriteReviewCTA = ({ eligibility, onOpenModal, size = "default", label, tar
 
   return (
     <div className={isLarge ? "flex flex-col items-center" : ""}>
-      <Button
-        variant="gradient"
-        size={isLarge ? "lg" : "sm"}
+      <button
         onClick={handleClick}
-        className="shine"
+        className={`btn btn-primary shine ${isLarge ? "btn-lg" : "btn-sm"}`}
       >
         {buttonLabel}
-      </Button>
+      </button>
       {showWhyNot && (
         <p className={`text-xs text-text-muted mt-3 ${isLarge ? "text-center max-w-xs" : ""}`}>
           Only patients with a completed appointment for this {targetLabel} can write a review.

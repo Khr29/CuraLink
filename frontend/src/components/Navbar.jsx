@@ -2,34 +2,6 @@ import React, { useContext, useState, useCallback, useEffect } from "react";
 import { assets } from "../assets/assets";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
-import {
-  LayoutDashboard,
-  UserCircle,
-  FileText,
-  CalendarDays,
-  MessageSquare,
-  Bell,
-  Settings,
-  ChevronDown,
-  LogOut,
-  Menu as MenuIcon,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 
 const navLinks = [
   { name: "Home", path: "/" },
@@ -40,16 +12,16 @@ const navLinks = [
 ];
 
 // Single source of truth for the account dropdown items, shared by the
-// desktop dropdown and the mobile drawer so they never drift apart.
+// desktop hover-menu and the mobile drawer so they never drift apart.
 // Mirrors the Patient Portal sidebar (components/PortalSidebar.jsx).
 const accountMenuItems = [
-  { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-  { label: "My Profile", path: "/my-profile", icon: UserCircle },
-  { label: "Medical Records", path: "/medical-records", icon: FileText },
-  { label: "My Appointments", path: "/my-appointments", icon: CalendarDays },
-  { label: "Reviews", path: "/reviews", icon: MessageSquare },
-  { label: "Notifications", path: "/notifications", icon: Bell },
-  { label: "Settings", path: "/settings", icon: Settings },
+  { label: "Dashboard", path: "/dashboard", icon: "🏠" },
+  { label: "My Profile", path: "/my-profile", icon: "👤" },
+  { label: "Medical Records", path: "/medical-records", icon: "📋" },
+  { label: "My Appointments", path: "/my-appointments", icon: "📅" },
+  { label: "Reviews", path: "/reviews", icon: "⭐" },
+  { label: "Notifications", path: "/notifications", icon: "🔔" },
+  { label: "Settings", path: "/settings", icon: "⚙️" },
 ];
 
 const Navbar = () => {
@@ -130,61 +102,59 @@ const Navbar = () => {
           {/* Right actions */}
           <div className="flex items-center gap-3">
             {token && userData ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <button
-                      className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-slate-200 hover:border-primary hover:bg-primary-light transition-all duration-200"
-                      aria-label="User menu"
-                    />
-                  }
+              <div className="relative group">
+                <button
+                  className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-slate-200 hover:border-primary hover:bg-primary-light transition-all duration-200"
+                  aria-label="User menu"
                 >
-                  <Avatar className="w-7 h-7 ring-2 ring-primary/20">
-                    <AvatarImage src={userData.image} alt={userData.name || "User"} />
-                    <AvatarFallback>{userData.name?.[0]}</AvatarFallback>
-                  </Avatar>
+                  <img
+                    className="w-7 h-7 rounded-full object-cover ring-2 ring-primary/20"
+                    src={userData.image}
+                    alt={userData.name || "User"}
+                  />
                   <span className="text-sm font-medium text-text-secondary hidden sm:block max-w-[100px] truncate">
                     {userData.name?.split(" ")[0]}
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-text-muted" />
-                </DropdownMenuTrigger>
+                  <svg className="w-3.5 h-3.5 text-text-muted" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" />
+                  </svg>
+                </button>
 
-                <DropdownMenuContent align="end" className="w-56 p-2">
-                  <div className="px-2 py-1.5 mb-1 border-b border-border">
-                    <p className="text-xs text-text-muted font-medium">Signed in as</p>
-                    <p className="text-sm font-semibold text-text-primary truncate">{userData.name}</p>
-                  </div>
-                  {accountMenuItems.map((item) => (
-                    <DropdownMenuItem
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className="gap-3 px-3 py-2 text-sm text-text-secondary"
+                {/* Dropdown */}
+                <div className="absolute right-0 top-full pt-2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 z-50">
+                  <div className="w-52 bg-white rounded-2xl shadow-card-lg border border-slate-100 p-2 overflow-hidden">
+                    <div className="px-3 py-2 mb-1 border-b border-slate-100">
+                      <p className="text-xs text-text-muted font-medium">Signed in as</p>
+                      <p className="text-sm font-semibold text-text-primary truncate">{userData.name}</p>
+                    </div>
+                    {accountMenuItems.map((item) => (
+                      <button
+                        key={item.path}
+                        onClick={() => navigate(item.path)}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:bg-slate-50 hover:text-text-primary rounded-lg transition-colors duration-150"
+                      >
+                        <span>{item.icon}</span>
+                        {item.label}
+                      </button>
+                    ))}
+                    <div className="my-1 border-t border-slate-100" />
+                    <button
+                      onClick={logout}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-danger hover:bg-red-50 rounded-lg transition-colors duration-150"
                     >
-                      <item.icon size={15} />
-                      {item.label}
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={logout}
-                    className="gap-3 px-3 py-2 text-sm"
-                  >
-                    <LogOut size={15} />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      <span>🚪</span>
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <Button
-                variant="gradient"
-                size="sm"
-                pill
-                className="hidden md:inline-flex shine"
+              <button
                 onClick={() => navigate("/login")}
+                className="hidden md:inline-flex btn btn-primary btn-sm shine"
               >
                 Get Started
-              </Button>
+              </button>
             )}
 
             {/* Hamburger */}
@@ -193,87 +163,96 @@ const Navbar = () => {
               className="md:hidden p-2 rounded-lg text-text-secondary hover:bg-slate-100 transition-colors"
               aria-label="Open menu"
             >
-              <MenuIcon className="w-5 h-5" />
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
           </div>
         </div>
       </header>
 
+      {/* Mobile Menu Overlay */}
+      {showMenu && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm md:hidden"
+          onClick={() => setShowMenu(false)}
+        />
+      )}
+
       {/* Mobile Drawer */}
-      <Sheet open={showMenu} onOpenChange={setShowMenu}>
-        <SheetContent side="right" className="w-72 p-0">
-          <SheetHeader className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100 space-y-0">
-            <img src={assets.logo} alt="CuraLink" className="h-7 w-auto" />
-            <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-          </SheetHeader>
+      <aside
+        className={`fixed top-0 right-0 bottom-0 w-72 z-[70] bg-white shadow-2xl transform transition-transform duration-300 ease-out md:hidden ${showMenu ? "translate-x-0" : "translate-x-full"
+          }`}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <img src={assets.logo} alt="CuraLink" className="h-7 w-auto" />
+          <button
+            onClick={() => setShowMenu(false)}
+            className="p-2 rounded-lg hover:bg-slate-100 text-text-secondary transition-colors"
+            aria-label="Close menu"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-          {token && userData && (
-            <div className="mx-4 mt-2 p-3 rounded-xl bg-gradient-card flex items-center gap-3">
-              <Avatar className="w-10 h-10">
-                <AvatarImage src={userData.image} alt={userData.name} />
-                <AvatarFallback>{userData.name?.[0]}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-text-primary truncate">{userData.name}</p>
-                <p className="text-xs text-text-muted truncate">{userData.email}</p>
-              </div>
+        {token && userData && (
+          <div className="mx-4 mt-4 p-3 rounded-xl bg-gradient-card flex items-center gap-3">
+            <img className="w-10 h-10 rounded-full object-cover" src={userData.image} alt={userData.name} />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-text-primary truncate">{userData.name}</p>
+              <p className="text-xs text-text-muted truncate">{userData.email}</p>
             </div>
-          )}
+          </div>
+        )}
 
-          <nav className="p-4 flex flex-col gap-1 overflow-y-auto">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.path}
-                to={link.path}
-                end={link.path === "/"}
-                className={({ isActive }) =>
-                  `block px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
-                    ? "bg-primary-light text-primary"
-                    : "text-text-secondary hover:bg-slate-50 hover:text-text-primary"
-                  }`
-                }
+        <nav className="p-4 flex flex-col gap-1">
+          {navLinks.map((link) => (
+            <NavLink
+              key={link.path}
+              to={link.path}
+              end={link.path === "/"}
+              className={({ isActive }) =>
+                `block px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
+                  ? "bg-primary-light text-primary"
+                  : "text-text-secondary hover:bg-slate-50 hover:text-text-primary"
+                }`
+              }
+            >
+              {link.name}
+            </NavLink>
+          ))}
+
+          {token && userData ? (
+            <>
+              <div className="my-2 border-t border-slate-100" />
+              {accountMenuItems.map((item) => (
+                <NavLink key={item.path} to={item.path} className="block px-4 py-3 rounded-xl text-sm font-medium text-text-secondary hover:bg-slate-50">
+                  {item.icon} {item.label}
+                </NavLink>
+              ))}
+              <div className="my-2 border-t border-slate-100" />
+              <button
+                onClick={logout}
+                className="block w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-danger hover:bg-red-50"
               >
-                {link.name}
-              </NavLink>
-            ))}
-
-            {token && userData ? (
-              <>
-                <div className="my-2 border-t border-slate-100" />
-                {accountMenuItems.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-text-secondary hover:bg-slate-50"
-                  >
-                    <item.icon size={16} />
-                    {item.label}
-                  </NavLink>
-                ))}
-                <div className="my-2 border-t border-slate-100" />
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-2 w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-danger hover:bg-red-50"
-                >
-                  <LogOut size={16} />
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="my-2 border-t border-slate-100" />
-                <Button
-                  variant="gradient"
-                  className="w-full mt-2"
-                  onClick={() => navigate("/login")}
-                >
-                  Get Started
-                </Button>
-              </>
-            )}
-          </nav>
-        </SheetContent>
-      </Sheet>
+                🚪 Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="my-2 border-t border-slate-100" />
+              <button
+                onClick={() => navigate("/login")}
+                className="btn btn-primary w-full justify-center mt-2"
+              >
+                Get Started
+              </button>
+            </>
+          )}
+        </nav>
+      </aside>
     </>
   );
 };

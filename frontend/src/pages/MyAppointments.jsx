@@ -8,19 +8,6 @@ import ReviewForm from "../components/ReviewForm";
 import EmptyState from "../components/EmptyState";
 import PortalLayout from "../components/PortalLayout";
 import { CalendarX2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
 
 const months = [" ", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -30,10 +17,10 @@ const formatDate = (slotDate) => {
 };
 
 const StatusBadge = ({ item }) => {
-  if (item.cancelled) return <Badge variant="red">Cancelled</Badge>;
-  if (item.isCompleted) return <Badge variant="green">Completed</Badge>;
-  if (item.payment) return <Badge variant="teal">Paid</Badge>;
-  return <Badge variant="amber">Pending Payment</Badge>;
+  if (item.cancelled) return <span className="badge badge-red">Cancelled</span>;
+  if (item.isCompleted) return <span className="badge badge-green">Completed</span>;
+  if (item.payment) return <span className="badge badge-teal">Paid</span>;
+  return <span className="badge badge-amber">Pending Payment</span>;
 };
 
 const MyAppointments = () => {
@@ -43,7 +30,6 @@ const MyAppointments = () => {
   const [myReviews, setMyReviews] = useState([]);
   const [reviewModal, setReviewModal] = useState(null);
   const [cancellingId, setCancellingId] = useState(null);
-  const [confirmCancelItem, setConfirmCancelItem] = useState(null);
   const navigate = useNavigate();
 
   const getUserAppointments = async () => {
@@ -154,13 +140,13 @@ const MyAppointments = () => {
           <h1 className="section-title mb-8" style={{ fontSize: "1.85rem" }}>My Appointments</h1>
           <div className="flex flex-col gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="appt-card">
+              <div key={i} className="appt-card animate-pulse">
                 <div className="flex gap-4">
-                  <Skeleton className="w-24 h-28 rounded-xl" />
+                  <div className="w-24 h-28 bg-slate-100 rounded-xl" />
                   <div className="flex-1 space-y-3 pt-1">
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-3 w-1/4" />
-                    <Skeleton className="h-3 w-1/2" />
+                    <div className="h-4 bg-slate-100 rounded w-1/3" />
+                    <div className="h-3 bg-slate-100 rounded w-1/4" />
+                    <div className="h-3 bg-slate-100 rounded w-1/2" />
                   </div>
                 </div>
               </div>
@@ -182,9 +168,9 @@ const MyAppointments = () => {
               title="No Appointments Yet"
               subtitle="You haven't booked any appointments. Find a doctor and schedule your first consultation!"
             />
-            <Button onClick={() => navigate("/doctors")} variant="gradient" className="mt-2">
+            <button onClick={() => navigate("/doctors")} className="btn btn-primary mt-2">
               Find a Doctor
-            </Button>
+            </button>
           </div>
         </div>
       </PortalLayout>
@@ -199,9 +185,9 @@ const MyAppointments = () => {
           <h1 className="section-title">My Appointments</h1>
           <p className="text-text-muted mt-1">{appointments.length} appointment{appointments.length !== 1 ? "s" : ""} found</p>
         </div>
-        <Button onClick={() => navigate("/doctors")} variant="gradient" size="sm">
+        <button onClick={() => navigate("/doctors")} className="btn btn-primary btn-sm">
           + New Appointment
-        </Button>
+        </button>
       </div>
 
       {/* Stats */}
@@ -268,41 +254,37 @@ const MyAppointments = () => {
               {/* Actions */}
               <div className="flex flex-row sm:flex-col gap-2 sm:justify-end sm:min-w-[160px]">
                 {!item.cancelled && item.payment && !item.isCompleted && (
-                  <Button variant="success" size="sm" className="w-full justify-center cursor-default opacity-90" disabled>
+                  <span className="btn btn-sm btn-success w-full justify-center cursor-default opacity-90">
                     ✅ Paid
-                  </Button>
+                  </span>
                 )}
                 {!item.cancelled && !item.payment && !item.isCompleted && (
-                  <Button
+                  <button
                     onClick={() => appointmentRazorpay(item._id)}
-                    variant="gradient"
-                    size="sm"
-                    className="shine w-full justify-center"
+                    className="btn btn-primary btn-sm shine w-full justify-center"
                   >
                     Pay Online
-                  </Button>
+                  </button>
                 )}
                 {!item.cancelled && !item.isCompleted && (
-                  <Button
-                    onClick={() => setConfirmCancelItem(item)}
+                  <button
+                    onClick={() => cancelAppointment(item._id)}
                     disabled={cancellingId === item._id}
-                    variant="brand-ghost"
-                    size="sm"
-                    className="border-danger/30 text-danger hover:bg-red-50 w-full justify-center"
+                    className="btn btn-sm btn-ghost border-danger/30 text-danger hover:bg-red-50 w-full justify-center"
                   >
                     {cancellingId === item._id ? "Cancelling..." : "Cancel"}
-                  </Button>
+                  </button>
                 )}
                 {item.cancelled && !item.isCompleted && (
-                  <Badge variant="red" className="justify-center py-2 w-full">Appointment Cancelled</Badge>
+                  <span className="badge badge-red justify-center py-2">Appointment Cancelled</span>
                 )}
                 {item.isCompleted && (
                   <>
-                    <Badge variant="green" className="justify-center py-2 w-full">✅ Completed</Badge>
+                    <span className="badge badge-green justify-center py-2">✅ Completed</span>
                     {hasReviewed(item._id, "doctor") ? (
-                      <Badge variant="teal" className="justify-center py-2 w-full text-[11px]">✓ Doctor Reviewed</Badge>
+                      <span className="badge badge-teal justify-center py-2 text-[11px]">✓ Doctor Reviewed</span>
                     ) : (
-                      <Button
+                      <button
                         onClick={() =>
                           setReviewModal({
                             targetType: "doctor",
@@ -311,17 +293,15 @@ const MyAppointments = () => {
                             appointmentId: item._id,
                           })
                         }
-                        variant="secondary"
-                        size="sm"
-                        className="w-full justify-center"
+                        className="btn btn-sm btn-secondary w-full justify-center"
                       >
                         ⭐ Rate Doctor
-                      </Button>
+                      </button>
                     )}
                     {hasReviewed(item._id, "hospital") ? (
-                      <Badge variant="teal" className="justify-center py-2 w-full text-[11px]">✓ Hospital Reviewed</Badge>
+                      <span className="badge badge-teal justify-center py-2 text-[11px]">✓ Hospital Reviewed</span>
                     ) : (
-                      <Button
+                      <button
                         onClick={() =>
                           setReviewModal({
                             targetType: "hospital",
@@ -330,12 +310,10 @@ const MyAppointments = () => {
                             appointmentId: item._id,
                           })
                         }
-                        variant="brand-ghost"
-                        size="sm"
-                        className="w-full justify-center"
+                        className="btn btn-sm btn-ghost w-full justify-center"
                       >
                         ⭐ Rate Hospital
-                      </Button>
+                      </button>
                     )}
                   </>
                 )}
@@ -354,31 +332,6 @@ const MyAppointments = () => {
         appointmentId={reviewModal?.appointmentId}
         onSuccess={getMyReviews}
       />
-
-      <AlertDialog open={!!confirmCancelItem} onOpenChange={(open) => !open && setConfirmCancelItem(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this appointment?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Your appointment with {confirmCancelItem?.docData?.name} on{" "}
-              {confirmCancelItem ? formatDate(confirmCancelItem.slotDate) : ""} will be cancelled. This can't be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep Appointment</AlertDialogCancel>
-            <AlertDialogAction
-              variant="solid-destructive"
-              onClick={() => {
-                const item = confirmCancelItem;
-                setConfirmCancelItem(null);
-                if (item) cancelAppointment(item._id);
-              }}
-            >
-              Yes, Cancel It
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </PortalLayout>
   );
 };

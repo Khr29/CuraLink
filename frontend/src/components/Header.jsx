@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext";
 import useCountUp from "../hooks/useCountUp";
-import { Badge } from "@/components/ui/badge";
 
 const TRUST = [
   {
@@ -291,7 +290,7 @@ const Header = () => {
                 <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#0F172A" }}>Dr. Ayesha Khan</p>
                 <p style={{ fontSize: "0.72rem", color: "#64748B" }}>Cardiologist</p>
               </div>
-              <Badge variant="green" style={{ flexShrink: 0 }}>Confirmed</Badge>
+              <span className="badge badge-green" style={{ flexShrink: 0 }}>Confirmed</span>
             </div>
 
             <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -328,7 +327,7 @@ const Header = () => {
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
               <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#0F172A" }}>4.9</span>
-              <Badge variant="green" style={{ marginLeft: "auto", fontSize: "0.6rem", padding: "2px 6px" }}>Open</Badge>
+              <span className="badge badge-green" style={{ marginLeft: "auto", fontSize: "0.6rem", padding: "2px 6px" }}>Open</span>
             </div>
             <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "#0F172A", lineHeight: 1.2 }}>Apollo Hospitals</p>
             <p style={{ fontSize: "0.65rem", color: "#94A3B8", marginTop: 2 }}>12 Departments</p>

@@ -6,14 +6,6 @@ import { toast } from "react-toastify";
 import CuraLinkPhoneInput from "../components/PhoneInput";
 import PortalLayout from "../components/PortalLayout";
 import { Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 // dob is stored as a plain "YYYY-MM-DD" string (or "Not Selected") — parse
 // defensively since it's user-entered, not a real Date column.
@@ -120,10 +112,10 @@ const MyProfile = () => {
           <p className="text-text-muted mt-1">Manage your personal information</p>
         </div>
         {!isEdit && (
-          <Button onClick={() => setIsEdit(true)} variant="gradient" size="sm" className="shine">
+          <button onClick={() => setIsEdit(true)} className="btn btn-primary btn-sm shine">
             <Pencil size={15} strokeWidth={2.25} />
             Edit Profile
-          </Button>
+          </button>
         )}
       </div>
 
@@ -273,16 +265,16 @@ const MyProfile = () => {
           <div className="py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
             <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Gender</p>
             {isEdit ? (
-              <Select value={userData.gender || ""} onValueChange={(value) => handleChange("gender", value)}>
-                <SelectTrigger className="w-auto max-w-[180px] text-sm">
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Male">Male</SelectItem>
-                  <SelectItem value="Female">Female</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <select
+                className="input text-sm w-auto max-w-[180px]"
+                value={userData.gender || ""}
+                onChange={(e) => handleChange("gender", e.target.value)}
+              >
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
             ) : (
               <p className="text-sm text-text-secondary">{userData.gender || <span className="text-slate-400">Not provided</span>}</p>
             )}
@@ -311,16 +303,16 @@ const MyProfile = () => {
           <div className="py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
             <p className="sm:w-32 text-xs font-semibold text-text-muted uppercase tracking-wider flex-shrink-0">Blood Group</p>
             {isEdit ? (
-              <Select value={userData.bloodGroup || ""} onValueChange={(value) => handleChange("bloodGroup", value)}>
-                <SelectTrigger className="w-auto max-w-[180px] text-sm">
-                  <SelectValue placeholder="Select blood group" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
-                    <SelectItem key={bg} value={bg}>{bg}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                className="input text-sm w-auto max-w-[180px]"
+                value={userData.bloodGroup || ""}
+                onChange={(e) => handleChange("bloodGroup", e.target.value)}
+              >
+                <option value="">Select blood group</option>
+                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
+                  <option key={bg} value={bg}>{bg}</option>
+                ))}
+              </select>
             ) : (
               <p className="text-sm text-text-secondary">{userData.bloodGroup || <span className="text-slate-400">Not provided</span>}</p>
             )}
@@ -515,16 +507,20 @@ const MyProfile = () => {
               Member since {new Date(userData.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long" })}
             </p>
           </div>
-          <Button variant="brand-ghost" size="sm" className="w-fit" render={<Link to="/settings" />}>
+          <Link to="/settings" className="btn btn-ghost btn-sm w-fit">
             Manage Password & Sessions
-          </Button>
+          </Link>
         </div>
       </div>
 
       {/* Save / Cancel */}
       {isEdit && (
         <div className="flex gap-3">
-          <Button onClick={updateUserProfileData} disabled={saving} variant="gradient" className="shine">
+          <button
+            onClick={updateUserProfileData}
+            disabled={saving}
+            className="btn btn-primary shine"
+          >
             {saving ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -533,10 +529,13 @@ const MyProfile = () => {
             ) : (
               "Save Changes"
             )}
-          </Button>
-          <Button onClick={() => { setIsEdit(false); setImage(null); }} variant="brand-ghost">
+          </button>
+          <button
+            onClick={() => { setIsEdit(false); setImage(null); }}
+            className="btn btn-ghost"
+          >
             Cancel
-          </Button>
+          </button>
         </div>
       )}
     </PortalLayout>

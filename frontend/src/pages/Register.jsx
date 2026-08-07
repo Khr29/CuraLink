@@ -4,14 +4,6 @@ import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import CuraLinkPhoneInput from "../components/PhoneInput";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const initialFormData = {
   firstName: "",
@@ -230,16 +222,12 @@ const Register = () => {
             <input name="dob" type="date" className="input text-sm" value={formData.dob} onChange={handleChange} />
           </Field>
           <Field label="Gender">
-            <Select value={formData.gender} onValueChange={(value) => setField("gender", value)}>
-              <SelectTrigger className="w-full text-sm">
-                <SelectValue placeholder="Select gender" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Male">Male</SelectItem>
-                <SelectItem value="Female">Female</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
-              </SelectContent>
-            </Select>
+            <select name="gender" className="input text-sm" value={formData.gender} onChange={handleChange}>
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
           </Field>
           <Field label="Phone Number">
             <CuraLinkPhoneInput value={formData.phone} onChange={(value) => setField("phone", value || "")} />
@@ -259,16 +247,12 @@ const Register = () => {
           icon={<path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />}
         >
           <Field label="Blood Group">
-            <Select value={formData.bloodGroup} onValueChange={(value) => setField("bloodGroup", value)}>
-              <SelectTrigger className="w-full text-sm">
-                <SelectValue placeholder="Select blood group" />
-              </SelectTrigger>
-              <SelectContent>
-                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
-                  <SelectItem key={bg} value={bg}>{bg}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select name="bloodGroup" className="input text-sm" value={formData.bloodGroup} onChange={handleChange}>
+              <option value="">Select blood group</option>
+              {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
+                <option key={bg} value={bg}>{bg}</option>
+              ))}
+            </select>
           </Field>
           <Field label="Height (cm)">
             <input name="height" className="input text-sm" value={formData.height} onChange={handleChange} placeholder="e.g. 175" />
@@ -303,7 +287,7 @@ const Register = () => {
           </Field>
         </SectionCard>
 
-        <Button type="submit" variant="gradient" disabled={submitting} className="shine w-full">
+        <button type="submit" disabled={submitting} className="btn btn-primary shine w-full">
           {submitting ? (
             <>
               <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -312,7 +296,7 @@ const Register = () => {
           ) : (
             "Create Account"
           )}
-        </Button>
+        </button>
 
         <p className="text-center text-sm text-text-muted mt-4">
           Already have an account?{" "}

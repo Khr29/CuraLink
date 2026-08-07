@@ -5,7 +5,6 @@ import { AppContext } from "../../context/AppContext";
 import PortalLayout from "../../components/PortalLayout";
 import EmptyState from "../../components/EmptyState";
 import { deriveNotifications } from "../../utils/deriveNotifications";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const iconFor = (type) => {
   if (type === "appointment") return { Icon: CalendarDays, bg: "#EFF6FF", color: "#2563EB" };
@@ -63,7 +62,7 @@ const NotificationsPage = () => {
 
       {loading ? (
         <div className="flex flex-col gap-3">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-2xl" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="profile-section animate-pulse h-16" />)}
         </div>
       ) : notifications.length === 0 ? (
         <div className="profile-section">

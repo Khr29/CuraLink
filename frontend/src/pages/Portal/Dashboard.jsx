@@ -23,8 +23,6 @@ import PortalStatCard from "../../components/PortalStatCard";
 import EmptyState from "../../components/EmptyState";
 import StarRating from "../../components/StarRating";
 import { deriveNotifications } from "../../utils/deriveNotifications";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const months = [" ", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const formatSlotDate = (slotDate) => {
@@ -276,9 +274,9 @@ const Dashboard = () => {
         {/* Upcoming appointments */}
         <SectionCard icon={Clock} iconColor="#2563EB" title="Upcoming Appointments" action={<ViewAllLink onClick={() => navigate("/my-appointments")} />}>
           {loading ? (
-            <div className="p-6 space-y-3">
-              <Skeleton className="h-14 rounded-xl" />
-              <Skeleton className="h-14 rounded-xl" />
+            <div className="p-6 animate-pulse space-y-3">
+              <div className="h-14 bg-slate-100 rounded-xl" />
+              <div className="h-14 bg-slate-100 rounded-xl" />
             </div>
           ) : upcoming.length === 0 ? (
             <EmptyState compact icon={CalendarDays} title="No upcoming appointments" subtitle="Book a doctor and it'll show up here." />
@@ -291,7 +289,7 @@ const Dashboard = () => {
                     <p className="text-sm font-semibold text-text-primary truncate">{item.docData?.name}</p>
                     <p className="text-xs text-text-muted mt-0.5">{formatSlotDate(item.slotDate)} · {item.slotTime}</p>
                   </div>
-                  <Badge variant="blue" className="text-[10px] flex-shrink-0">Upcoming</Badge>
+                  <span className="badge badge-blue text-[10px] flex-shrink-0">Upcoming</span>
                 </div>
               ))}
             </div>
@@ -389,8 +387,8 @@ const Dashboard = () => {
       {/* Reviews preview */}
       <SectionCard icon={Star} iconColor="#D97706" title="My Reviews" action={<ViewAllLink onClick={() => navigate("/reviews")} />}>
         {loading ? (
-          <div className="p-6 space-y-3">
-            <Skeleton className="h-14 rounded-xl" />
+          <div className="p-6 animate-pulse space-y-3">
+            <div className="h-14 bg-slate-100 rounded-xl" />
           </div>
         ) : reviews.length === 0 ? (
           <EmptyState compact icon={MessageSquare} title="No reviews yet" subtitle="Reviews you write for doctors and hospitals show up here." />

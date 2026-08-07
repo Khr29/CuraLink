@@ -1,7 +1,4 @@
 import React from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -23,22 +20,20 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       // You can render any custom fallback UI
       return (
-        <div className="flex items-center justify-center min-h-[50vh] p-4">
-          <Alert variant="destructive" className="max-w-md flex-col items-center text-center gap-3 py-8 px-6">
-            <AlertTriangle className="mx-auto" size={32} />
-            <AlertTitle className="text-xl">Something went wrong.</AlertTitle>
-            <AlertDescription>
-              We apologize for the inconvenience. Please try refreshing the page.
-            </AlertDescription>
-            <Button variant="gradient" className="mt-2" onClick={() => window.location.reload()}>
-              Refresh Page
-            </Button>
-          </Alert>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-2">Something went wrong.</h2>
+          <p className="text-gray-600 mb-4">We apologize for the inconvenience. Please try refreshing the page.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-primary text-white px-6 py-2 rounded-full hover:bg-primary-dark transition-colors"
+          >
+            Refresh Page
+          </button>
         </div>
       );
     }
 
-    return this.props.children;
+    return this.props.children; 
   }
 }
 
