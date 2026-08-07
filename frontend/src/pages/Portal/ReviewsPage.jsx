@@ -142,16 +142,26 @@ const ReviewsPage = () => {
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="mb-6">
-        <TabsList variant="line" className="gap-2 p-0 h-auto bg-transparent">
+        <TabsList className="gap-2 p-0 h-auto bg-transparent">
           <TabsTrigger
             value="doctor"
-            className={`filter-pill w-auto flex-none inline-flex items-center gap-1.5 h-auto py-2.5 ${tab === "doctor" ? "active" : ""}`}
+            style={tab === "doctor" ? { background: "#CCFBF1", color: "#0D9488", borderColor: "#5EEAD4", fontWeight: 600 } : undefined}
+            className={`flex-none inline-flex items-center gap-1.5 h-auto rounded-[10px] border-[1.5px] px-3.5 py-2.5 text-sm transition-all font-sans ${
+              tab === "doctor"
+                ? ""
+                : "bg-transparent text-text-secondary border-transparent hover:bg-teal-50 hover:text-primary-dark hover:border-primary-light"
+            }`}
           >
             <Stethoscope size={14} /> Doctor Reviews ({doctorReviews.length})
           </TabsTrigger>
           <TabsTrigger
             value="hospital"
-            className={`filter-pill w-auto flex-none inline-flex items-center gap-1.5 h-auto py-2.5 ${tab === "hospital" ? "active" : ""}`}
+            style={tab === "hospital" ? { background: "#CCFBF1", color: "#0D9488", borderColor: "#5EEAD4", fontWeight: 600 } : undefined}
+            className={`flex-none inline-flex items-center gap-1.5 h-auto rounded-[10px] border-[1.5px] px-3.5 py-2.5 text-sm transition-all font-sans ${
+              tab === "hospital"
+                ? ""
+                : "bg-transparent text-text-secondary border-transparent hover:bg-teal-50 hover:text-primary-dark hover:border-primary-light"
+            }`}
           >
             <Building2 size={14} /> Hospital Reviews ({hospitalReviews.length})
           </TabsTrigger>
