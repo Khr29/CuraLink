@@ -8,6 +8,7 @@ import {
   getMyRecords,
   getDoctorRecords,
   getHospitalRecords,
+  getPrescriptionOptions,
 } from "../controllers/medicalRecordController.js";
 import authDoctor from "../middlewares/authDoctor.js";
 import authUser from "../middlewares/authUser.js";
@@ -16,6 +17,9 @@ import authAdmin from "../middlewares/authAdmin.js";
 import upload from "../middlewares/multer.js";
 
 const medicalRecordRouter = express.Router();
+
+// Public — canonical dropdown vocabulary for structured prescriptions.
+medicalRecordRouter.get("/prescription-options", getPrescriptionOptions);
 
 // =====================================
 // Doctor — write access, scoped to appointments they handled

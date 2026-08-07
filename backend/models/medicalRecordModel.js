@@ -1,15 +1,31 @@
 import mongoose from "mongoose";
+import { DRUG_FORMS, FREQUENCIES, ROUTES, TIMING_OPTIONS } from "../constants/prescription.js";
 
 // One medical record per completed appointment. A doctor drafts it, then
 // finalizes it — after that it's locked: any further edit must go through
 // amendRecord (medicalRecordController.js), which archives the prior state
 // into `versions` rather than overwriting it silently.
+//
+// `medicine`/`dosage` are the original free-text fields — kept (not
+// removed) so pre-existing records stay valid and readable with zero
+// migration. `sanitizePrescription` in medicalRecordController.js keeps
+// them in sync with `medicineName`/`dose` on every write going forward;
+// anything still reading the old fields keeps working unchanged.
 const prescriptionItemSchema = new mongoose.Schema(
   {
-    medicine: { type: String, required: true, trim: true },
-    dosage: { type: String, default: "", trim: true },
+    medicine: { type: String, required: true, trim: true }, // deprecated, mirrors medicineName
+    dosage: { type: String, default: "", trim: true }, // deprecated, mirrors dose
     duration: { type: String, default: "", trim: true },
     instructions: { type: String, default: "", trim: true },
+
+    medicineName: { type: String, default: "", trim: true },
+    strength: { type: String, default: "", trim: true },
+    form: { type: String, enum: DRUG_FORMS, default: "Tablet" },
+    dose: { type: String, default: "", trim: true },
+    frequency: { type: String, enum: [...FREQUENCIES, ""], default: "" },
+    route: { type: String, enum: ROUTES, default: "Oral" },
+    timing: { type: String, enum: TIMING_OPTIONS, default: "Anytime" },
+    quantity: { type: String, default: "", trim: true },
   },
   { _id: false }
 );

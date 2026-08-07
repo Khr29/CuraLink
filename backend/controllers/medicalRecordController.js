@@ -4,19 +4,46 @@ import doctorModel from "../models/doctorModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import { sanitizeText } from "../utils/sanitize.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
+import { DRUG_FORMS, FREQUENCIES, ROUTES, TIMING_OPTIONS } from "../constants/prescription.js";
 
 const MAX_DIAGNOSIS_LEN = 3000;
 const MAX_NOTES_LEN = 5000;
 const MAX_PRESCRIPTION_ITEMS = 30;
 
+const oneOf = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback);
+
+// Writes both the legacy (medicine/dosage) and structured (medicineName/dose)
+// fields in sync on every save, so the item is recognized as non-empty
+// regardless of which name a reader still checks, and so nothing that only
+// reads the old fields ever sees a blank row for a prescription written
+// through the new structured form.
 const sanitizePrescription = (prescription) => {
   if (!Array.isArray(prescription)) return [];
-  return prescription.slice(0, MAX_PRESCRIPTION_ITEMS).map((item) => ({
-    medicine: sanitizeText(item?.medicine || "", { maxLength: 200 }),
-    dosage: sanitizeText(item?.dosage || "", { maxLength: 100 }),
-    duration: sanitizeText(item?.duration || "", { maxLength: 100 }),
-    instructions: sanitizeText(item?.instructions || "", { maxLength: 500 }),
-  })).filter((item) => item.medicine);
+  return prescription.slice(0, MAX_PRESCRIPTION_ITEMS).map((item) => {
+    const medicineName = sanitizeText(item?.medicineName || item?.medicine || "", { maxLength: 200 });
+    const dose = sanitizeText(item?.dose || item?.dosage || "", { maxLength: 100 });
+    return {
+      medicine: medicineName,
+      dosage: dose,
+      duration: sanitizeText(item?.duration || "", { maxLength: 100 }),
+      instructions: sanitizeText(item?.instructions || "", { maxLength: 500 }),
+
+      medicineName,
+      strength: sanitizeText(item?.strength || "", { maxLength: 40 }),
+      form: oneOf(item?.form, DRUG_FORMS, "Tablet"),
+      dose,
+      frequency: oneOf(item?.frequency, FREQUENCIES, ""),
+      route: oneOf(item?.route, ROUTES, "Oral"),
+      timing: oneOf(item?.timing, TIMING_OPTIONS, "Anytime"),
+      quantity: sanitizeText(item?.quantity || "", { maxLength: 40 }),
+    };
+  }).filter((item) => item.medicineName);
+};
+
+// Public — lets both admin apps and the patient frontend fetch the same
+// canonical dropdown options instead of hardcoding a second copy.
+export const getPrescriptionOptions = (req, res) => {
+  res.json({ success: true, options: { forms: DRUG_FORMS, frequencies: FREQUENCIES, routes: ROUTES, timings: TIMING_OPTIONS } });
 };
 
 // A doctor may only touch a record for an appointment they actually

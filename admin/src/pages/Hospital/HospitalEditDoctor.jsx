@@ -12,7 +12,8 @@ import {
   MapPin,
   FileText,
   Pencil,
-  ToggleRight
+  ToggleRight,
+  CalendarClock
 } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 import FormCard from '../../components/FormCard'
@@ -113,7 +114,21 @@ const HospitalEditDoctor = () => {
     <div className="curalink-fade-in" style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '36px 24px' }}>
       <form onSubmit={onSubmitHandler} style={{ maxWidth: 1320, margin: '0 auto' }}>
 
-        <PageHero icon={Pencil} title={`Edit Dr. ${form.name}`} description="Update this doctor's professional details." />
+        <PageHero
+          icon={Pencil} title={`Edit Dr. ${form.name}`} description="Update this doctor's professional details."
+          action={
+            <button
+              type="button" onClick={() => navigate(`/hospital-doctor-schedule/${doctorId}`)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.12)',
+                border: '1px solid rgba(255,255,255,0.25)', backdropFilter: 'blur(8px)', color: '#FFFFFF',
+                borderRadius: 12, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif'
+              }}
+            >
+              <CalendarClock size={15} /> Manage Schedule
+            </button>
+          }
+        />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(580px, 1fr))', gap: 28 }}>
 

@@ -1,6 +1,6 @@
 import React, { useContext, useMemo, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, CalendarDays, UserCog, Building2 } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, UserCog, CalendarClock, Building2 } from 'lucide-react'
 import { DoctorContext } from '../context/DoctorContext'
 
 const DoctorSidebar = () => {
@@ -11,6 +11,7 @@ const DoctorSidebar = () => {
     { name: 'Dashboard', path: '/doctor-dashboard', icon: LayoutDashboard },
     { name: 'Appointments', path: '/doctor-appointments', icon: CalendarDays },
     { name: 'Edit Profile', path: '/doctor-profile', icon: UserCog },
+    { name: 'My Schedule', path: '/doctor-schedule', icon: CalendarClock },
     { name: 'Hospital Affiliation', path: '/doctor-hospital-affiliation', icon: Building2 }
   ], [])
 

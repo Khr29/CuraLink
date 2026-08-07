@@ -47,6 +47,7 @@ import userRouter from "./routes/userRoute.js";
 import reviewRouter from "./routes/reviewRoute.js";
 import statsRouter from "./routes/statsRoute.js";
 import medicalRecordRouter from "./routes/medicalRecordRoute.js";
+import scheduleRouter from "./routes/scheduleRoute.js";
 
 import helmet from "helmet";
 import compression from "compression";
@@ -105,6 +106,7 @@ app.use("/api/hospital", hospitalRouter);
 app.use("/api/review", reviewRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/medical-records", medicalRecordRouter);
+app.use("/api/schedule", scheduleRouter);
 
 // global error handler (reliability)
 app.use((err, req, res, next) => {

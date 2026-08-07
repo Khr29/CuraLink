@@ -327,13 +327,20 @@ const appointmentCancel = async (req, res) => {
         const docId = req.docId
         const { appointmentId } = req.body
 
-        const appointmentData = await appointmentModel.findById(appointmentId).select('docId')
+        const appointmentData = await appointmentModel.findById(appointmentId).select('docId slotDate slotTime')
 
         if (!appointmentData || appointmentData.docId.toString() !== docId) {
             return res.json({ success: false, message: 'Cancelled Failed' })
         }
 
         await appointmentModel.findByIdAndUpdate(appointmentId, { cancelled: true })
+
+        // Release the slot — previously only the appointment was marked
+        // cancelled and the slot stayed permanently booked when a doctor
+        // (rather than the patient) cancelled it.
+        await doctorModel.findByIdAndUpdate(docId, {
+            $pull: { [`slots_booked.${appointmentData.slotDate}`]: appointmentData.slotTime },
+        })
 
         await logAction({
             req,

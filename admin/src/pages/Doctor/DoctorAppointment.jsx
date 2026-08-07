@@ -234,6 +234,34 @@ import PageHero from '../../components/PageHero'
 import EmptyState from '../../components/EmptyState'
 import { SkeletonRow } from '../../components/Skeleton'
 
+const EMPTY_ROW = {
+  medicineName: '', strength: '', form: 'Tablet', dose: '', frequency: '',
+  route: 'Oral', timing: 'Anytime', duration: '', quantity: '', instructions: '',
+}
+
+// Pre-existing records saved before structured prescriptions may only have
+// the legacy medicine/dosage fields — fall back to those so an old record
+// still shows its medicine when opened in the new structured form.
+const normalizeRow = (item) => ({
+  ...EMPTY_ROW,
+  ...item,
+  medicineName: item.medicineName || item.medicine || '',
+  dose: item.dose || item.dosage || '',
+  form: item.form || 'Tablet',
+  route: item.route || 'Oral',
+  timing: item.timing || 'Anytime',
+})
+
+// Auto-composed, human-readable line shown under each medicine row, e.g.
+// "Paracetamol 500mg — 1 tablet, Twice daily, After Food, for 5 days".
+const composePrescriptionSummary = (item) => {
+  if (!item.medicineName) return ''
+  const head = item.strength ? `${item.medicineName} ${item.strength}` : item.medicineName
+  const tail = [item.dose, item.frequency, item.timing !== 'Anytime' ? item.timing : '', item.duration ? `for ${item.duration}` : '']
+    .filter(Boolean).join(', ')
+  return tail ? `${head} — ${tail}` : head
+}
+
 // Doctor-facing medical record editor for one appointment. Draft freely,
 // then Finalize locks it (backend rejects further plain edits); after
 // finalization only "Amend" is offered, which archives the prior state
@@ -244,10 +272,22 @@ const MedicalRecordModal = ({ appointment, dToken, backendUrl, onClose }) => {
   const [record, setRecord] = useState(null)
   const [diagnosis, setDiagnosis] = useState('')
   const [notes, setNotes] = useState('')
-  const [prescription, setPrescription] = useState([{ medicine: '', dosage: '', duration: '', instructions: '' }])
+  const [prescription, setPrescription] = useState([{ ...EMPTY_ROW }])
   const [amendReason, setAmendReason] = useState('')
+  const [options, setOptions] = useState({ forms: [], frequencies: [], routes: [], timings: [] })
 
   const config = { headers: { dtoken: dToken } }
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axios.get(`${backendUrl}/api/medical-records/prescription-options`)
+        if (data.success) setOptions(data.options)
+      } catch (error) {
+        // Falls back to a Tablet/Oral/Anytime-only form if this fails — not fatal.
+      }
+    })()
+  }, [backendUrl])
 
   useEffect(() => {
     (async () => {
@@ -257,7 +297,7 @@ const MedicalRecordModal = ({ appointment, dToken, backendUrl, onClose }) => {
           setRecord(data.record)
           setDiagnosis(data.record.diagnosis || '')
           setNotes(data.record.notes || '')
-          if (data.record.prescription?.length) setPrescription(data.record.prescription)
+          if (data.record.prescription?.length) setPrescription(data.record.prescription.map(normalizeRow))
         }
       } catch (error) {
         // 404 just means no draft exists yet — that's fine, form starts empty.

@@ -45,43 +45,42 @@ const Appointments = () => {
     setDocInfo(doctor || null);
   }, [doctors, docId]);
 
-  const getAvailableSlots = useCallback(() => {
+  // Backend-authoritative: slots come from the doctor's structured schedule
+  // (shifts/breaks/slot duration/unavailable dates), not a hardcoded
+  // client-side window. Doctors with no schedule configured yet still get
+  // the same 10:00-21:00/30-min slots this used to generate locally.
+  const getAvailableSlots = useCallback(async () => {
     if (!docInfo) return;
-    const days = [];
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      // `date` is the calendar day this box represents — kept separate from
-      // the slot-generation cursor below so the day label always renders
-      // even when that day happens to produce zero bookable time slots
-      // (e.g. "today" after the clinic's last slot has already passed).
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
+    try {
+      const { data } = await axios.get(`${backendUrl}/api/schedule/doctor/${docId}/slots?days=7`);
+      if (!data.success) return;
 
-      const cursor = new Date(date);
-      const endTime = new Date(date);
-      endTime.setHours(21, 0, 0, 0);
-      if (i === 0) {
-        cursor.setHours(cursor.getHours() > 10 ? cursor.getHours() + 1 : 10);
-        cursor.setMinutes(cursor.getMinutes() > 30 ? 30 : 0);
-      } else {
-        cursor.setHours(10);
-        cursor.setMinutes(0);
+      const days = [];
+      const today = new Date();
+      for (let i = 0; i < 7; i++) {
+        // `date` is the calendar day this box represents — the day label
+        // always renders even when that day has zero bookable slots.
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        const slotDate = `${date.getDate()}_${date.getMonth() + 1}_${date.getFullYear()}`;
+
+        const timeSlots = (data.slots?.[slotDate] || []).map((hhmm) => {
+          const [hour, minute] = hhmm.split(":").map(Number);
+          const datetime = new Date(date);
+          datetime.setHours(hour, minute, 0, 0);
+          return {
+            datetime,
+            time: hhmm, // canonical "HH:mm" — what's sent to book-appointment
+            label: datetime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), // display only
+          };
+        });
+        days.push({ date, slots: timeSlots });
       }
-      const timeSlots = [];
-      while (cursor < endTime) {
-        const formattedTime = cursor.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-        const day = cursor.getDate();
-        const month = cursor.getMonth() + 1;
-        const year = cursor.getFullYear();
-        const slotDate = `${day}_${month}_${year}`;
-        const isAvailable = !docInfo.slots_booked?.[slotDate]?.includes(formattedTime);
-        if (isAvailable) timeSlots.push({ datetime: new Date(cursor), time: formattedTime });
-        cursor.setMinutes(cursor.getMinutes() + 30);
-      }
-      days.push({ date, slots: timeSlots });
+      setDocSlots(days);
+    } catch (error) {
+      console.error(error);
     }
-    setDocSlots(days);
-  }, [docInfo]);
+  }, [docInfo, backendUrl, docId]);
 
   const bookAppointment = useCallback(async () => {
     if (!token) {
@@ -236,7 +235,7 @@ const Appointments = () => {
                 onClick={() => setSlotTime(item.time)}
                 className={`slot-time ${item.time === slotTime ? "active" : ""}`}
               >
-                {item.time.toLowerCase()}
+                {item.label.toLowerCase()}
               </button>
             ))}
           </div>

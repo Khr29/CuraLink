@@ -4,7 +4,9 @@ import userModel from "../models/userModels.js";
 import { v2 as cloudinary } from "cloudinary";
 import appointmentModel from "../models/appointmentModel.js";
 import doctorModel from "../models/doctorModel.js";
+import doctorScheduleModel from "../models/doctorScheduleModel.js";
 import hospitalModel from "../models/hospitalModel.js";
+import { computeAvailableSlots, parseSlotDate, parseSlotTime } from "../utils/slotGenerator.js";
 import razorpay from "razorpay";
 import { sendEmail } from "../utils/email.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
@@ -450,43 +452,8 @@ const updateProfile = async (req, res) => {
 
 //api to book appointment
 
-// Backend is authoritative for booking rules — the frontend's slot picker
-// only generates 10:00-21:00 slots, but a direct API call must be blocked
-// too. Window is intentionally a bit wider than the picker's to tolerate
-// locale-formatted time strings without false-rejecting real bookings.
-const WORKING_HOURS_START = 7;
-const WORKING_HOURS_END = 21;
 const MAX_ADVANCE_BOOKING_DAYS = 90;
-
-// slotDate is this codebase's "D_M_YYYY" convention (see getHospitalSelfDashboard).
-const parseSlotDate = (slotDate) => {
-  if (typeof slotDate !== "string") return null;
-  const parts = slotDate.split("_");
-  if (parts.length !== 3) return null;
-  const [day, month, year] = parts.map(Number);
-  if (!day || !month || !year) return null;
-  const date = new Date(year, month - 1, day);
-  return Number.isNaN(date.getTime()) ? null : date;
-};
-
-// Accepts both "10:00 AM" and 24h "14:00" — whichever the client's locale
-// produced (see frontend Appointments.jsx toLocaleTimeString call).
-const parseSlotTime = (slotTime) => {
-  if (typeof slotTime !== "string") return null;
-  const trimmed = slotTime.trim();
-  let match = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (match) {
-    let hour = parseInt(match[1], 10);
-    const minute = parseInt(match[2], 10);
-    const meridiem = match[3].toUpperCase();
-    if (meridiem === "PM" && hour !== 12) hour += 12;
-    if (meridiem === "AM" && hour === 12) hour = 0;
-    return { hour, minute };
-  }
-  match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
-  if (match) return { hour: parseInt(match[1], 10), minute: parseInt(match[2], 10) };
-  return null;
-};
+const pad2 = (n) => String(n).padStart(2, "0");
 
 const bookAppointment = async (req, res) => {
   try {
@@ -532,16 +499,21 @@ const bookAppointment = async (req, res) => {
       return res.json({ success: false, message: "This date is too far in advance to book" });
     }
 
+    // Slot legitimacy is schedule-authoritative: the requested time must be
+    // one of the doctor's actually-generated slots for this date (which
+    // already excludes breaks, non-working days, already-booked times, and
+    // anything earlier than now today). Doctors with no schedule configured
+    // yet fall back to the same 10:00-21:00/30-min window this always used.
+    const schedule = await doctorScheduleModel.findOne({
+      doctorId: docId,
+      hospitalId: docData.hospitalId || null,
+    });
+    const bookedForDate = docData.slots_booked?.[slotDate] || [];
+    const availableSlots = computeAvailableSlots(schedule, dateOnly, bookedForDate, now);
     const time = parseSlotTime(slotTime);
-    if (time) {
-      if (time.hour < WORKING_HOURS_START || time.hour >= WORKING_HOURS_END) {
-        return res.json({ success: false, message: "Selected time is outside working hours" });
-      }
-      const appointmentDateTime = new Date(dateOnly);
-      appointmentDateTime.setHours(time.hour, time.minute, 0, 0);
-      if (appointmentDateTime < now) {
-        return res.json({ success: false, message: "This slot has already passed" });
-      }
+    const canonicalSlotTime = time ? `${pad2(time.hour)}:${pad2(time.minute)}` : null;
+    if (!canonicalSlotTime || !availableSlots.includes(canonicalSlotTime)) {
+      return res.json({ success: false, message: "Selected time is not available for this doctor" });
     }
 
     // Atomic reservation: the filter only matches while the slot is still

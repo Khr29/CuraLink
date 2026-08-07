@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react'
 import { DoctorContext } from '../../context/DoctorContext'
+import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import {
@@ -285,7 +286,6 @@ const DoctorProfile = () => {
       formData.append('degree', profileData.degree || '')
       formData.append('experience', profileData.experience || '')
       formData.append('speciality', profileData.speciality || '')
-      formData.append('workingHours', profileData.workingHours || '')
       formData.append('languages', JSON.stringify(profileData.languages || []))
       formData.append('fees', profileData.fees)
       formData.append('address', JSON.stringify(profileData.address))
@@ -610,18 +610,12 @@ const DoctorProfile = () => {
             </Field>
 
             <Field label="Working Hours">
-              {isEdit ? (
-                <input
-                  type="text" value={profileData.workingHours || ''}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, workingHours: e.target.value }))}
-                  placeholder="e.g. Mon–Fri, 9:00 AM – 5:00 PM" style={inputStyle}
-                  onFocus={focusTeal} onBlur={blurDefault}
-                />
-              ) : (
-                <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <Clock size={15} color="#94A3B8" /> {profileData.workingHours || '—'}
-                </p>
-              )}
+              <Link
+                to="/doctor-schedule"
+                style={{ fontSize: 14, color: '#2563EB', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none' }}
+              >
+                <Clock size={15} /> Manage in My Schedule <ExternalLink size={12} />
+              </Link>
             </Field>
 
             <div style={{ gridColumn: '1 / -1' }}>

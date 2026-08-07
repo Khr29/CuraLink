@@ -28,6 +28,7 @@ const AuditLogs = lazy(() => import('./pages/Admin/AuditLogs'))
 const DoctorDashboard = lazy(() => import('./pages/Doctor/DoctorDashboard'))
 const DoctorAppointment = lazy(() => import('./pages/Doctor/DoctorAppointment'))
 const DoctorProfile = lazy(() => import('./pages/Doctor/DoctorProfile'))
+const DoctorSchedule = lazy(() => import('./pages/Doctor/DoctorSchedule'))
 const DoctorHospitalAffiliation = lazy(() => import('./pages/Doctor/HospitalAffiliation'))
 
 // Lazy loaded Hospital Portal Pages
@@ -38,6 +39,7 @@ const HospitalPatientDetail = lazy(() => import('./pages/Hospital/HospitalPatien
 const HospitalDoctorRequests = lazy(() => import('./pages/Hospital/DoctorRequests'))
 const HospitalAddDoctor = lazy(() => import('./pages/Hospital/HospitalAddDoctor'))
 const HospitalEditDoctor = lazy(() => import('./pages/Hospital/HospitalEditDoctor'))
+const HospitalDoctorSchedule = lazy(() => import('./pages/Hospital/HospitalDoctorSchedule'))
 const HospitalDepartments = lazy(() => import('./pages/Hospital/HospitalDepartments'))
 const HospitalAppointments = lazy(() => import('./pages/Hospital/HospitalAppointments'))
 const HospitalMyReviews = lazy(() => import('./pages/Hospital/MyReviews'))
@@ -132,6 +134,10 @@ const App = () => {
         <ProtectedRoute token={dToken}><PanelLayout><DoctorProfile /></PanelLayout></ProtectedRoute>
       } />
 
+      <Route path="/doctor-schedule" element={
+        <ProtectedRoute token={dToken}><PanelLayout><DoctorSchedule /></PanelLayout></ProtectedRoute>
+      } />
+
       <Route path="/doctor-hospital-affiliation" element={
         <ProtectedRoute token={dToken}><PanelLayout><DoctorHospitalAffiliation /></PanelLayout></ProtectedRoute>
       } />
@@ -163,6 +169,10 @@ const App = () => {
 
       <Route path="/hospital-edit-doctor/:doctorId" element={
         <ProtectedRoute token={hToken}><PanelLayout><HospitalEditDoctor /></PanelLayout></ProtectedRoute>
+      } />
+
+      <Route path="/hospital-doctor-schedule/:doctorId" element={
+        <ProtectedRoute token={hToken}><PanelLayout><HospitalDoctorSchedule /></PanelLayout></ProtectedRoute>
       } />
 
       <Route path="/hospital-departments" element={
