@@ -13,12 +13,12 @@ import {
   IndianRupee,
   MapPin,
   FileText,
-  UploadCloud,
   UserPlus
 } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 import FormCard from '../../components/FormCard'
 import FormInput from '../../components/FormInput'
+import ImageUploadSlot from '../../components/ImageUploadSlot'
 import { formLabelStyle, formInputStyle, formFocusHandlers } from '../../components/formStyles'
 import { formatExperienceYears } from '../../utils/experience'
 
@@ -105,37 +105,15 @@ const HospitalAddDoctor = () => {
             <FormCard title="Basic Information" icon={User}>
 
               <div style={{ marginBottom: 24 }}>
-                <label style={formLabelStyle}>Doctor Photo</label>
-                <div style={{ position: 'relative' }}>
-                  <label
-                    htmlFor="doc-img"
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                      padding: '24px 16px', borderRadius: 20, border: '2px dashed #CBD5E1',
-                      background: '#F8FAFC', cursor: 'pointer', transition: 'all 0.25s ease', textAlign: 'center'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.background = '#EFF6FF' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; e.currentTarget.style.background = '#F8FAFC' }}
-                  >
-                    {docImg ? (
-                      <div style={{ position: 'relative', width: '100%', height: 160, borderRadius: 14, overflow: 'hidden' }}>
-                        <img src={URL.createObjectURL(docImg)} alt="Doctor Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 600, fontSize: 13 }}>
-                          Click to Replace Image
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div style={{ width: 48, height: 48, borderRadius: 14, background: '#E0F2FE', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                          <UploadCloud size={24} color="#14B8A6" />
-                        </div>
-                        <p style={{ fontSize: 14, fontWeight: 600, color: '#0F172A', margin: 0 }}>Click or drag doctor photo here</p>
-                        <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>Supports PNG, JPG or WEBP (Max 5MB)</p>
-                      </>
-                    )}
-                  </label>
-                  <input type="file" id="doc-img" hidden accept="image/*" onChange={(e) => setDocImg(e.target.files[0])} />
-                </div>
+                <ImageUploadSlot
+                  label="Doctor Photo"
+                  hint="Supports PNG, JPG or WEBP (Max 5MB)"
+                  aspect="16/9"
+                  file={docImg}
+                  required
+                  onSelect={setDocImg}
+                  onRemove={() => setDocImg(null)}
+                />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>

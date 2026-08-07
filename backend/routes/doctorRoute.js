@@ -8,6 +8,7 @@ import {
   respondToInvite,
 } from '../controllers/hospitalRequestController.js'
 import authDoctor from '../middlewares/authDoctor.js'
+import upload from '../middlewares/multer.js'
 import {
   makeRefreshTokenHandler,
   makeLogoutAllHandler,
@@ -32,7 +33,7 @@ doctorRouter.post('/complete-appointment',authDoctor,appointmentComplete)
 doctorRouter.post('/cancel-appointment',authDoctor,appointmentCancel)
 doctorRouter.get('/dashboard',authDoctor,doctorDashboard)
 doctorRouter.get('/profile',authDoctor,doctorProfile)
-doctorRouter.post('/update-profile',authDoctor,updateDoctorProffile)
+doctorRouter.post('/update-profile',upload.single('image'),authDoctor,updateDoctorProffile)
 
 // Hospital affiliation lifecycle
 doctorRouter.post('/request-hospital',authDoctor,requestHospital)

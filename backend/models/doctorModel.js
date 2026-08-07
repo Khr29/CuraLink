@@ -57,6 +57,21 @@ const doctorSchema = new mongoose.Schema(
       required: true,
     },
 
+    phone: {
+      type: String,
+      default: "",
+    },
+
+    workingHours: {
+      type: String,
+      default: "",
+    },
+
+    languages: {
+      type: [String],
+      default: [],
+    },
+
     // ==========================
     // Availability
     // ==========================

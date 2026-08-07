@@ -11,13 +11,13 @@ import {
   IndianRupee,
   MapPin,
   FileText,
-  UploadCloud,
   Pencil,
   ToggleRight
 } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 import FormCard from '../../components/FormCard'
 import FormInput from '../../components/FormInput'
+import ImageUploadSlot from '../../components/ImageUploadSlot'
 import { formLabelStyle, formInputStyle, formFocusHandlers } from '../../components/formStyles'
 import { parseExperienceYears, formatExperienceYears } from '../../utils/experience'
 
@@ -33,6 +33,7 @@ const HospitalEditDoctor = () => {
   const { backendUrl, hToken, doctors, getHospitalDoctors } = useContext(HospitalContext)
 
   const [docImg, setDocImg] = useState(null)
+  const [docImgRemoved, setDocImgRemoved] = useState(false)
   const [form, setForm] = useState(null)
   const [saving, setSaving] = useState(false)
 
@@ -67,6 +68,10 @@ const HospitalEditDoctor = () => {
         return toast.error('Enter a valid number of years of experience')
       }
 
+      if (docImgRemoved && !docImg) {
+        return toast.error('Please upload a new photo before saving, or cancel the removal.')
+      }
+
       setSaving(true)
       try {
         const formData = new FormData()
@@ -99,7 +104,7 @@ const HospitalEditDoctor = () => {
         setSaving(false)
       }
     },
-    [docImg, form, backendUrl, hToken, doctorId, getHospitalDoctors, navigate]
+    [docImg, docImgRemoved, form, backendUrl, hToken, doctorId, getHospitalDoctors, navigate]
   )
 
   if (!form) return <PageLoader />
@@ -116,31 +121,17 @@ const HospitalEditDoctor = () => {
             <FormCard title="Professional Information" icon={User}>
 
               <div style={{ marginBottom: 24 }}>
-                <label style={formLabelStyle}>Doctor Photo</label>
-                <div style={{ position: 'relative' }}>
-                  <label
-                    htmlFor="doc-img"
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                      padding: '24px 16px', borderRadius: 20, border: '2px dashed #CBD5E1',
-                      background: '#F8FAFC', cursor: 'pointer', transition: 'all 0.25s ease', textAlign: 'center'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.background = '#EFF6FF' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; e.currentTarget.style.background = '#F8FAFC' }}
-                  >
-                    <div style={{ position: 'relative', width: '100%', height: 160, borderRadius: 14, overflow: 'hidden' }}>
-                      <img src={docImg ? URL.createObjectURL(docImg) : form.image} alt="Doctor" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 600, fontSize: 13 }}>
-                        Click to Replace Photo
-                      </div>
-                    </div>
-                  </label>
-                  <input type="file" id="doc-img" hidden accept="image/*" onChange={(e) => setDocImg(e.target.files[0])} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
-                    <UploadCloud size={13} color="#94A3B8" />
-                    <p style={{ fontSize: 11.5, color: '#94A3B8', margin: 0 }}>Only shown if you upload a new photo.</p>
-                  </div>
-                </div>
+                <ImageUploadSlot
+                  label="Doctor Photo"
+                  hint="Replacing or removing the photo only takes effect after you Save Changes."
+                  aspect="16/9"
+                  current={form.image}
+                  file={docImg}
+                  removed={docImgRemoved}
+                  required
+                  onSelect={(f) => { setDocImg(f); setDocImgRemoved(false) }}
+                  onRemove={() => { setDocImg(null); setDocImgRemoved(true) }}
+                />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>

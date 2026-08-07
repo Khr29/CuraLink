@@ -567,6 +567,8 @@ const uploadHospitalMedia = async (req, res) => {
         resource_type: "image",
       });
       updateData.banner = upload.secure_url;
+    } else if (req.body?.removeBanner === "true") {
+      updateData.banner = "";
     }
 
     if (req.files?.logo?.length) {
@@ -574,6 +576,8 @@ const uploadHospitalMedia = async (req, res) => {
         resource_type: "image",
       });
       updateData.logo = upload.secure_url;
+    } else if (req.body?.removeLogo === "true") {
+      updateData.logo = "";
     }
 
     if (req.files?.image?.length) {

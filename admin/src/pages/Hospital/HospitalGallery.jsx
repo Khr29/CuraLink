@@ -5,51 +5,12 @@ import { HospitalContext } from '../../context/HospitalContext'
 import { Images, UploadCloud, Trash2, Loader2, Image as ImageIcon } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 import FormCard from '../../components/FormCard'
+import ImageUploadSlot from '../../components/ImageUploadSlot'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const PageLoader = () => (
   <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
     <div style={{ width: 44, height: 44, border: '3px solid #E2E8F0', borderTopColor: '#14B8A6', borderRadius: '50%', animation: 'curalink-spin .7s linear infinite' }} />
-  </div>
-)
-
-const UploadSlot = ({ label, hint, aspect, current, file, onChange, uploading }) => (
-  <div>
-    <label style={{ fontSize: 12.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 7 }}>{label}</label>
-    <div style={{ position: 'relative' }}>
-      <label
-        htmlFor={`upload-${label}`}
-        style={{
-          display: 'block', position: 'relative', width: '100%', aspectRatio: aspect,
-          borderRadius: 18, border: '2px dashed #CBD5E1', background: '#F8FAFC',
-          cursor: 'pointer', overflow: 'hidden', transition: 'all 0.25s ease'
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2563EB' }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CBD5E1' }}
-      >
-        {(file || current) ? (
-          <>
-            <img src={file ? URL.createObjectURL(file) : current} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 600, fontSize: 13, opacity: 0, transition: 'opacity 0.2s' }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = 1 }} onMouseLeave={(e) => { e.currentTarget.style.opacity = 0 }}
-            >
-              Click to Replace
-            </div>
-          </>
-        ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <UploadCloud size={26} color="#14B8A6" />
-            <p style={{ fontSize: 12.5, color: '#64748B', margin: 0 }}>Click to upload</p>
-          </div>
-        )}
-        {uploading && (
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 size={22} className="animate-spin" color="#2563EB" />
-          </div>
-        )}
-      </label>
-      <input id={`upload-${label}`} type="file" hidden accept="image/*" onChange={(e) => onChange(e.target.files[0])} />
-    </div>
-    {hint && <p style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 6 }}>{hint}</p>}
   </div>
 )
 
@@ -58,6 +19,9 @@ const HospitalGallery = () => {
   const [banner, setBanner] = useState(null)
   const [logo, setLogo] = useState(null)
   const [coverImage, setCoverImage] = useState(null)
+  const [bannerRemoved, setBannerRemoved] = useState(false)
+  const [logoRemoved, setLogoRemoved] = useState(false)
+  const [coverRemoved, setCoverRemoved] = useState(false)
   const [galleryFiles, setGalleryFiles] = useState([])
   const [saving, setSaving] = useState(false)
   const [deletingUrl, setDeletingUrl] = useState(null)
@@ -67,14 +31,22 @@ const HospitalGallery = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hToken])
 
-  const hasChanges = banner || logo || coverImage || galleryFiles.length > 0
+  const hasChanges = banner || logo || coverImage || galleryFiles.length > 0 || bannerRemoved || logoRemoved || coverRemoved
 
   const handleSave = async () => {
+    // Cover image is required — a removal with no replacement can't be
+    // persisted, so block save instead of silently discarding the removal.
+    if (coverRemoved && !coverImage) {
+      toast.error('Please upload a new cover image before saving, or cancel the removal by uploading one back.')
+      return
+    }
     setSaving(true)
     try {
       const formData = new FormData()
       if (banner) formData.append('banner', banner)
+      else if (bannerRemoved) formData.append('removeBanner', 'true')
       if (logo) formData.append('logo', logo)
+      else if (logoRemoved) formData.append('removeLogo', 'true')
       if (coverImage) formData.append('image', coverImage)
       galleryFiles.forEach((file) => formData.append('galleryImages', file))
 
@@ -82,6 +54,7 @@ const HospitalGallery = () => {
       if (data.success) {
         toast.success('Media updated')
         setBanner(null); setLogo(null); setCoverImage(null); setGalleryFiles([])
+        setBannerRemoved(false); setLogoRemoved(false); setCoverRemoved(false)
         getHospitalProfile()
       } else {
         toast.error(data.message)
@@ -93,8 +66,11 @@ const HospitalGallery = () => {
     }
   }
 
-  const handleDeleteGalleryImage = async (url) => {
-    if (!window.confirm('Remove this photo from your gallery?')) return
+  const [galleryDeleteTarget, setGalleryDeleteTarget] = useState(null)
+
+  const confirmDeleteGalleryImage = async () => {
+    const url = galleryDeleteTarget
+    if (!url) return
     setDeletingUrl(url)
     try {
       const { data } = await axios.post(`${backendUrl}/api/hospital/self/gallery/delete`, { url }, { headers: { htoken: hToken } })
@@ -108,6 +84,7 @@ const HospitalGallery = () => {
       toast.error(error.response?.data?.message || error.message)
     } finally {
       setDeletingUrl(null)
+      setGalleryDeleteTarget(null)
     }
   }
 
@@ -121,9 +98,24 @@ const HospitalGallery = () => {
 
         <FormCard title="Brand Images" icon={ImageIcon}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
-            <UploadSlot label="Banner" hint="Shown behind your dashboard header (wide)" aspect="16/9" current={hospitalProfile.banner} file={banner} onChange={setBanner} uploading={saving} />
-            <UploadSlot label="Logo" hint="Square logo used across CuraLink" aspect="1/1" current={hospitalProfile.logo} file={logo} onChange={setLogo} uploading={saving} />
-            <UploadSlot label="Cover Image" hint="Main photo on your hospital card" aspect="4/3" current={hospitalProfile.image} file={coverImage} onChange={setCoverImage} uploading={saving} />
+            <ImageUploadSlot
+              label="Banner" hint="Shown behind your dashboard header (wide)" aspect="16/9"
+              current={hospitalProfile.banner} file={banner} removed={bannerRemoved} uploading={saving}
+              onSelect={(f) => { setBanner(f); setBannerRemoved(false) }}
+              onRemove={() => { setBanner(null); setBannerRemoved(true) }}
+            />
+            <ImageUploadSlot
+              label="Logo" hint="Square logo used across CuraLink" aspect="1/1"
+              current={hospitalProfile.logo} file={logo} removed={logoRemoved} uploading={saving}
+              onSelect={(f) => { setLogo(f); setLogoRemoved(false) }}
+              onRemove={() => { setLogo(null); setLogoRemoved(true) }}
+            />
+            <ImageUploadSlot
+              label="Cover Image" hint="Main photo on your hospital card" aspect="4/3" required
+              current={hospitalProfile.image} file={coverImage} removed={coverRemoved} uploading={saving}
+              onSelect={(f) => { setCoverImage(f); setCoverRemoved(false) }}
+              onRemove={() => { setCoverImage(null); setCoverRemoved(true) }}
+            />
           </div>
         </FormCard>
 
@@ -137,7 +129,7 @@ const HospitalGallery = () => {
                   <img src={url} alt="Gallery" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   <button
                     type="button"
-                    onClick={() => handleDeleteGalleryImage(url)}
+                    onClick={() => setGalleryDeleteTarget(url)}
                     disabled={deletingUrl === url}
                     style={{
                       position: 'absolute', top: 6, right: 6, width: 26, height: 26, borderRadius: '50%',
@@ -184,6 +176,17 @@ const HospitalGallery = () => {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(galleryDeleteTarget)}
+        title="Remove this photo?"
+        message="This photo will be permanently removed from your gallery."
+        confirmLabel="Remove"
+        destructive
+        loading={Boolean(deletingUrl)}
+        onConfirm={confirmDeleteGalleryImage}
+        onClose={() => setGalleryDeleteTarget(null)}
+      />
     </div>
   )
 }

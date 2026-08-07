@@ -159,9 +159,11 @@
 import doctorModel from "../models/doctorModel.js"
 import bcrypt from 'bcrypt'
 import appointmentModel from "../models/appointmentModel.js"
+import { v2 as cloudinary } from "cloudinary"
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js"
 import { issueSession, revokeSession } from "../utils/session.js"
 import { signAccessToken } from "../utils/tokens.js"
+import { sanitizeText, isSafeName } from "../utils/sanitize.js"
 
 // Change Availability
 const changeAvailability = async (req, res) => {
@@ -400,9 +402,48 @@ const doctorProfile = async (req, res) => {
 const updateDoctorProffile = async (req, res) => {
     try {
         const docId = req.docId
-        const { fees, address, available } = req.body
+        const {
+            name, phone, about, degree, experience, speciality,
+            workingHours, languages, fees, address, available
+        } = req.body
 
-        await doctorModel.findByIdAndUpdate(docId, { fees, address, available })
+        const updateData = {}
+
+        if (name !== undefined) {
+            if (!isSafeName(name)) {
+                return res.json({ success: false, message: 'Please enter a valid name' })
+            }
+            updateData.name = sanitizeText(name, { maxLength: 80 })
+        }
+        if (phone !== undefined) updateData.phone = sanitizeText(phone, { maxLength: 20 })
+        if (about !== undefined) updateData.about = sanitizeText(about, { maxLength: 2000 })
+        if (degree !== undefined) updateData.degree = sanitizeText(degree, { maxLength: 200 })
+        if (experience !== undefined) updateData.experience = sanitizeText(experience, { maxLength: 40 })
+        if (speciality !== undefined) updateData.speciality = sanitizeText(speciality, { maxLength: 100 })
+        if (workingHours !== undefined) updateData.workingHours = sanitizeText(workingHours, { maxLength: 200 })
+        if (languages !== undefined) {
+            try {
+                const parsed = typeof languages === 'string' ? JSON.parse(languages) : languages
+                if (Array.isArray(parsed)) {
+                    updateData.languages = parsed
+                        .map((l) => sanitizeText(String(l), { maxLength: 40 }))
+                        .filter(Boolean)
+                        .slice(0, 20)
+                }
+            } catch (e) {
+                // ignore malformed languages payload, leave unchanged
+            }
+        }
+        if (fees !== undefined) updateData.fees = fees
+        if (address !== undefined) updateData.address = typeof address === 'string' ? JSON.parse(address) : address
+        if (available !== undefined) updateData.available = available
+
+        if (req.file) {
+            const imageUpload = await cloudinary.uploader.upload(req.file.path, { resource_type: 'image' })
+            updateData.image = imageUpload.secure_url
+        }
+
+        await doctorModel.findByIdAndUpdate(docId, updateData)
 
         res.json({ success: true, message: 'Profile Updated' })
 

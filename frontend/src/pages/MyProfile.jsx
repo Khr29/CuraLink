@@ -5,7 +5,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import CuraLinkPhoneInput from "../components/PhoneInput";
 import PortalLayout from "../components/PortalLayout";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2, User as UserIcon } from "lucide-react";
 
 // dob is stored as a plain "YYYY-MM-DD" string (or "Not Selected") — parse
 // defensively since it's user-entered, not a real Date column.
@@ -26,9 +26,21 @@ const MyProfile = () => {
   const { userData, setUserData, token, backendUrl, loadUserProfileData } = useContext(AppContext);
   const [isEdit, setIsEdit] = useState(false);
   const [image, setImage] = useState(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const handleImageChange = useCallback((e) => setImage(e.target.files[0]), []);
+  const handleImageChange = useCallback((e) => {
+    setImage(e.target.files[0]);
+    setImageRemoved(false);
+  }, []);
+
+  const handleImageRemove = useCallback(() => {
+    if (userData.image && !image) {
+      if (!window.confirm("Remove your profile picture? You'll need to upload a new one before saving.")) return;
+    }
+    setImage(null);
+    setImageRemoved(true);
+  }, [userData.image, image]);
 
   const handleChange = useCallback(
     (field, value) => setUserData((prev) => ({ ...prev, [field]: value })),
@@ -60,6 +72,10 @@ const MyProfile = () => {
   );
 
   const updateUserProfileData = async () => {
+    if (imageRemoved && !image) {
+      toast.error("Please upload a new profile picture before saving, or cancel the removal.");
+      return;
+    }
     setSaving(true);
     try {
       const formData = new FormData();
@@ -89,6 +105,7 @@ const MyProfile = () => {
         await loadUserProfileData();
         setIsEdit(false);
         setImage(null);
+        setImageRemoved(false);
       } else {
         toast.error(data.message);
       }
@@ -102,7 +119,7 @@ const MyProfile = () => {
 
   if (!userData) return null;
 
-  const imgSrc = image ? URL.createObjectURL(image) : userData.image;
+  const imgSrc = image ? URL.createObjectURL(image) : (imageRemoved ? null : userData.image);
 
   return (
     <PortalLayout>
@@ -122,34 +139,53 @@ const MyProfile = () => {
       {/* Avatar + name */}
       <div className="profile-section flex items-center gap-5 mb-6">
         <div className="relative">
-          <div className="w-24 h-24 rounded-2xl overflow-hidden ring-4 ring-primary-light">
-            <img
-              src={imgSrc}
-              alt={userData.name}
-              className="w-full h-full object-cover"
-            />
+          <div className="w-24 h-24 rounded-2xl overflow-hidden ring-4 ring-primary-light bg-primary-light/40 flex items-center justify-center">
+            {imgSrc ? (
+              <img
+                src={imgSrc}
+                alt={userData.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <UserIcon size={36} className="text-primary" />
+            )}
           </div>
           {isEdit && (
-            <label
-              htmlFor="profile-image"
-              className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-primary-dark transition-colors"
-              title="Change photo"
-            >
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
-              </svg>
-              <input
-                id="profile-image"
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={handleImageChange}
-              />
-            </label>
+            <>
+              <label
+                htmlFor="profile-image"
+                className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-primary-dark transition-colors"
+                title="Change photo"
+              >
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                </svg>
+                <input
+                  id="profile-image"
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleImageChange}
+                />
+              </label>
+              {imgSrc && (
+                <button
+                  type="button"
+                  onClick={handleImageRemove}
+                  title="Remove photo"
+                  className="absolute -top-1 -right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-red-700 transition-colors"
+                >
+                  <Trash2 size={11} className="text-white" />
+                </button>
+              )}
+            </>
           )}
         </div>
         <div className="flex-1 min-w-0">
+          {isEdit && imageRemoved && !image && (
+            <p className="text-red-600 text-xs mb-1">Please upload a new photo before saving.</p>
+          )}
           {isEdit ? (
             <input
               className="input text-xl font-bold mb-1"
@@ -531,7 +567,7 @@ const MyProfile = () => {
             )}
           </button>
           <button
-            onClick={() => { setIsEdit(false); setImage(null); }}
+            onClick={() => { setIsEdit(false); setImage(null); setImageRemoved(false); }}
             className="btn btn-ghost"
           >
             Cancel

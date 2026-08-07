@@ -1,7 +1,6 @@
 import React, { useContext, useMemo, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Building2 } from 'lucide-react'
-import { assets } from '../assets/assets'
+import { LayoutDashboard, CalendarDays, UserCog, Building2 } from 'lucide-react'
 import { DoctorContext } from '../context/DoctorContext'
 
 const DoctorSidebar = () => {
@@ -9,9 +8,9 @@ const DoctorSidebar = () => {
   const [collapsed, setCollapsed] = useState(false)
 
   const menuItems = useMemo(() => [
-    { name: 'Dashboard', path: '/doctor-dashboard', icon: assets.home_icon },
-    { name: 'Appointments', path: '/doctor-appointments', icon: assets.appointment_icon },
-    { name: 'Profile', path: '/doctor-profile', icon: assets.people_icon },
+    { name: 'Dashboard', path: '/doctor-dashboard', icon: LayoutDashboard },
+    { name: 'Appointments', path: '/doctor-appointments', icon: CalendarDays },
+    { name: 'Edit Profile', path: '/doctor-profile', icon: UserCog },
     { name: 'Hospital Affiliation', path: '/doctor-hospital-affiliation', icon: Building2 }
   ], [])
 
@@ -107,10 +106,7 @@ const DoctorSidebar = () => {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'background 0.2s'
                       }}>
-                        {typeof item.icon === 'string'
-                          ? <img src={item.icon} alt={item.name} style={{ width: 16, height: 16, filter: isActive ? 'brightness(10)' : 'brightness(0.6)' }} />
-                          : <item.icon size={16} color={isActive ? '#FFFFFF' : '#94A3B8'} />
-                        }
+                        <item.icon size={16} color={isActive ? '#FFFFFF' : '#94A3B8'} />
                       </div>
                       {!collapsed && (
                         <span style={{

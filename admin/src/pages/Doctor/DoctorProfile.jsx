@@ -21,16 +21,33 @@ import {
   Check,
   Loader2,
   AlertCircle,
-  UserRound
+  UserRound,
+  Camera,
+  Phone,
+  Mail,
+  Clock,
+  Languages as LanguagesIcon,
+  Plus,
+  Trash2
 } from 'lucide-react'
 import EmptyState from '../../components/EmptyState'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import { SectionCard, StarRow, Field, inputStyle, inputErrorStyle, focusTeal, blurDefault } from '../../components/ProfileUI'
-import { formatExperience } from '../../utils/experience'
+import { formatExperience, formatExperienceYears, parseExperienceYears } from '../../utils/experience'
 
 const REVIEW_PAGE_SIZE = 3
 const DISTRIBUTION_SAMPLE_SIZE = 50
 
 const MAX_REPLY_LENGTH = 1000
+
+const SPECIALITY_OPTIONS = [
+  'General physician',
+  'Gynecologist',
+  'Dermatologist',
+  'Pediatricians',
+  'Neurologist',
+  'Gastroenterologist',
+]
 
 const ReplyModal = ({ mode, initialText, onCancel, onSubmit, submitting }) => {
   const [text, setText] = useState(initialText)
@@ -109,6 +126,38 @@ const DoctorProfile = () => {
   const [isEdit, setIsEdit] = useState(false)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
+
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [imageRemoved, setImageRemoved] = useState(false)
+  const [removeAvatarConfirmOpen, setRemoveAvatarConfirmOpen] = useState(false)
+  const [languageInput, setLanguageInput] = useState('')
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    setImageRemoved(false)
+  }
+
+  const confirmRemoveAvatar = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    setImageRemoved(true)
+    setRemoveAvatarConfirmOpen(false)
+  }
+
+  const addLanguage = () => {
+    const value = languageInput.trim()
+    if (!value) return
+    setProfileData(prev => ({ ...prev, languages: [...(prev.languages || []), value] }))
+    setLanguageInput('')
+  }
+
+  const removeLanguage = (index) => {
+    setProfileData(prev => ({ ...prev, languages: (prev.languages || []).filter((_, i) => i !== index) }))
+  }
 
   const [hospital, setHospital] = useState(null)
   const [todayCount, setTodayCount] = useState(0)
@@ -214,8 +263,10 @@ const DoctorProfile = () => {
   const validate = () => {
     const next = {}
     const feesNum = Number(profileData.fees)
+    if (!profileData.name?.trim()) next.name = 'Name is required'
     if (!Number.isFinite(feesNum) || feesNum <= 0) next.fees = 'Enter a valid consultation fee'
     if (!profileData.address?.line1?.trim()) next.line1 = 'Address line 1 is required'
+    if (imageRemoved && !imageFile) next.image = 'Please upload a new profile picture, or cancel the removal'
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -227,12 +278,28 @@ const DoctorProfile = () => {
     }
     try {
       setSaving(true)
-      const updateData = { address: profileData.address, fees: profileData.fees, available: profileData.available }
-      const { data } = await axios.post(backendUrl + '/api/doctor/update-profile', updateData, { headers: { dToken } })
+      const formData = new FormData()
+      formData.append('name', profileData.name)
+      formData.append('phone', profileData.phone || '')
+      formData.append('about', profileData.about || '')
+      formData.append('degree', profileData.degree || '')
+      formData.append('experience', profileData.experience || '')
+      formData.append('speciality', profileData.speciality || '')
+      formData.append('workingHours', profileData.workingHours || '')
+      formData.append('languages', JSON.stringify(profileData.languages || []))
+      formData.append('fees', profileData.fees)
+      formData.append('address', JSON.stringify(profileData.address))
+      formData.append('available', profileData.available)
+      if (imageFile) formData.append('image', imageFile)
+
+      const { data } = await axios.post(backendUrl + '/api/doctor/update-profile', formData, { headers: { dToken } })
       if (data.success) {
         toast.success(data.message)
         setIsEdit(false)
         setErrors({})
+        setImageFile(null)
+        setImagePreview(null)
+        setImageRemoved(false)
         getProfileData()
       } else {
         toast.error(data.message)
@@ -247,6 +314,10 @@ const DoctorProfile = () => {
   const cancelEdit = useCallback(() => {
     setIsEdit(false)
     setErrors({})
+    setImageFile(null)
+    setImagePreview(null)
+    setImageRemoved(false)
+    setLanguageInput('')
     getProfileData() // discard any unsaved local edits
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -300,13 +371,78 @@ const DoctorProfile = () => {
 
           <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-              <img
-                src={profileData.image}
-                alt={profileData.name}
-                style={{ width: 104, height: 104, borderRadius: '50%', objectFit: 'cover', border: '4px solid rgba(255,255,255,0.85)', boxShadow: '0 8px 24px rgba(0,0,0,0.35)', flexShrink: 0 }}
-              />
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                {(imagePreview || (profileData.image && !imageRemoved)) ? (
+                  <img
+                    src={imagePreview || profileData.image}
+                    alt={profileData.name}
+                    style={{ width: 104, height: 104, borderRadius: '50%', objectFit: 'cover', border: '4px solid rgba(255,255,255,0.85)', boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }}
+                  />
+                ) : (
+                  <div style={{
+                    width: 104, height: 104, borderRadius: '50%', border: '4px dashed rgba(255,255,255,0.4)',
+                    background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <UserRound size={36} color="rgba(255,255,255,0.6)" />
+                  </div>
+                )}
+                {isEdit && (
+                  <>
+                    <label
+                      htmlFor="doctor-avatar-upload"
+                      title="Change profile picture"
+                      style={{
+                        position: 'absolute', bottom: 0, right: 0, width: 34, height: 34, borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #2563EB, #14B8A6)', border: '3px solid #0F172A',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.35)'
+                      }}
+                    >
+                      <Camera size={14} color="#FFFFFF" />
+                      <input id="doctor-avatar-upload" type="file" accept="image/*" hidden onChange={handleImageSelect} />
+                    </label>
+                    {(imagePreview || (profileData.image && !imageRemoved)) && (
+                      <button
+                        type="button"
+                        title="Remove profile picture"
+                        onClick={() => imageFile ? confirmRemoveAvatar() : setRemoveAvatarConfirmOpen(true)}
+                        style={{
+                          position: 'absolute', top: 0, right: 0, width: 24, height: 24, borderRadius: '50%',
+                          background: 'rgba(220,38,38,0.92)', border: '3px solid #0F172A',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.35)'
+                        }}
+                      >
+                        <Trash2 size={10} color="#FFFFFF" />
+                      </button>
+                    )}
+                  </>
+                )}
+                {errors.image && (
+                  <p style={{ color: '#FCA5A5', fontSize: 11, margin: '6px 0 0', maxWidth: 130, textAlign: 'center', display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <AlertCircle size={11} /> {errors.image}
+                  </p>
+                )}
+              </div>
               <div>
-                <h1 style={{ fontSize: 28, fontWeight: 800, color: '#FFFFFF', margin: '0 0 6px', letterSpacing: '-0.01em' }}>{profileData.name}</h1>
+                {isEdit ? (
+                  <>
+                    <input
+                      type="text" value={profileData.name || ''}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Full name"
+                      style={{
+                        fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.01em',
+                        background: '#FFFFFF', border: errors.name ? '1.5px solid #EF4444' : '1.5px solid transparent',
+                        borderRadius: 10, padding: '8px 14px', marginBottom: 6, outline: 'none',
+                        fontFamily: 'Inter, sans-serif', minWidth: 220
+                      }}
+                    />
+                    {errors.name && <p style={{ color: '#FCA5A5', fontSize: 11.5, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 4 }}><AlertCircle size={12} /> {errors.name}</p>}
+                  </>
+                ) : (
+                  <h1 style={{ fontSize: 28, fontWeight: 800, color: '#FFFFFF', margin: '0 0 6px', letterSpacing: '-0.01em' }}>{profileData.name}</h1>
+                )}
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.25)', color: '#E2F8F5', fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 99 }}>
                     <Stethoscope size={12} /> {profileData.speciality}
@@ -386,27 +522,166 @@ const DoctorProfile = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '22px 32px' }} className="curalink-profile-grid">
             <div style={{ gridColumn: '1 / -1' }}>
               <Field label="About">
-                <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, margin: 0 }}>{profileData.about}</p>
+                {isEdit ? (
+                  <textarea
+                    value={profileData.about || ''}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, about: e.target.value }))}
+                    rows={4} placeholder="Tell patients about your background and practice…"
+                    style={{ ...inputStyle, resize: 'vertical' }}
+                    onFocus={focusTeal} onBlur={blurDefault}
+                  />
+                ) : (
+                  <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, margin: 0 }}>{profileData.about}</p>
+                )}
               </Field>
             </div>
 
             <Field label="Education">
-              <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
-                <GraduationCap size={15} color="#94A3B8" /> {profileData.degree}
-              </p>
+              {isEdit ? (
+                <input
+                  type="text" value={profileData.degree || ''}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, degree: e.target.value }))}
+                  placeholder="e.g. MBBS, MD" style={inputStyle}
+                  onFocus={focusTeal} onBlur={blurDefault}
+                />
+              ) : (
+                <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <GraduationCap size={15} color="#94A3B8" /> {profileData.degree}
+                </p>
+              )}
             </Field>
 
             <Field label="Speciality">
-              <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
-                <Stethoscope size={15} color="#94A3B8" /> {profileData.speciality}
-              </p>
+              {isEdit ? (
+                <select
+                  value={profileData.speciality || ''}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, speciality: e.target.value }))}
+                  style={inputStyle}
+                  onFocus={focusTeal} onBlur={blurDefault}
+                >
+                  {SPECIALITY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              ) : (
+                <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Stethoscope size={15} color="#94A3B8" /> {profileData.speciality}
+                </p>
+              )}
             </Field>
 
             <Field label="Experience">
-              <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
-                <Briefcase size={15} color="#94A3B8" /> {formatExperience(profileData.experience)}
-              </p>
+              {isEdit ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <input
+                    type="number" min={0}
+                    value={parseExperienceYears(profileData.experience) ?? ''}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, experience: formatExperienceYears(e.target.value) }))}
+                    style={inputStyle}
+                    onFocus={focusTeal} onBlur={blurDefault}
+                  />
+                  <span style={{ fontSize: 13, color: '#64748B', flexShrink: 0 }}>years</span>
+                </div>
+              ) : (
+                <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Briefcase size={15} color="#94A3B8" /> {formatExperience(profileData.experience)}
+                </p>
+              )}
             </Field>
+
+            <Field label="Phone">
+              {isEdit ? (
+                <input
+                  type="tel" value={profileData.phone || ''}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Contact number" style={inputStyle}
+                  onFocus={focusTeal} onBlur={blurDefault}
+                />
+              ) : (
+                <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Phone size={15} color="#94A3B8" /> {profileData.phone || '—'}
+                </p>
+              )}
+            </Field>
+
+            <Field label="Email">
+              <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+                <Mail size={15} color="#94A3B8" /> {profileData.email}
+              </p>
+              {isEdit && <p style={{ fontSize: 11, color: '#94A3B8', margin: '5px 0 0' }}>Contact support to change your login email.</p>}
+            </Field>
+
+            <Field label="Working Hours">
+              {isEdit ? (
+                <input
+                  type="text" value={profileData.workingHours || ''}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, workingHours: e.target.value }))}
+                  placeholder="e.g. Mon–Fri, 9:00 AM – 5:00 PM" style={inputStyle}
+                  onFocus={focusTeal} onBlur={blurDefault}
+                />
+              ) : (
+                <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Clock size={15} color="#94A3B8" /> {profileData.workingHours || '—'}
+                </p>
+              )}
+            </Field>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Field label="Languages">
+                {isEdit ? (
+                  <div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: (profileData.languages || []).length ? 10 : 0 }}>
+                      {(profileData.languages || []).map((lang, i) => (
+                        <span key={`${lang}-${i}`} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F0FDFA',
+                          border: '1px solid #99F6E4', color: '#0D9488', fontSize: 12, fontWeight: 600,
+                          padding: '5px 10px 5px 12px', borderRadius: 99
+                        }}>
+                          {lang}
+                          <button
+                            type="button" onClick={() => removeLanguage(i)}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#0D9488', display: 'flex', padding: 0 }}
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        type="text" value={languageInput}
+                        onChange={(e) => setLanguageInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLanguage() } }}
+                        placeholder="Add a language and press Enter"
+                        style={{ ...inputStyle, flex: 1 }}
+                        onFocus={focusTeal} onBlur={blurDefault}
+                      />
+                      <button
+                        type="button" onClick={addLanguage}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 6, padding: '0 16px', borderRadius: 10,
+                          border: '1.5px solid #E2E8F0', background: '#FFFFFF', color: '#2563EB',
+                          fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif'
+                        }}
+                      >
+                        <Plus size={14} /> Add
+                      </button>
+                    </div>
+                  </div>
+                ) : (profileData.languages || []).length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {profileData.languages.map((lang, i) => (
+                      <span key={`${lang}-${i}`} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5, background: '#F0FDFA',
+                        border: '1px solid #99F6E4', color: '#0D9488', fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 99
+                      }}>
+                        <LanguagesIcon size={11} /> {lang}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 14, color: '#94A3B8', margin: 0 }}>—</p>
+                )}
+              </Field>
+            </div>
 
             <Field label="Consultation Fee">
               {isEdit ? (
@@ -738,6 +1013,16 @@ const DoctorProfile = () => {
           onSubmit={submitReply}
         />
       )}
+
+      <ConfirmDialog
+        open={removeAvatarConfirmOpen}
+        title="Remove profile picture?"
+        message="This clears your photo here. You'll need to upload a new one before saving."
+        confirmLabel="Remove"
+        destructive
+        onConfirm={confirmRemoveAvatar}
+        onClose={() => setRemoveAvatarConfirmOpen(false)}
+      />
     </div>
   )
 }
