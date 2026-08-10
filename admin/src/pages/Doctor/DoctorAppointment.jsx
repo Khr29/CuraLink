@@ -336,6 +336,11 @@ const MedicalRecordModal = ({ appointment, dToken, backendUrl, onClose }) => {
 
   const finalize = async () => {
     if (!diagnosis.trim()) return toast.error('Diagnosis is required before finalizing')
+    // Mirrors the backend's finalize-time check (medicalRecordController.js)
+    // so an incomplete medication is caught here instead of round-tripping
+    // to the API first.
+    const incomplete = cleanPrescription().find((p) => !p.dose.trim() || !p.frequency)
+    if (incomplete) return toast.error(`"${incomplete.medicineName}" needs a dose and frequency before finalizing`)
     setSaving(true)
     try {
       await axios.post(`${backendUrl}/api/medical-records/draft`, {
@@ -386,7 +391,21 @@ const MedicalRecordModal = ({ appointment, dToken, backendUrl, onClose }) => {
           </h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}><X size={20} /></button>
         </div>
-        <p style={{ fontSize: 13, color: '#64748B', marginBottom: 18 }}>{appointment.userData?.name} · {appointment.slotDate}</p>
+        {/* Patient identity, confirmed up front — this record is locked to
+            the patient on this specific appointment (medicalRecordModel is
+            keyed 1:1 by appointmentId), so there's no separate "pick a
+            patient" step where the wrong one could be selected by mistake. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, padding: '10px 12px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: 12 }}>
+          {appointment.userData?.image && (
+            <img src={appointment.userData.image} alt="" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+          )}
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', margin: 0 }}>{appointment.userData?.name}</p>
+            <p style={{ fontSize: 11.5, color: '#64748B', margin: '1px 0 0' }}>
+              {[appointment.userData?.email, appointment.userData?.phone].filter(Boolean).join(' · ') || appointment.slotDate}
+            </p>
+          </div>
+        </div>
 
         {loading ? (
           <p style={{ color: '#94A3B8', fontSize: 13 }}>Loading...</p>

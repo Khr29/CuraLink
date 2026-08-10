@@ -1,12 +1,15 @@
 import doctorModel from "../models/doctorModel.js";
 import doctorScheduleModel from "../models/doctorScheduleModel.js";
 import { computeAvailableSlots } from "../utils/slotGenerator.js";
+import { nowIST, istCalendarDate } from "../utils/istTime.js";
 
 const SLOT_DURATIONS = [15, 20, 30, 60];
 const DEFAULT_SLOT_DAYS = 7;
 const MAX_SLOT_DAYS = 30;
 
-const slotDateKey = (date) => `${date.getDate()}_${date.getMonth() + 1}_${date.getFullYear()}`;
+// date is IST-anchored (istCalendarDate) — must read it via the UTC
+// accessors, matching slotGenerator.js's convention.
+const slotDateKey = (date) => `${date.getUTCDate()}_${date.getUTCMonth() + 1}_${date.getUTCFullYear()}`;
 
 // A schedule always scopes to wherever the doctor is CURRENTLY affiliated —
 // hospitalId comes from the doctor record, never from the caller.
@@ -144,10 +147,10 @@ const getAvailableSlots = async (req, res) => {
     const days = Math.min(Number(req.query.days) || DEFAULT_SLOT_DAYS, MAX_SLOT_DAYS);
     const schedule = await findScheduleForDoctor(doctor);
 
-    const now = new Date();
+    const now = nowIST();
     const slots = {};
     for (let i = 0; i < days; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      const date = istCalendarDate(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + i);
       const key = slotDateKey(date);
       const booked = doctor.slots_booked?.[key] || [];
       slots[key] = computeAvailableSlots(schedule, date, booked, now);

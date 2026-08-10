@@ -27,6 +27,7 @@ const PrescriptionsPage = lazy(() => import("./pages/Portal/PrescriptionsPage"))
 const ReviewsPage = lazy(() => import("./pages/Portal/ReviewsPage"));
 const NotificationsPage = lazy(() => import("./pages/Portal/NotificationsPage"));
 const SettingsPage = lazy(() => import("./pages/Portal/SettingsPage"));
+const VerifyPrescription = lazy(() => import("./pages/VerifyPrescription"));
 
 // Loading Spinner
 const PageLoader = () => (
@@ -85,6 +86,9 @@ const App = () => {
                 <Route path="/reviews" element={<ReviewsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+
+                {/* Public prescription verification */}
+                <Route path="/verify/:token" element={<VerifyPrescription />} />
 
                 {/* Other */}
                 <Route path="/login" element={<Login />} />

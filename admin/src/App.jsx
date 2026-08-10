@@ -47,6 +47,11 @@ const HospitalGallery = lazy(() => import('./pages/Hospital/HospitalGallery'))
 const HospitalProfile = lazy(() => import('./pages/Hospital/HospitalProfile'))
 const HospitalSettings = lazy(() => import('./pages/Hospital/HospitalSettings'))
 
+// Lazy loaded Hospital Portal — Pharmacy section
+const HospitalPharmacyOverview = lazy(() => import('./pages/Hospital/PharmacyOverview'))
+const HospitalPharmacyVerify = lazy(() => import('./pages/Hospital/PharmacyVerify'))
+const HospitalPharmacyHistory = lazy(() => import('./pages/Hospital/PharmacyHistory'))
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="flex justify-center items-center h-full min-h-[50vh]">
@@ -197,6 +202,19 @@ const App = () => {
 
       <Route path="/hospital-settings" element={
         <ProtectedRoute token={hToken}><PanelLayout><HospitalSettings /></PanelLayout></ProtectedRoute>
+      } />
+
+      {/* Hospital Portal — Pharmacy section (same auth/layout as the rest of the Hospital Portal) */}
+      <Route path="/hospital-pharmacy" element={
+        <ProtectedRoute token={hToken}><PanelLayout><HospitalPharmacyOverview /></PanelLayout></ProtectedRoute>
+      } />
+
+      <Route path="/hospital-pharmacy/verify" element={
+        <ProtectedRoute token={hToken}><PanelLayout><HospitalPharmacyVerify /></PanelLayout></ProtectedRoute>
+      } />
+
+      <Route path="/hospital-pharmacy/history" element={
+        <ProtectedRoute token={hToken}><PanelLayout><HospitalPharmacyHistory /></PanelLayout></ProtectedRoute>
       } />
 
     </Routes>

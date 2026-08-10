@@ -2,6 +2,13 @@
 // (backend/controllers/scheduleController.js) and appointment booking
 // (backend/controllers/userController.js) — one source of truth for
 // "what times can this doctor be booked at on this date."
+//
+// Every Date here is IST-calendar-anchored via istCalendarDate/nowIST (see
+// utils/istTime.js) and read back with the UTC accessors — never the local
+// ones — so slot generation is correct regardless of the host server's own
+// timezone. Mixing local and UTC accessors on these dates would silently
+// reintroduce the bug this fixes.
+import { istCalendarDate, nowIST } from "./istTime.js";
 
 // slotDate is this codebase's "D_M_YYYY" convention (no leading zeros).
 export const parseSlotDate = (slotDate) => {
@@ -10,7 +17,7 @@ export const parseSlotDate = (slotDate) => {
   if (parts.length !== 3) return null;
   const [day, month, year] = parts.map(Number);
   if (!day || !month || !year) return null;
-  const date = new Date(year, month - 1, day);
+  const date = istCalendarDate(year, month - 1, day);
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
@@ -56,19 +63,19 @@ const LEGACY_FALLBACK_SCHEDULE = {
 
 /**
  * @param {object|null} scheduleDoc - a doctorScheduleModel document (or plain object), or null/undefined to use the legacy fallback
- * @param {Date} dateObj - the calendar date to generate slots for
+ * @param {Date} dateObj - the calendar date to generate slots for (IST-anchored — see istCalendarDate)
  * @param {string[]} bookedTimesForDate - raw slots_booked[dateKey] values (legacy or canonical format)
- * @param {Date} [now] - injectable for testing; defaults to current time
+ * @param {Date} [now] - injectable for testing; defaults to the current IST instant (nowIST())
  * @returns {string[]} canonical "HH:mm" slot times, already excluding booked/past/break times
  */
-export function computeAvailableSlots(scheduleDoc, dateObj, bookedTimesForDate = [], now = new Date()) {
+export function computeAvailableSlots(scheduleDoc, dateObj, bookedTimesForDate = [], now = nowIST()) {
   if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) return [];
 
   const schedule = scheduleDoc || LEGACY_FALLBACK_SCHEDULE;
-  const dateISO = `${dateObj.getFullYear()}-${pad2(dateObj.getMonth() + 1)}-${pad2(dateObj.getDate())}`;
+  const dateISO = `${dateObj.getUTCFullYear()}-${pad2(dateObj.getUTCMonth() + 1)}-${pad2(dateObj.getUTCDate())}`;
   if (schedule.unavailableDates?.includes(dateISO)) return [];
 
-  const dayOfWeek = dateObj.getDay();
+  const dayOfWeek = dateObj.getUTCDay();
   const dayPattern = (schedule.weeklyPattern || []).find((p) => p.dayOfWeek === dayOfWeek);
   if (!dayPattern || dayPattern.isWorking === false) return [];
 
@@ -92,10 +99,10 @@ export function computeAvailableSlots(scheduleDoc, dateObj, bookedTimesForDate =
   );
 
   const isToday =
-    dateObj.getFullYear() === now.getFullYear() &&
-    dateObj.getMonth() === now.getMonth() &&
-    dateObj.getDate() === now.getDate();
-  const nowMinutes = toMinutes({ hour: now.getHours(), minute: now.getMinutes() });
+    dateObj.getUTCFullYear() === now.getUTCFullYear() &&
+    dateObj.getUTCMonth() === now.getUTCMonth() &&
+    dateObj.getUTCDate() === now.getUTCDate();
+  const nowMinutes = toMinutes({ hour: now.getUTCHours(), minute: now.getUTCMinutes() });
 
   const slots = [];
   for (const shift of dayPattern.shifts || []) {

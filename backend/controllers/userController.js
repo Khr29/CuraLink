@@ -7,6 +7,7 @@ import doctorModel from "../models/doctorModel.js";
 import doctorScheduleModel from "../models/doctorScheduleModel.js";
 import hospitalModel from "../models/hospitalModel.js";
 import { computeAvailableSlots, parseSlotDate, parseSlotTime } from "../utils/slotGenerator.js";
+import { nowIST, istCalendarDate } from "../utils/istTime.js";
 import razorpay from "razorpay";
 import { sendEmail } from "../utils/email.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
@@ -488,13 +489,15 @@ const bookAppointment = async (req, res) => {
     if (!dateOnly) {
       return res.json({ success: false, message: "Invalid appointment date" });
     }
-    const now = new Date();
-    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const now = nowIST();
+    const todayOnly = istCalendarDate(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
     if (dateOnly < todayOnly) {
       return res.json({ success: false, message: "Cannot book an appointment in the past" });
     }
-    const maxAdvance = new Date(todayOnly);
-    maxAdvance.setDate(maxAdvance.getDate() + MAX_ADVANCE_BOOKING_DAYS);
+    // istCalendarDate is UTC-anchored — setDate()/getDate() are host-local
+    // and would reintroduce the same timezone bug, so advance the day count
+    // via the UTC accessor instead.
+    const maxAdvance = istCalendarDate(todayOnly.getUTCFullYear(), todayOnly.getUTCMonth(), todayOnly.getUTCDate() + MAX_ADVANCE_BOOKING_DAYS);
     if (dateOnly > maxAdvance) {
       return res.json({ success: false, message: "This date is too far in advance to book" });
     }
