@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { NavLink } from "react-router-dom";
+import React, { useContext, useMemo, useCallback } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   UserCircle,
@@ -9,7 +9,9 @@ import {
   MessageSquare,
   Bell,
   Settings,
+  LogOut,
 } from "lucide-react";
+import { AppContext } from "../context/AppContext";
 
 // Patient portal's own in-section navigation — deliberately matches the
 // Doctor/Hospital dashboards' sidebar: flush against the true left edge of
@@ -31,6 +33,14 @@ const menuItems = [
 
 const PortalSidebar = () => {
   const items = useMemo(() => menuItems, []);
+  const { setToken } = useContext(AppContext);
+  const navigate = useNavigate();
+
+  const logout = useCallback(() => {
+    setToken(false);
+    localStorage.removeItem("token");
+    navigate("/login");
+  }, [setToken, navigate]);
 
   return (
     <>
@@ -76,6 +86,16 @@ const PortalSidebar = () => {
             </NavLink>
           ))}
         </nav>
+
+        <div className="px-3 py-4 border-t border-white/10">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all duration-200"
+          >
+            <LogOut size={15} />
+            Logout
+          </button>
+        </div>
       </aside>
 
       {/* Mobile — horizontal scrollable pill bar */}
@@ -92,6 +112,13 @@ const PortalSidebar = () => {
             {item.name}
           </NavLink>
         ))}
+        <button
+          onClick={logout}
+          className="filter-pill flex-shrink-0 w-auto inline-flex items-center gap-1.5 text-red-500"
+        >
+          <LogOut size={14} />
+          Logout
+        </button>
       </nav>
     </>
   );
