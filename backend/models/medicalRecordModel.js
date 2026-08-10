@@ -96,6 +96,56 @@ const medicalRecordSchema = new mongoose.Schema(
     finalizedAt: { type: Date, default: null },
 
     versions: { type: [versionSchema], default: [] },
+
+    // ==========================
+    // Pharmacy / secure prescription — assigned by finalizeRecord only when
+    // the record actually carries medications. Old finalized records (and
+    // any record with no prescription items) simply have these at their
+    // defaults — no migration, nothing reads them until they're set.
+    // ==========================
+
+    // Public-facing sequential ID (RX-2026-000142). Never used for
+    // verification/authorization — see verificationToken. No `default` here
+    // deliberately: a sparse unique index only skips documents where the
+    // field is genuinely ABSENT — Mongoose's `default: null` would instead
+    // write an explicit `null` into every record, and MongoDB's sparse
+    // index treats that as a real (colliding) value, breaking as soon as a
+    // second record without a prescription is created.
+    prescriptionId: { type: String, unique: true, sparse: true },
+
+    // High-entropy capability token the QR code / verify link actually
+    // carries. select:false so it's never returned by a plain .find()/
+    // .findOne() — every read path that legitimately needs it opts in with
+    // .select("+verificationToken") explicitly. No `default` — same sparse-
+    // index reasoning as prescriptionId above.
+    verificationToken: { type: String, unique: true, sparse: true, select: false },
+
+    prescriptionStatus: {
+      type: String,
+      enum: ["none", "active", "revoked"],
+      default: "none",
+    },
+    revokedAt: { type: Date, default: null },
+    revokedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+
+    // Pharmacy-fulfillment status — separate from prescriptionStatus (which
+    // tracks the prescription's own validity, not whether it's been filled
+    // yet). Dispensing is performed through the Hospital Portal's Pharmacy
+    // section (authHospital), not a separate pharmacy account — dispensedBy
+    // is whichever hospital verified/dispensed it, which may differ from
+    // the prescribing hospital (a patient can fill a prescription at any
+    // hospital's pharmacy).
+    dispensing: {
+      status: {
+        type: String,
+        enum: ["not_applicable", "pending", "partially_dispensed", "dispensed"],
+        default: "not_applicable",
+      },
+      dispensedBy: { type: mongoose.Schema.Types.ObjectId, ref: "hospital", default: null },
+      dispensedByName: { type: String, default: "" },
+      dispensedAt: { type: Date, default: null },
+      notes: { type: String, default: "" },
+    },
   },
   { timestamps: true, minimize: false }
 );

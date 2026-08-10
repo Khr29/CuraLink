@@ -118,6 +118,21 @@ const Appointments = () => {
   useEffect(() => { fetchDocInfo(); }, [fetchDocInfo]);
   useEffect(() => { getAvailableSlots(); }, [getAvailableSlots]);
 
+  // docInfo.available is a general on/off toggle (see doctorController's
+  // changeAvailability) — it says nothing about whether TODAY specifically
+  // has open slots. Labelling it "Available Today" regardless of the real,
+  // schedule-computed slots (docSlots, same backend source the booking
+  // widget below uses) is exactly the bug: the badge could say "Available
+  // Today" while the slot picker directly underneath says "No Slots
+  // Available." Once slots have loaded, fold in whether today actually has
+  // any before making that specific claim.
+  const todaySlotCount = docSlots[0]?.slots?.length ?? null; // null = not loaded yet
+  const availabilityBadge = !docInfo?.available
+    ? { label: "Unavailable", className: "badge-slate", dotClassName: "bg-slate-400" }
+    : todaySlotCount === 0
+      ? { label: "No Slots Today", className: "badge-amber", dotClassName: "bg-amber-500" }
+      : { label: "Available Today", className: "badge-green", dotClassName: "bg-accent animate-pulse" };
+
   if (!docInfo) {
     return (
       <div className="page-loader">
@@ -197,9 +212,9 @@ const Appointments = () => {
             </div>
             <div className="text-right">
               <p className="text-xs text-text-muted mb-0.5">Availability</p>
-              <span className={`badge ${docInfo.available ? "badge-green" : "badge-slate"}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${docInfo.available ? "bg-accent animate-pulse" : "bg-slate-400"}`} />
-                {docInfo.available ? "Available Today" : "Unavailable"}
+              <span className={`badge ${availabilityBadge.className}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${availabilityBadge.dotClassName}`} />
+                {availabilityBadge.label}
               </span>
             </div>
           </div>

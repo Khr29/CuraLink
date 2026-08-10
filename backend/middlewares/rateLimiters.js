@@ -135,6 +135,17 @@ export const bookingLimiter = make(
   "Too many booking attempts. Please wait a moment and try again."
 );
 
+// Guards the public prescription-verification endpoint against token
+// guessing — the token itself is 48 hex chars of crypto randomness, but a
+// generous ceiling here still costs an attacker nothing to respect and
+// gives defense in depth against brute-forcing a valid one.
+export const prescriptionVerifyLimiter = make(
+  "prescription-verify",
+  10 * 60 * 1000,
+  20,
+  "Too many verification attempts. Please wait a few minutes and try again."
+);
+
 // ============================================================
 // General API safety net — NOT a per-endpoint security control (those are
 // the limiters above). This exists purely to bound genuine abuse/flooding

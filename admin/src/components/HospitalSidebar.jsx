@@ -11,7 +11,10 @@ import {
   Settings,
   LogOut,
   UserCheck,
-  Users
+  Users,
+  Pill,
+  QrCode,
+  History
 } from 'lucide-react'
 import { HospitalContext } from '../context/HospitalContext'
 
@@ -27,6 +30,9 @@ const HospitalSidebar = () => {
     { name: 'Departments', path: '/hospital-departments', icon: Building2 },
     { name: 'Appointments', path: '/hospital-appointments', icon: CalendarDays },
     { name: 'Patients', path: '/hospital-patients', icon: Users },
+    { name: 'Pharmacy', path: '/hospital-pharmacy', icon: Pill },
+    { name: 'Verify & Dispense', path: '/hospital-pharmacy/verify', icon: QrCode },
+    { name: 'Dispensing History', path: '/hospital-pharmacy/history', icon: History },
     { name: 'Reviews', path: '/hospital-my-reviews', icon: MessageSquare },
     { name: 'Gallery', path: '/hospital-gallery', icon: Images },
     { name: 'Profile', path: '/hospital-profile', icon: UserCog },
