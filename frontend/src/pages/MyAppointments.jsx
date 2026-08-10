@@ -270,7 +270,7 @@ const MyAppointments = () => {
                   <button
                     onClick={() => cancelAppointment(item._id)}
                     disabled={cancellingId === item._id}
-                    className="btn btn-sm btn-ghost border-danger/30 text-danger hover:bg-red-50 w-full justify-center"
+                    className="btn btn-sm btn-danger w-full justify-center"
                   >
                     {cancellingId === item._id ? "Cancelling..." : "Cancel"}
                   </button>

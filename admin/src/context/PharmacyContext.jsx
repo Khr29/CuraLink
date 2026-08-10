@@ -122,11 +122,16 @@ const PharmacyContextProvider = (props) => {
         }
     }, [backendUrl, pToken])
 
-    const dispensePrescription = useCallback(async (token, status, notes) => {
+    // Dispenses `quantity` units of the medicine at `medicineIndex` in THIS
+    // action (not the new total) — supports partial dispensing across
+    // multiple visits. The backend rejects (success: false) if quantity
+    // exceeds what's actually remaining, so the toast here surfaces that
+    // rejection with the server's specific "only N remaining" message.
+    const dispensePrescription = useCallback(async (token, medicineIndex, quantity, notes) => {
         try {
             const { data } = await axios.post(
                 backendUrl + '/api/medical-records/pharmacy/dispense/' + token,
-                { status, notes },
+                { medicineIndex, quantity, notes },
                 { headers: { ptoken: pToken } }
             )
             if (data.success) {

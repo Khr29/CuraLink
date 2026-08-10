@@ -9,7 +9,7 @@ const refreshTokenSchema = new mongoose.Schema(
   {
     actorType: {
       type: String,
-      enum: ["admin", "doctor", "hospital", "user"],
+      enum: ["admin", "doctor", "hospital", "user", "pharmacy"],
       required: true,
     },
     actorId: {

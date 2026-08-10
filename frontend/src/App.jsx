@@ -1,12 +1,31 @@
 import React, { Suspense, lazy } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import PortalTopBar from "./components/PortalTopBar";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
+
+// Authenticated Patient Portal routes (every page wrapped in PortalLayout —
+// see components/PortalLayout.jsx) get their own application-style shell
+// instead of the public marketing site's Navbar+Footer, so the portal reads
+// as its own product (same idea as the Doctor/Hospital/Pharmacy admin app
+// shells) rather than a dashboard bolted onto the public website. Public
+// pages (Home, Doctors, Hospitals, About, Contact, auth, the public /verify
+// page) are completely untouched.
+const PORTAL_PATH_PREFIXES = [
+  "/dashboard",
+  "/my-profile",
+  "/medical-records",
+  "/prescriptions",
+  "/my-appointments",
+  "/reviews",
+  "/notifications",
+  "/settings",
+];
 
 // Lazy loaded pages
 const Home = lazy(() => import("./pages/Home"));
@@ -37,6 +56,9 @@ const PageLoader = () => (
 );
 
 const App = () => {
+  const location = useLocation();
+  const isPortalRoute = PORTAL_PATH_PREFIXES.some((p) => location.pathname.startsWith(p));
+
   return (
     <div className="flex flex-col min-h-screen">
 
@@ -46,8 +68,11 @@ const App = () => {
           internal max-w-7xl centering, so marketing pages look identical,
           but this is what lets its left edge line up with the Patient
           Portal's full-bleed sidebar (see PortalLayout.jsx) instead of
-          leaving a mismatched notch in the top-left/top-right corners. */}
-      <Navbar />
+          leaving a mismatched notch in the top-left/top-right corners.
+          Portal routes get PortalTopBar instead — no public nav links, no
+          duplicate "account menu" navigation (PortalSidebar is the one
+          navigation surface there). */}
+      {isPortalRoute ? <PortalTopBar /> : <Navbar />}
 
       {/* Automatically scroll to top on every page change */}
       <ScrollToTop />
@@ -104,7 +129,7 @@ const App = () => {
         </main>
       </div>
 
-      <Footer />
+      {!isPortalRoute && <Footer />}
 
     </div>
   );

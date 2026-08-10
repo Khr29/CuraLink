@@ -26,6 +26,15 @@ const prescriptionItemSchema = new mongoose.Schema(
     route: { type: String, enum: ROUTES, default: "Oral" },
     timing: { type: String, enum: TIMING_OPTIONS, default: "Anytime" },
     quantity: { type: String, default: "", trim: true },
+
+    // Numeric dispensing counters — derived from `quantity` (free text, e.g.
+    // "30 tablets") by medicalRecordController.js's parseLeadingQuantity,
+    // never entered directly by the doctor, so the prescribing form/workflow
+    // is unchanged. Defaults to 1 when `quantity` has no parseable leading
+    // number, meaning that item is treated as a single dispense-once unit
+    // rather than tracked in fractional amounts.
+    quantityPrescribed: { type: Number, default: 1, min: 1 },
+    dispensedQuantity: { type: Number, default: 0, min: 0 },
   },
   { _id: false }
 );
@@ -145,6 +154,29 @@ const medicalRecordSchema = new mongoose.Schema(
       dispensedByName: { type: String, default: "" },
       dispensedAt: { type: Date, default: null },
       notes: { type: String, default: "" },
+    },
+
+    // Auditable, append-only dispensing ledger — one entry per dispense
+    // action (never overwritten or removed), which is what actually backs
+    // `dispensing` above (a convenience rollup recomputed after every
+    // append). `prescription[].dispensedQuantity` is the running total per
+    // medicine and the one over-dispense guard actually checks against
+    // (medicalRecordController.js#pharmacyDispense) — this array exists so
+    // "who dispensed what, how much, and when" can never be lost the way a
+    // single overwritten object would lose it.
+    dispensingRecords: {
+      type: [
+        {
+          pharmacyId: { type: mongoose.Schema.Types.ObjectId, ref: "pharmacy", required: true },
+          pharmacyName: { type: String, default: "" },
+          medicineIndex: { type: Number, required: true },
+          medicineName: { type: String, default: "" },
+          quantityDispensed: { type: Number, required: true, min: 1 },
+          notes: { type: String, default: "" },
+          dispensedAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
     },
   },
   { timestamps: true, minimize: false }
