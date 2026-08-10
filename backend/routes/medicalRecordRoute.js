@@ -20,6 +20,7 @@ import {
 import authDoctor from "../middlewares/authDoctor.js";
 import authUser from "../middlewares/authUser.js";
 import authHospital from "../middlewares/authHospital.js";
+import authPharmacy from "../middlewares/authPharmacy.js";
 import authAdmin from "../middlewares/authAdmin.js";
 import upload from "../middlewares/multer.js";
 import { prescriptionVerifyLimiter } from "../middlewares/rateLimiters.js";
@@ -83,14 +84,14 @@ medicalRecordRouter.post("/revoke", authDoctorOrAdmin, revokePrescription);
 medicalRecordRouter.get("/verify/:token", prescriptionVerifyLimiter, verifyPrescription);
 
 // =====================================
-// Pharmacy — part of the Hospital Portal (authHospital), not a separate
-// account type. Authorized access to a specific prescription by its
+// Pharmacy — a first-class authenticated role (authPharmacy), separate from
+// the Hospital Portal. Authorized access to a specific prescription by its
 // verification token (from a scanned QR or the verify link), dispensing,
-// and the Pharmacy section's own dashboard stats/history.
+// and the Pharmacy portal's own dashboard stats/history.
 // =====================================
-medicalRecordRouter.get("/pharmacy/verify/:token", authHospital, pharmacyVerifyPrescription);
-medicalRecordRouter.post("/pharmacy/dispense/:token", authHospital, pharmacyDispense);
-medicalRecordRouter.get("/pharmacy/stats", authHospital, getPharmacyStats);
-medicalRecordRouter.get("/pharmacy/history", authHospital, getPharmacyHistory);
+medicalRecordRouter.get("/pharmacy/verify/:token", authPharmacy, pharmacyVerifyPrescription);
+medicalRecordRouter.post("/pharmacy/dispense/:token", authPharmacy, pharmacyDispense);
+medicalRecordRouter.get("/pharmacy/stats", authPharmacy, getPharmacyStats);
+medicalRecordRouter.get("/pharmacy/history", authPharmacy, getPharmacyHistory);
 
 export default medicalRecordRouter;

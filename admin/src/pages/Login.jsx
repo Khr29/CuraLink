@@ -158,6 +158,7 @@ import { assets } from '../assets/assets'
 import { AdminContext } from '../context/AdminContext'
 import { DoctorContext } from '../context/DoctorContext'
 import { HospitalContext } from '../context/HospitalContext'
+import { PharmacyContext } from '../context/PharmacyContext'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { useNavigate, Link } from 'react-router-dom'
@@ -166,12 +167,14 @@ const LOGIN_ROUTES = {
   Admin: { url: '/api/admin/login', tokenKey: 'aToken', dashboard: '/admin-dashboard' },
   Doctor: { url: '/api/doctor/login', tokenKey: 'dToken', dashboard: '/doctor-dashboard' },
   Hospital: { url: '/api/hospital/login', tokenKey: 'hToken', dashboard: '/hospital-dashboard' },
+  Pharmacy: { url: '/api/pharmacy/login', tokenKey: 'pToken', dashboard: '/pharmacy-dashboard' },
 }
 
 const ROLE_ACCENT = {
   Admin: { active: 'linear-gradient(135deg, #0EA5E9, #0284C7)', dot: '#0EA5E9', text: '#0284C7', glow: 'rgba(14,165,233,0.35)', ring: 'rgba(14,165,233,0.12)' },
   Doctor: { active: 'linear-gradient(135deg, #14B8A6, #0D9488)', dot: '#14B8A6', text: '#0D9488', glow: 'rgba(20,184,166,0.35)', ring: 'rgba(20,184,166,0.12)' },
   Hospital: { active: 'linear-gradient(135deg, #2563EB, #1D4ED8)', dot: '#2563EB', text: '#1D4ED8', glow: 'rgba(37,99,235,0.35)', ring: 'rgba(37,99,235,0.12)' },
+  Pharmacy: { active: 'linear-gradient(135deg, #14B8A6, #0F766E)', dot: '#14B8A6', text: '#0F766E', glow: 'rgba(20,184,166,0.35)', ring: 'rgba(20,184,166,0.12)' },
 }
 
 const Login = () => {
@@ -185,6 +188,7 @@ const Login = () => {
   const { setAToken, backendUrl } = useContext(AdminContext)
   const { setDToken } = useContext(DoctorContext)
   const { setHToken } = useContext(HospitalContext)
+  const { setPToken } = useContext(PharmacyContext)
   const navigate = useNavigate()
 
   const onSubmitHandler = useCallback(async (event) => {
@@ -197,14 +201,15 @@ const Login = () => {
 
       if (data.success) {
         // Only one role is ever logged in at a time — clear the other tokens.
-        ['aToken', 'dToken', 'hToken'].forEach((key) => {
+        ['aToken', 'dToken', 'hToken', 'pToken'].forEach((key) => {
           if (key !== tokenKey) localStorage.removeItem(key)
         })
         localStorage.setItem(tokenKey, data.token)
 
         if (tokenKey === 'aToken') setAToken(data.token)
         else if (tokenKey === 'dToken') setDToken(data.token)
-        else setHToken(data.token)
+        else if (tokenKey === 'hToken') setHToken(data.token)
+        else setPToken(data.token)
 
         navigate(dashboard)
         toast.success('Login successful 🚀')
@@ -217,7 +222,7 @@ const Login = () => {
     } finally {
       setLoading(false)
     }
-  }, [state, email, password, rememberMe, backendUrl, setAToken, setDToken, setHToken, navigate])
+  }, [state, email, password, rememberMe, backendUrl, setAToken, setDToken, setHToken, setPToken, navigate])
 
   const accent = ROLE_ACCENT[state]
 
@@ -303,10 +308,10 @@ const Login = () => {
           </div>
 
           {/* Role Toggle */}
-          <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 28 }}>
-            {['Admin', 'Doctor', 'Hospital'].map((role) => (
+          <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 28, flexWrap: 'wrap' }}>
+            {['Admin', 'Doctor', 'Hospital', 'Pharmacy'].map((role) => (
               <button key={role} type="button" onClick={() => setState(role)} style={{
-                flex: 1, padding: '9px 0', borderRadius: 9, border: 'none',
+                flex: 1, minWidth: 80, padding: '9px 0', borderRadius: 9, border: 'none',
                 fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 0.2s',
                 background: state === role ? ROLE_ACCENT[role].active : 'transparent',
@@ -314,7 +319,7 @@ const Login = () => {
                 boxShadow: state === role ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
                 fontFamily: 'Inter, sans-serif'
               }}>
-                {role === 'Admin' ? '🛡️' : role === 'Doctor' ? '🩺' : '🏥'} {role}
+                {role === 'Admin' ? '🛡️' : role === 'Doctor' ? '🩺' : role === 'Hospital' ? '🏥' : '💊'} {role}
               </button>
             ))}
           </div>

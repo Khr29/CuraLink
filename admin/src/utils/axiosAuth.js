@@ -2,8 +2,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 // Access tokens are short-lived (15 min) by design — see backend/utils/tokens.js.
-// This app hosts three roles (admin/doctor/hospital) sharing one axios
-// instance, so the interceptor inspects which token header a failed
+// This app hosts four roles (admin/doctor/hospital/pharmacy) sharing one
+// axios instance, so the interceptor inspects which token header a failed
 // request used to know which refresh endpoint / localStorage key / React
 // setter applies, refreshes silently via the httpOnly cookie, and retries
 // the request once.
@@ -11,6 +11,7 @@ const ROLE_CONFIG = {
   atoken: { refreshPath: "/api/admin/refresh-token", storageKey: "aToken" },
   dtoken: { refreshPath: "/api/doctor/refresh-token", storageKey: "dToken" },
   htoken: { refreshPath: "/api/hospital/refresh-token", storageKey: "hToken" },
+  ptoken: { refreshPath: "/api/pharmacy/refresh-token", storageKey: "pToken" },
 };
 
 const setters = {};

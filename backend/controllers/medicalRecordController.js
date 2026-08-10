@@ -2,7 +2,7 @@ import QRCode from "qrcode";
 import medicalRecordModel from "../models/medicalRecordModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import doctorModel from "../models/doctorModel.js";
-import hospitalModel from "../models/hospitalModel.js";
+import pharmacyModel from "../models/pharmacyModel.js";
 import auditLogModel from "../models/auditLogModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import { sanitizeText } from "../utils/sanitize.js";
@@ -495,15 +495,14 @@ export const revokePrescription = async (req, res) => {
 };
 
 // =============================
-// Pharmacy — AUTHORIZED access, performed through the Hospital Portal's own
-// Pharmacy section (authHospital), not a separate pharmacy account. Same
-// verificationToken as the public QR, but returns the fuller set a pharmacy
-// needs to safely dispense: medications, dispensing state, patient name —
-// never diagnosis, notes, attachments, or any other record on this patient.
-// Any authenticated, active hospital may verify a prescription regardless
-// of which hospital originally prescribed it — a patient can fill a
-// prescription at any pharmacy, and the verification token is what proves
-// authorization, not hospital affiliation.
+// Pharmacy — AUTHORIZED access, performed by an authenticated Pharmacy
+// account (authPharmacy). Same verificationToken as the public QR, but
+// returns the fuller set a pharmacy needs to safely dispense: medications,
+// dispensing state, patient name — never diagnosis, notes, attachments, or
+// any other record on this patient. Any authenticated, active pharmacy may
+// verify a prescription regardless of which hospital originally prescribed
+// it — a patient can fill a prescription at any pharmacy, and the
+// verification token is what proves authorization, not affiliation.
 // =============================
 export const pharmacyVerifyPrescription = async (req, res) => {
   try {
@@ -518,8 +517,8 @@ export const pharmacyVerifyPrescription = async (req, res) => {
     if (!record || record.status !== "finalized" || record.prescriptionStatus === "none") {
       await logAction({
         req,
-        actorType: "hospital",
-        actorId: req.hospitalId,
+        actorType: "pharmacy",
+        actorId: req.pharmacyId,
         action: AUDIT_ACTIONS.UNAUTHORIZED_ACCESS_ATTEMPT,
         target: { type: "medicalRecord", label: "unknown token" },
         status: "failure",
@@ -528,12 +527,12 @@ export const pharmacyVerifyPrescription = async (req, res) => {
       return res.status(404).json({ success: false, message: "Prescription not found" });
     }
 
-    const hospital = await hospitalModel.findById(req.hospitalId).select("name");
+    const pharmacy = await pharmacyModel.findById(req.pharmacyId).select("name");
     await logAction({
       req,
-      actorType: "hospital",
-      actorId: req.hospitalId,
-      actorLabel: hospital?.name || "",
+      actorType: "pharmacy",
+      actorId: req.pharmacyId,
+      actorLabel: pharmacy?.name || "",
       action: AUDIT_ACTIONS.PRESCRIPTION_ACCESSED_BY_PHARMACY,
       target: { type: "medicalRecord", id: record._id, label: record.prescriptionId },
       status: "success",
@@ -561,7 +560,7 @@ export const pharmacyVerifyPrescription = async (req, res) => {
 const DISPENSE_STATUSES = ["partially_dispensed", "dispensed"];
 
 // =============================
-// Pharmacy — record dispensing status (authHospital). Refuses anything but
+// Pharmacy — record dispensing status (authPharmacy). Refuses anything but
 // an active prescription (draft/revoked/not-yet-finalized can never be
 // dispensed). The doctor's prescribed dose/frequency/quantity are never
 // touched here — only the fulfillment status/notes.
@@ -579,12 +578,12 @@ export const pharmacyDispense = async (req, res) => {
       return res.json({ success: false, message: "This prescription is not available for dispensing" });
     }
 
-    const hospital = await hospitalModel.findById(req.hospitalId).select("name");
+    const pharmacy = await pharmacyModel.findById(req.pharmacyId).select("name");
 
     record.dispensing = {
       status,
-      dispensedBy: req.hospitalId,
-      dispensedByName: hospital?.name || "",
+      dispensedBy: req.pharmacyId,
+      dispensedByName: pharmacy?.name || "",
       dispensedAt: new Date(),
       notes: sanitizeText(notes || "", { maxLength: MAX_DISPENSE_NOTES_LEN }),
     };
@@ -592,9 +591,9 @@ export const pharmacyDispense = async (req, res) => {
 
     await logAction({
       req,
-      actorType: "hospital",
-      actorId: req.hospitalId,
-      actorLabel: hospital?.name || "",
+      actorType: "pharmacy",
+      actorId: req.pharmacyId,
+      actorLabel: pharmacy?.name || "",
       action: AUDIT_ACTIONS.PRESCRIPTION_DISPENSED,
       target: { type: "medicalRecord", id: record._id, label: record.prescriptionId },
       newValue: { status },
@@ -609,34 +608,34 @@ export const pharmacyDispense = async (req, res) => {
 };
 
 // =============================
-// Pharmacy — dashboard stats for the logged-in hospital's own Pharmacy
-// section. Built from this hospital's own dispensing activity (medical
-// records it has dispensed against, plus its own audit-log entries) — not
-// a global queue, since any hospital may verify/dispense any patient's
-// prescription and there's no per-hospital "incoming" queue to track.
+// Pharmacy — dashboard stats for the logged-in Pharmacy account. Built from
+// this pharmacy's own dispensing activity (medical records it has dispensed
+// against, plus its own audit-log entries) — not a global queue, since any
+// pharmacy may verify/dispense any patient's prescription and there's no
+// per-pharmacy "incoming" queue to track.
 // =============================
 export const getPharmacyStats = async (req, res) => {
   try {
-    const hospitalId = req.hospitalId;
+    const pharmacyId = req.pharmacyId;
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
     const [verifiedToday, dispensedToday, dispensedTotal, partiallyDispensed, revokedTouched] = await Promise.all([
       auditLogModel.countDocuments({
-        actorType: "hospital",
-        actorId: hospitalId,
+        actorType: "pharmacy",
+        actorId: pharmacyId,
         action: AUDIT_ACTIONS.PRESCRIPTION_ACCESSED_BY_PHARMACY,
         createdAt: { $gte: startOfToday },
       }),
       auditLogModel.countDocuments({
-        actorType: "hospital",
-        actorId: hospitalId,
+        actorType: "pharmacy",
+        actorId: pharmacyId,
         action: AUDIT_ACTIONS.PRESCRIPTION_DISPENSED,
         createdAt: { $gte: startOfToday },
       }),
-      medicalRecordModel.countDocuments({ "dispensing.dispensedBy": hospitalId, "dispensing.status": "dispensed" }),
-      medicalRecordModel.countDocuments({ "dispensing.dispensedBy": hospitalId, "dispensing.status": "partially_dispensed" }),
-      medicalRecordModel.countDocuments({ "dispensing.dispensedBy": hospitalId, prescriptionStatus: "revoked" }),
+      medicalRecordModel.countDocuments({ "dispensing.dispensedBy": pharmacyId, "dispensing.status": "dispensed" }),
+      medicalRecordModel.countDocuments({ "dispensing.dispensedBy": pharmacyId, "dispensing.status": "partially_dispensed" }),
+      medicalRecordModel.countDocuments({ "dispensing.dispensedBy": pharmacyId, prescriptionStatus: "revoked" }),
     ]);
 
     res.json({
@@ -656,14 +655,14 @@ export const getPharmacyStats = async (req, res) => {
 };
 
 // =============================
-// Pharmacy — dispensing history for the logged-in hospital's own Pharmacy
-// section. Scoped strictly to records this hospital has actually dispensed
-// against — never another hospital's activity or unrelated patient data.
+// Pharmacy — dispensing history for the logged-in Pharmacy account. Scoped
+// strictly to records this pharmacy has actually dispensed against — never
+// another pharmacy's activity or unrelated patient data.
 // =============================
 export const getPharmacyHistory = async (req, res) => {
   try {
     const records = await medicalRecordModel
-      .find({ "dispensing.dispensedBy": req.hospitalId })
+      .find({ "dispensing.dispensedBy": req.pharmacyId })
       .select("prescriptionId prescriptionStatus dispensing finalizedAt doctorId patientId hospitalId")
       .populate("doctorId", "name speciality")
       .populate("patientId", "name")

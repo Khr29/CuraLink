@@ -3,6 +3,7 @@ import { assets } from '../assets/assets'
 import { AdminContext } from '../context/AdminContext'
 import { DoctorContext } from '../context/DoctorContext'
 import { HospitalContext } from '../context/HospitalContext'
+import { PharmacyContext } from '../context/PharmacyContext'
 import { useNavigate } from 'react-router-dom'
 import { User, LogOut, ChevronDown } from 'lucide-react'
 
@@ -10,23 +11,28 @@ const ROLE_BADGE = {
   Admin: { bg: '#F0F9FF', border: '#BAE6FD', dot: '#0EA5E9', text: '#0284C7', avatar: 'A' },
   Doctor: { bg: '#F0FDF4', border: '#BBF7D0', dot: '#22C55E', text: '#16A34A', avatar: 'D' },
   Hospital: { bg: '#EFF6FF', border: '#BFDBFE', dot: '#2563EB', text: '#1D4ED8', avatar: 'H' },
+  Pharmacy: { bg: '#F0FDFA', border: '#99F6E4', dot: '#14B8A6', text: '#0D9488', avatar: 'P' },
 }
 
 // Role-aware destination for the "My Profile" menu item. Admin has no
 // dedicated profile page in the current route set, so it's simply omitted
 // for that role rather than linking somewhere invalid.
-const PROFILE_PATH = { Doctor: '/doctor-profile', Hospital: '/hospital-profile' }
+const PROFILE_PATH = { Doctor: '/doctor-profile', Hospital: '/hospital-profile', Pharmacy: '/pharmacy-profile' }
 
 const Navbar = () => {
   const { aToken, setAToken } = useContext(AdminContext)
   const { dToken, setDToken } = useContext(DoctorContext)
   const { hToken, setHToken } = useContext(HospitalContext)
+  const { pToken, setPToken } = useContext(PharmacyContext)
   const navigate = useNavigate()
 
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
 
-  const role = useMemo(() => (aToken ? 'Admin' : dToken ? 'Doctor' : 'Hospital'), [aToken, dToken])
+  const role = useMemo(
+    () => (aToken ? 'Admin' : dToken ? 'Doctor' : hToken ? 'Hospital' : 'Pharmacy'),
+    [aToken, dToken, hToken]
+  )
   const badge = ROLE_BADGE[role]
   const profilePath = PROFILE_PATH[role]
 
@@ -59,8 +65,13 @@ const Navbar = () => {
       localStorage.removeItem('hToken')
     }
 
+    if (pToken) {
+      setPToken('')
+      localStorage.removeItem('pToken')
+    }
+
     navigate('/')
-  }, [aToken, dToken, hToken, setAToken, setDToken, setHToken, navigate])
+  }, [aToken, dToken, hToken, pToken, setAToken, setDToken, setHToken, setPToken, navigate])
 
   const goToProfile = useCallback(() => {
     setMenuOpen(false)
