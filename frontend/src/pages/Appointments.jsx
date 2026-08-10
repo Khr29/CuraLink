@@ -12,6 +12,7 @@ import useReviewEligibility from "../hooks/useReviewEligibility";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { formatExperience } from "../utils/experience";
+import { getAvailabilityBadge } from "../utils/availability";
 import EmptyState from "../components/EmptyState";
 import { CalendarX2 } from "lucide-react";
 
@@ -118,20 +119,11 @@ const Appointments = () => {
   useEffect(() => { fetchDocInfo(); }, [fetchDocInfo]);
   useEffect(() => { getAvailableSlots(); }, [getAvailableSlots]);
 
-  // docInfo.available is a general on/off toggle (see doctorController's
-  // changeAvailability) — it says nothing about whether TODAY specifically
-  // has open slots. Labelling it "Available Today" regardless of the real,
-  // schedule-computed slots (docSlots, same backend source the booking
-  // widget below uses) is exactly the bug: the badge could say "Available
-  // Today" while the slot picker directly underneath says "No Slots
-  // Available." Once slots have loaded, fold in whether today actually has
-  // any before making that specific claim.
+  // docSlots is fetched live for this specific doctor (more current than the
+  // batched todaySlotCount on doctor-list cards), so build the badge from
+  // that rather than whatever list-level snapshot docInfo may carry.
   const todaySlotCount = docSlots[0]?.slots?.length ?? null; // null = not loaded yet
-  const availabilityBadge = !docInfo?.available
-    ? { label: "Unavailable", className: "badge-slate", dotClassName: "bg-slate-400" }
-    : todaySlotCount === 0
-      ? { label: "No Slots Today", className: "badge-amber", dotClassName: "bg-amber-500" }
-      : { label: "Available Today", className: "badge-green", dotClassName: "bg-accent animate-pulse" };
+  const availabilityBadge = getAvailabilityBadge({ available: docInfo?.available, todaySlotCount });
 
   if (!docInfo) {
     return (

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "react-toastify";
 
 // Access tokens are short-lived (15 min) by design — see backend/utils/tokens.js.
 // This installs one global interceptor that transparently refreshes an
@@ -7,6 +8,38 @@ import axios from "axios";
 
 let tokenSetter = null;
 let installed = false;
+
+// The refresh token is single-use/rotating (backend/utils/session.js), so if
+// several requests 401 at once and each independently calls /refresh-token,
+// only the first succeeds and the rest get rejected by the backend as if the
+// session were dead. Sharing one in-flight promise means concurrent 401s
+// await a single refresh instead of racing each other.
+let refreshPromise = null;
+const refreshAccessToken = (backendUrl) => {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${backendUrl}/api/user/refresh-token`, {}, { withCredentials: true })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+};
+
+// A hard redirect reloads the page, which resets all module state — so this
+// only ever needs to fire once per dead session, not be manually reset.
+const handleSessionExpired = () => {
+  localStorage.removeItem("token");
+  tokenSetter?.(false);
+  // Fixed toastId collapses concurrent 401s into a single toast instead of
+  // stacking one per failed request (react-toastify no-ops duplicate ids).
+  toast.error("Your session has expired. Please log in again.", {
+    toastId: "session-expired",
+  });
+  if (window.location.pathname !== "/login") {
+    window.location.href = "/login";
+  }
+};
 
 export const registerUserTokenSetter = (setter) => {
   tokenSetter = setter;
@@ -61,11 +94,7 @@ export const installAuthInterceptor = (backendUrl) => {
       if (status === 401 && usedUserToken && !originalRequest._retry) {
         originalRequest._retry = true;
         try {
-          const { data } = await axios.post(
-            `${backendUrl}/api/user/refresh-token`,
-            {},
-            { withCredentials: true }
-          );
+          const { data } = await refreshAccessToken(backendUrl);
           if (data?.success && data.token) {
             localStorage.setItem("token", data.token);
             tokenSetter?.(data.token);
@@ -73,10 +102,13 @@ export const installAuthInterceptor = (backendUrl) => {
             return axios(originalRequest);
           }
         } catch (refreshError) {
-          // fall through — session is unrecoverable, sign out below
+          // session is unrecoverable — fall through to sign-out below
         }
-        localStorage.removeItem("token");
-        tokenSetter?.(false);
+        handleSessionExpired();
+        // Redirecting away; never resolve so this request's own .catch()
+        // doesn't also fire a duplicate "Request failed with status code
+        // 401" toast on top of the one handleSessionExpired just showed.
+        return new Promise(() => {});
       }
 
       return Promise.reject(error);

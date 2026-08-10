@@ -159,6 +159,9 @@
 import doctorModel from "../models/doctorModel.js"
 import bcrypt from 'bcrypt'
 import appointmentModel from "../models/appointmentModel.js"
+import doctorScheduleModel from "../models/doctorScheduleModel.js"
+import { computeAvailableSlots } from "../utils/slotGenerator.js"
+import { nowIST } from "../utils/istTime.js"
 import { v2 as cloudinary } from "cloudinary"
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js"
 import { issueSession, revokeSession } from "../utils/session.js"
@@ -188,7 +191,38 @@ const changeAvailability = async (req, res) => {
 const doctorList = async (req, res) => {
     try {
         const doctors = await doctorModel.find({}, { password: 0, email: 0 }).populate("hospitalId", "name")
-        res.json({ success: true, doctors })
+
+        // `available` (below) is a manual on/off toggle (see changeAvailability
+        // above) — it says nothing about whether TODAY specifically has open
+        // slots. Cards/lists used to show it as "Available" on its own, which
+        // could disagree with the booking page's "No Slots Available" (same
+        // schedule-derived source of truth as utils/slotGenerator.js /
+        // scheduleController.getAvailableSlots). Compute that same signal here,
+        // batched, so every doctor-list consumer can show one honest badge.
+        const schedules = await doctorScheduleModel
+            .find({ doctorId: { $in: doctors.map((d) => d._id) } })
+            .lean()
+        const scheduleMap = new Map(
+            schedules.map((s) => [`${s.doctorId}:${s.hospitalId || ""}`, s])
+        )
+
+        const now = nowIST()
+        const todayKey = `${now.getUTCDate()}_${now.getUTCMonth() + 1}_${now.getUTCFullYear()}`
+
+        const doctorsWithAvailability = doctors.map((doc) => {
+            const obj = doc.toObject()
+            const scheduleKey = `${doc._id}:${doc.hospitalId?._id || doc.hospitalId || ""}`
+            const schedule = scheduleMap.get(scheduleKey) || null
+            const bookedToday = doc.slots_booked?.[todayKey] || []
+            // Left as a plain count (not collapsed into one boolean) so
+            // consumers can distinguish "toggled off" from "toggled on but
+            // no slots left today" — same 3-state distinction Appointments.jsx
+            // already draws for the profile-page badge.
+            obj.todaySlotCount = computeAvailableSlots(schedule, now, bookedToday, now).length
+            return obj
+        })
+
+        res.json({ success: true, doctors: doctorsWithAvailability })
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })

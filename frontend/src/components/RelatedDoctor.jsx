@@ -43,6 +43,7 @@
 import React, { useContext, useMemo } from "react";
 import { AppContext } from "../context/AppContext";
 import { useNavigate } from "react-router-dom";
+import { getAvailabilityBadge } from "../utils/availability";
 
 const RelatedDoctor = ({ speciality, docId }) => {
 
@@ -79,46 +80,37 @@ const RelatedDoctor = ({ speciality, docId }) => {
 
       <div className="w-full grid grid-cols-auto gap-4 pt-5 gap-y-6 px-3 sm:px-0">
 
-        {relatedDoctors.map((item) => (
+        {relatedDoctors.map((item) => {
+          const badge = getAvailabilityBadge(item);
+          return (
+            <div
+              key={item._id}
+              onClick={() => handleNavigate(item._id)}
+              className="border border-blue-200 rounded-xl overflow-hidden cursor-pointer hover:-translate-y-2 transition-all duration-300"
+            >
 
-          <div
-            key={item._id}
-            onClick={() => handleNavigate(item._id)}
-            className="border border-blue-200 rounded-xl overflow-hidden cursor-pointer hover:-translate-y-2 transition-all duration-300"
-          >
+              <img className="bg-blue-50 w-full" src={item.image} alt={item.name} />
 
-            <img className="bg-blue-50 w-full" src={item.image} alt={item.name} />
+              <div className="p-4">
 
-            <div className="p-4">
+                <span className={`badge ${badge.className}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${badge.dotClassName}`} />
+                  {badge.label}
+                </span>
 
-              <div
-                className={`flex items-center gap-2 text-sm ${
-                  item.available ? "text-green-500" : "text-gray-500"
-                }`}
-              >
-                <p
-                  className={`w-2 h-2 rounded-full ${
-                    item.available ? "bg-green-500" : "bg-gray-500"
-                  }`}
-                ></p>
+                <p className="text-gray-900 text-lg font-medium">
+                  {item.name}
+                </p>
 
-                <p>{item.available ? "Available" : "Not Available"}</p>
+                <p className="text-gray-600 text-sm">
+                  {item.speciality}
+                </p>
 
               </div>
 
-              <p className="text-gray-900 text-lg font-medium">
-                {item.name}
-              </p>
-
-              <p className="text-gray-600 text-sm">
-                {item.speciality}
-              </p>
-
             </div>
-
-          </div>
-
-        ))}
+          );
+        })}
 
       </div>
 
