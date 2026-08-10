@@ -1,43 +1,26 @@
 import React, { useContext, useMemo, useState, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import {
-  LayoutDashboard,
-  Stethoscope,
-  Building2,
-  CalendarDays,
-  MessageSquare,
-  Images,
-  UserCog,
-  Settings,
-  LogOut,
-  UserCheck,
-  Users
-} from 'lucide-react'
-import { HospitalContext } from '../context/HospitalContext'
+import { LayoutDashboard, ScanLine, History, UserCog, Settings, LogOut } from 'lucide-react'
+import { PharmacyContext } from '../context/PharmacyContext'
 
-const HospitalSidebar = () => {
-  const { hToken, setHToken } = useContext(HospitalContext)
+const PharmacySidebar = () => {
+  const { pToken, setPToken } = useContext(PharmacyContext)
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
 
   const menuItems = useMemo(() => [
-    { name: 'Dashboard', path: '/hospital-dashboard', icon: LayoutDashboard },
-    { name: 'Doctors', path: '/hospital-my-doctors', icon: Stethoscope },
-    { name: 'Doctor Requests', path: '/hospital-doctor-requests', icon: UserCheck },
-    { name: 'Departments', path: '/hospital-departments', icon: Building2 },
-    { name: 'Appointments', path: '/hospital-appointments', icon: CalendarDays },
-    { name: 'Patients', path: '/hospital-patients', icon: Users },
-    { name: 'Reviews', path: '/hospital-my-reviews', icon: MessageSquare },
-    { name: 'Gallery', path: '/hospital-gallery', icon: Images },
-    { name: 'Profile', path: '/hospital-profile', icon: UserCog },
-    { name: 'Settings', path: '/hospital-settings', icon: Settings }
+    { name: 'Dashboard', path: '/pharmacy-dashboard', icon: LayoutDashboard },
+    { name: 'Scan & Verify', path: '/pharmacy-scan', icon: ScanLine },
+    { name: 'Dispensing History', path: '/pharmacy-history', icon: History },
+    { name: 'Profile', path: '/pharmacy-profile', icon: UserCog },
+    { name: 'Settings', path: '/pharmacy-settings', icon: Settings }
   ], [])
 
   const logout = useCallback(() => {
-    setHToken('')
-    localStorage.removeItem('hToken')
+    setPToken('')
+    localStorage.removeItem('pToken')
     navigate('/')
-  }, [setHToken, navigate])
+  }, [setPToken, navigate])
 
   return (
     <div style={{
@@ -66,7 +49,7 @@ const HospitalSidebar = () => {
               background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 16, fontWeight: 800, color: '#fff'
-            }}>H</div>
+            }}>P</div>
             <div style={{ minWidth: 0 }}>
               <h2 style={{
                 margin: 0, fontSize: 17, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.3px',
@@ -75,7 +58,7 @@ const HospitalSidebar = () => {
               }}>
                 CuraLink
               </h2>
-              <p style={{ color: '#64748B', fontSize: 10, margin: 0 }}>Hospital Panel</p>
+              <p style={{ color: '#64748B', fontSize: 10, margin: 0 }}>Pharmacy Panel</p>
             </div>
           </div>
         )}
@@ -102,7 +85,7 @@ const HospitalSidebar = () => {
       </div>
 
       {/* Menu */}
-      {hToken && (
+      {pToken && (
         <nav style={{ padding: '12px 10px', flex: 1 }}>
           {!collapsed && (
             <p style={{ fontSize: 10, fontWeight: 700, color: '#334155', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 10px', marginBottom: 8 }}>
@@ -176,4 +159,4 @@ const HospitalSidebar = () => {
   )
 }
 
-export default React.memo(HospitalSidebar)
+export default React.memo(PharmacySidebar)

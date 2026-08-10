@@ -262,84 +262,6 @@ const HospitalContextProvider = (props) => {
         }
     }, [backendUrl, hToken])
 
-    // ==========================
-    // Pharmacy (Hospital Portal section — same hToken auth as the rest of
-    // the portal, no separate pharmacy account). See backend
-    // medicalRecordController.js's pharmacy* endpoints.
-    // ==========================
-    const [pharmacyStats, setPharmacyStats] = useState(null)
-    const [pharmacyHistory, setPharmacyHistory] = useState([])
-    const [pharmacyLookupResult, setPharmacyLookupResult] = useState(null)
-
-    const getPharmacyStats = useCallback(async () => {
-        try {
-            const { data } = await axios.get(backendUrl + '/api/medical-records/pharmacy/stats', { headers: { htoken: hToken } })
-            if (data.success) {
-                setPharmacyStats(data.stats)
-            } else {
-                toast.error(data.message)
-            }
-        } catch (error) {
-            console.log(error)
-            toast.error(error.message)
-        }
-    }, [backendUrl, hToken])
-
-    const getPharmacyHistory = useCallback(async () => {
-        try {
-            const { data } = await axios.get(backendUrl + '/api/medical-records/pharmacy/history', { headers: { htoken: hToken } })
-            if (data.success) {
-                setPharmacyHistory(data.history)
-            } else {
-                toast.error(data.message)
-            }
-        } catch (error) {
-            console.log(error)
-            toast.error(error.message)
-        }
-    }, [backendUrl, hToken])
-
-    // Looks up a prescription by its verification token (pasted from a
-    // verify link, or extracted from a scanned QR) — the AUTHORIZED view,
-    // richer than the public /verify/:token page, but still never the
-    // patient's full medical history.
-    const lookupPrescription = useCallback(async (token) => {
-        try {
-            const { data } = await axios.get(backendUrl + '/api/medical-records/pharmacy/verify/' + token, { headers: { htoken: hToken } })
-            if (data.success) {
-                setPharmacyLookupResult(data.prescription)
-            } else {
-                setPharmacyLookupResult(null)
-                toast.error(data.message)
-            }
-            return data
-        } catch (error) {
-            setPharmacyLookupResult(null)
-            toast.error(error.response?.data?.message || error.message)
-            return { success: false }
-        }
-    }, [backendUrl, hToken])
-
-    const dispensePrescription = useCallback(async (token, status, notes) => {
-        try {
-            const { data } = await axios.post(
-                backendUrl + '/api/medical-records/pharmacy/dispense/' + token,
-                { status, notes },
-                { headers: { htoken: hToken } }
-            )
-            if (data.success) {
-                toast.success(data.message)
-                await lookupPrescription(token)
-            } else {
-                toast.error(data.message)
-            }
-            return data
-        } catch (error) {
-            toast.error(error.response?.data?.message || error.message)
-            return { success: false }
-        }
-    }, [backendUrl, hToken, lookupPrescription])
-
     const value = {
         backendUrl,
         hToken, setHToken,
@@ -353,9 +275,6 @@ const HospitalContextProvider = (props) => {
         allDoctors, getAllDoctorsForInvite, inviteDoctor,
         patients, getHospitalPatients,
         patientDetail, setPatientDetail, getHospitalPatientDetail,
-        pharmacyStats, getPharmacyStats,
-        pharmacyHistory, getPharmacyHistory,
-        pharmacyLookupResult, setPharmacyLookupResult, lookupPrescription, dispensePrescription,
     }
 
     return (

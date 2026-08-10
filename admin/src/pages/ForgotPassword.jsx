@@ -7,6 +7,7 @@ import { AdminContext } from '../context/AdminContext'
 const ROLE_ROUTES = {
   Doctor: { forgot: '/api/doctor/forgot-password', reset: '/api/doctor/reset-password' },
   Hospital: { forgot: '/api/hospital/forgot-password', reset: '/api/hospital/reset-password' },
+  Pharmacy: { forgot: '/api/pharmacy/forgot-password', reset: '/api/pharmacy/reset-password' },
 }
 
 const ForgotPassword = () => {
@@ -14,7 +15,9 @@ const ForgotPassword = () => {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const [role, setRole] = useState(location.state?.role === 'Hospital' ? 'Hospital' : 'Doctor')
+  const [role, setRole] = useState(
+    location.state?.role === 'Hospital' ? 'Hospital' : location.state?.role === 'Pharmacy' ? 'Pharmacy' : 'Doctor'
+  )
   const [step, setStep] = useState('request') // 'request' | 'reset'
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
@@ -74,7 +77,7 @@ const ForgotPassword = () => {
 
         {step === 'request' && (
           <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 20 }}>
-            {['Doctor', 'Hospital'].map((r) => (
+            {['Doctor', 'Hospital', 'Pharmacy'].map((r) => (
               <button key={r} type="button" onClick={() => setRole(r)} style={{
                 flex: 1, padding: '8px 0', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 background: role === r ? '#0EA5E9' : 'transparent', color: role === r ? '#fff' : '#64748B',

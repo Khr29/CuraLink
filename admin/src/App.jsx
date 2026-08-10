@@ -6,6 +6,7 @@ import { ToastContainer } from 'react-toastify'
 import { AdminContext } from './context/AdminContext'
 import { DoctorContext } from './context/DoctorContext'
 import { HospitalContext } from './context/HospitalContext'
+import { PharmacyContext } from './context/PharmacyContext'
 import PanelLayout from './components/PanelLayout'
 import { Route, Routes } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -47,10 +48,13 @@ const HospitalGallery = lazy(() => import('./pages/Hospital/HospitalGallery'))
 const HospitalProfile = lazy(() => import('./pages/Hospital/HospitalProfile'))
 const HospitalSettings = lazy(() => import('./pages/Hospital/HospitalSettings'))
 
-// Lazy loaded Hospital Portal — Pharmacy section
-const HospitalPharmacyOverview = lazy(() => import('./pages/Hospital/PharmacyOverview'))
-const HospitalPharmacyVerify = lazy(() => import('./pages/Hospital/PharmacyVerify'))
-const HospitalPharmacyHistory = lazy(() => import('./pages/Hospital/PharmacyHistory'))
+// Lazy loaded Pharmacy Portal Pages — a first-class role, not part of the
+// Hospital Portal (own token/context/routes, same as Doctor/Hospital).
+const PharmacyDashboard = lazy(() => import('./pages/Pharmacy/PharmacyDashboard'))
+const PharmacyScan = lazy(() => import('./pages/Pharmacy/PharmacyScan'))
+const PharmacyHistory = lazy(() => import('./pages/Pharmacy/PharmacyHistory'))
+const PharmacyProfile = lazy(() => import('./pages/Pharmacy/PharmacyProfile'))
+const PharmacySettings = lazy(() => import('./pages/Pharmacy/PharmacySettings'))
 
 // Loading fallback component
 const PageLoader = () => (
@@ -64,6 +68,7 @@ const App = () => {
   const { aToken } = useContext(AdminContext)
   const { dToken } = useContext(DoctorContext)
   const { hToken } = useContext(HospitalContext)
+  const { pToken } = useContext(PharmacyContext)
 
   const isAdmin = !!aToken
   const isDoctor = !!dToken
@@ -204,17 +209,25 @@ const App = () => {
         <ProtectedRoute token={hToken}><PanelLayout><HospitalSettings /></PanelLayout></ProtectedRoute>
       } />
 
-      {/* Hospital Portal — Pharmacy section (same auth/layout as the rest of the Hospital Portal) */}
-      <Route path="/hospital-pharmacy" element={
-        <ProtectedRoute token={hToken}><PanelLayout><HospitalPharmacyOverview /></PanelLayout></ProtectedRoute>
+      {/* Pharmacy Portal — first-class role, own token/context, not nested under Hospital */}
+      <Route path="/pharmacy-dashboard" element={
+        <ProtectedRoute token={pToken}><PanelLayout><PharmacyDashboard /></PanelLayout></ProtectedRoute>
       } />
 
-      <Route path="/hospital-pharmacy/verify" element={
-        <ProtectedRoute token={hToken}><PanelLayout><HospitalPharmacyVerify /></PanelLayout></ProtectedRoute>
+      <Route path="/pharmacy-scan" element={
+        <ProtectedRoute token={pToken}><PanelLayout><PharmacyScan /></PanelLayout></ProtectedRoute>
       } />
 
-      <Route path="/hospital-pharmacy/history" element={
-        <ProtectedRoute token={hToken}><PanelLayout><HospitalPharmacyHistory /></PanelLayout></ProtectedRoute>
+      <Route path="/pharmacy-history" element={
+        <ProtectedRoute token={pToken}><PanelLayout><PharmacyHistory /></PanelLayout></ProtectedRoute>
+      } />
+
+      <Route path="/pharmacy-profile" element={
+        <ProtectedRoute token={pToken}><PanelLayout><PharmacyProfile /></PanelLayout></ProtectedRoute>
+      } />
+
+      <Route path="/pharmacy-settings" element={
+        <ProtectedRoute token={pToken}><PanelLayout><PharmacySettings /></PanelLayout></ProtectedRoute>
       } />
 
     </Routes>

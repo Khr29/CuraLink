@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom'
 import AdminContextProvider from './context/AdminContext.jsx'
 import DoctorContextProvider from './context/DoctorContext.jsx'
 import HospitalContextProvider from './context/HospitalContext.jsx'
+import PharmacyContextProvider from './context/PharmacyContext.jsx'
 import AppContextProvider from './context/AppContext.jsx'
 
 createRoot(document.getElementById('root')).render(
@@ -13,9 +14,11 @@ createRoot(document.getElementById('root')).render(
   <AdminContextProvider>
     <DoctorContextProvider>
       <HospitalContextProvider>
-        <AppContextProvider>
-           <App />
-        </AppContextProvider>
+        <PharmacyContextProvider>
+          <AppContextProvider>
+             <App />
+          </AppContextProvider>
+        </PharmacyContextProvider>
       </HospitalContextProvider>
     </DoctorContextProvider>
   </AdminContextProvider>

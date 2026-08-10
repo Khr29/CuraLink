@@ -6,6 +6,7 @@ export const REFRESH_COOKIE_NAMES = {
   doctor: "curalink_doctor_rt",
   hospital: "curalink_hospital_rt",
   admin: "curalink_admin_rt",
+  pharmacy: "curalink_pharmacy_rt",
 };
 
 const isProd = process.env.NODE_ENV === "production";

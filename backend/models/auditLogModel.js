@@ -7,7 +7,7 @@ const auditLogSchema = new mongoose.Schema(
     // snapshot (email/name) that survives the actor later being deleted.
     actorType: {
       type: String,
-      enum: ["admin", "doctor", "hospital", "user", "system"],
+      enum: ["admin", "doctor", "hospital", "pharmacy", "user", "system"],
       required: true,
     },
     actorId: {

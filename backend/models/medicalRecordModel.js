@@ -130,18 +130,18 @@ const medicalRecordSchema = new mongoose.Schema(
 
     // Pharmacy-fulfillment status — separate from prescriptionStatus (which
     // tracks the prescription's own validity, not whether it's been filled
-    // yet). Dispensing is performed through the Hospital Portal's Pharmacy
-    // section (authHospital), not a separate pharmacy account — dispensedBy
-    // is whichever hospital verified/dispensed it, which may differ from
-    // the prescribing hospital (a patient can fill a prescription at any
-    // hospital's pharmacy).
+    // yet). Dispensing is performed by an authenticated Pharmacy account
+    // (authPharmacy, backend/models/pharmacyModel.js) — dispensedBy is
+    // whichever pharmacy verified/dispensed it, which is unrelated to the
+    // prescribing hospital (a patient can fill a prescription at any
+    // pharmacy).
     dispensing: {
       status: {
         type: String,
         enum: ["not_applicable", "pending", "partially_dispensed", "dispensed"],
         default: "not_applicable",
       },
-      dispensedBy: { type: mongoose.Schema.Types.ObjectId, ref: "hospital", default: null },
+      dispensedBy: { type: mongoose.Schema.Types.ObjectId, ref: "pharmacy", default: null },
       dispensedByName: { type: String, default: "" },
       dispensedAt: { type: Date, default: null },
       notes: { type: String, default: "" },
