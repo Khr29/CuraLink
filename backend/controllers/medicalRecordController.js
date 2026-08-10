@@ -19,16 +19,42 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 const oneOf = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback);
 
+// Extracts a leading whole number from the doctor's free-text quantity field
+// ("30 tablets" -> 30, "30" -> 30, "" or non-numeric -> null). Never surfaced
+// to or entered by the doctor directly — this only drives the pharmacy
+// dispensing guard (pharmacyDispense below), so the prescribing form and
+// workflow are completely unchanged.
+const parseLeadingQuantity = (str) => {
+  const match = String(str || "").match(/\d+/);
+  if (!match) return null;
+  const n = parseInt(match[0], 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
 // Writes both the legacy (medicine/dosage) and structured (medicineName/dose)
 // fields in sync on every save, so the item is recognized as non-empty
 // regardless of which name a reader still checks, and so nothing that only
 // reads the old fields ever sees a blank row for a prescription written
 // through the new structured form.
-const sanitizePrescription = (prescription) => {
+//
+// `previousPrescription` (only passed by amendRecord) lets an amendment
+// carry forward a medicine's dispensing progress instead of resetting it —
+// but only when the medicine at that position is unchanged, so a doctor
+// swapping in a genuinely different drug at the same row never inherits
+// another drug's dispensed count. Clamped so a shrunk quantity can never
+// leave dispensedQuantity > quantityPrescribed.
+const sanitizePrescription = (prescription, previousPrescription = []) => {
   if (!Array.isArray(prescription)) return [];
-  return prescription.slice(0, MAX_PRESCRIPTION_ITEMS).map((item) => {
+  return prescription.slice(0, MAX_PRESCRIPTION_ITEMS).map((item, index) => {
     const medicineName = sanitizeText(item?.medicineName || item?.medicine || "", { maxLength: 200 });
     const dose = sanitizeText(item?.dose || item?.dosage || "", { maxLength: 100 });
+    const quantity = sanitizeText(item?.quantity || "", { maxLength: 40 });
+    const quantityPrescribed = parseLeadingQuantity(quantity) || 1;
+
+    const prev = previousPrescription[index];
+    const carryForward = prev && prev.medicineName === medicineName;
+    const dispensedQuantity = carryForward ? Math.min(prev.dispensedQuantity || 0, quantityPrescribed) : 0;
+
     return {
       medicine: medicineName,
       dosage: dose,
@@ -42,7 +68,9 @@ const sanitizePrescription = (prescription) => {
       frequency: oneOf(item?.frequency, FREQUENCIES, ""),
       route: oneOf(item?.route, ROUTES, "Oral"),
       timing: oneOf(item?.timing, TIMING_OPTIONS, "Anytime"),
-      quantity: sanitizeText(item?.quantity || "", { maxLength: 40 }),
+      quantity,
+      quantityPrescribed,
+      dispensedQuantity,
     };
   }).filter((item) => item.medicineName);
 };
@@ -247,7 +275,7 @@ export const amendRecord = async (req, res) => {
 
     if (diagnosis !== undefined) record.diagnosis = sanitizeText(diagnosis, { maxLength: MAX_DIAGNOSIS_LEN });
     if (notes !== undefined) record.notes = sanitizeText(notes, { maxLength: MAX_NOTES_LEN });
-    if (prescription !== undefined) record.prescription = sanitizePrescription(prescription);
+    if (prescription !== undefined) record.prescription = sanitizePrescription(prescription, record.prescription);
 
     await record.save();
 
@@ -547,7 +575,29 @@ export const pharmacyVerifyPrescription = async (req, res) => {
         patient: { name: record.patientId?.name || "" },
         doctor: { name: record.doctorId?.name || "", speciality: record.doctorId?.speciality || "" },
         hospital: record.hospitalId?.name || null,
-        medications: record.prescription,
+        // Least-privilege projection — only dispensing-relevant medicine
+        // fields, plus the per-medicine quantity math a pharmacist needs to
+        // safely partial-dispense. Never diagnosis/notes/attachments.
+        medications: record.prescription.map((item, index) => {
+          const quantityPrescribed = item.quantityPrescribed ?? 1;
+          const dispensedQuantity = item.dispensedQuantity ?? 0;
+          return {
+            medicineIndex: index,
+            medicineName: item.medicineName || item.medicine || "",
+            strength: item.strength,
+            form: item.form,
+            dose: item.dose || item.dosage || "",
+            frequency: item.frequency,
+            route: item.route,
+            timing: item.timing,
+            duration: item.duration,
+            quantity: item.quantity,
+            instructions: item.instructions,
+            quantityPrescribed,
+            dispensedQuantity,
+            remaining: Math.max(quantityPrescribed - dispensedQuantity, 0),
+          };
+        }),
         dispensing: record.dispensing,
       },
     });
@@ -557,37 +607,104 @@ export const pharmacyVerifyPrescription = async (req, res) => {
   }
 };
 
-const DISPENSE_STATUSES = ["partially_dispensed", "dispensed"];
-
 // =============================
-// Pharmacy — record dispensing status (authPharmacy). Refuses anything but
-// an active prescription (draft/revoked/not-yet-finalized can never be
-// dispensed). The doctor's prescribed dose/frequency/quantity are never
-// touched here — only the fulfillment status/notes.
+// Pharmacy — record dispensing for ONE medicine on the prescription
+// (authPharmacy). Refuses anything but an active prescription (draft/
+// revoked/not-yet-finalized can never be dispensed). Supports partial
+// dispensing: `quantity` is how many units to dispense in THIS action, not
+// the new total.
+//
+// Over-dispensing / double-click / concurrent-request races are prevented
+// the same way appointment booking prevents double-booking (userController.js)
+// — a single atomic findOneAndUpdate whose filter re-checks
+// "dispensedQuantity + quantity <= quantityPrescribed" against whatever the
+// document's state actually is at write time, not a stale earlier read. Only
+// one of two simultaneous requests for the same remaining stock can match.
 // =============================
 export const pharmacyDispense = async (req, res) => {
   try {
     const { token } = req.params;
-    const { status, notes } = req.body;
-    if (!DISPENSE_STATUSES.includes(status)) {
-      return res.json({ success: false, message: "Invalid dispensing status" });
+    const medicineIndex = Number(req.body.medicineIndex);
+    const quantity = Number(req.body.quantity);
+    const notes = sanitizeText(req.body.notes || "", { maxLength: MAX_DISPENSE_NOTES_LEN });
+
+    if (!Number.isInteger(medicineIndex) || medicineIndex < 0) {
+      return res.json({ success: false, message: "Invalid medicine selected" });
+    }
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return res.json({ success: false, message: "Quantity to dispense must be a positive whole number" });
     }
 
-    const record = await medicalRecordModel.findOne({ verificationToken: token }).select("+verificationToken");
-    if (!record || record.prescriptionStatus !== "active") {
+    const preRecord = await medicalRecordModel
+      .findOne({ verificationToken: token })
+      .select("+verificationToken prescription prescriptionStatus");
+    if (!preRecord || preRecord.prescriptionStatus !== "active") {
       return res.json({ success: false, message: "This prescription is not available for dispensing" });
+    }
+    const targetItem = preRecord.prescription[medicineIndex];
+    if (!targetItem) {
+      return res.json({ success: false, message: "Medicine not found on this prescription" });
     }
 
     const pharmacy = await pharmacyModel.findById(req.pharmacyId).select("name");
 
-    record.dispensing = {
-      status,
+    const updated = await medicalRecordModel.findOneAndUpdate(
+      {
+        verificationToken: token,
+        prescriptionStatus: "active",
+        $expr: {
+          $lte: [
+            { $add: [{ $arrayElemAt: ["$prescription.dispensedQuantity", medicineIndex] }, quantity] },
+            { $arrayElemAt: ["$prescription.quantityPrescribed", medicineIndex] },
+          ],
+        },
+      },
+      {
+        $inc: { [`prescription.${medicineIndex}.dispensedQuantity`]: quantity },
+        $push: {
+          dispensingRecords: {
+            pharmacyId: req.pharmacyId,
+            pharmacyName: pharmacy?.name || "",
+            medicineIndex,
+            medicineName: targetItem.medicineName || targetItem.medicine || "",
+            quantityDispensed: quantity,
+            notes,
+            dispensedAt: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      // The atomic guard didn't match — re-fetch to report the real reason
+      // (prescription no longer active, or not enough remaining).
+      const current = await medicalRecordModel.findOne({ verificationToken: token }).select("prescription prescriptionStatus");
+      if (!current || current.prescriptionStatus !== "active") {
+        return res.json({ success: false, message: "This prescription is not available for dispensing" });
+      }
+      const currentItem = current.prescription[medicineIndex];
+      const remaining = Math.max((currentItem?.quantityPrescribed ?? 0) - (currentItem?.dispensedQuantity ?? 0), 0);
+      return res.json({
+        success: false,
+        message: `Cannot dispense ${quantity} — only ${remaining} remaining for this medicine`,
+      });
+    }
+
+    // Record-level rollup, recomputed from the now-consistent per-item
+    // quantities — a convenience summary for existing consumers (dashboard
+    // stats, "already dispensed" checks), never the source of truth for the
+    // over-dispense guard above (that's prescription[].dispensedQuantity).
+    const allFull = updated.prescription.every((p) => (p.dispensedQuantity || 0) >= (p.quantityPrescribed || 1));
+    const anyDispensed = updated.prescription.some((p) => (p.dispensedQuantity || 0) > 0);
+    const dispensingSummary = {
+      status: allFull ? "dispensed" : anyDispensed ? "partially_dispensed" : "pending",
       dispensedBy: req.pharmacyId,
       dispensedByName: pharmacy?.name || "",
       dispensedAt: new Date(),
-      notes: sanitizeText(notes || "", { maxLength: MAX_DISPENSE_NOTES_LEN }),
+      notes,
     };
-    await record.save();
+    await medicalRecordModel.updateOne({ _id: updated._id }, { $set: { dispensing: dispensingSummary } });
 
     await logAction({
       req,
@@ -595,12 +712,12 @@ export const pharmacyDispense = async (req, res) => {
       actorId: req.pharmacyId,
       actorLabel: pharmacy?.name || "",
       action: AUDIT_ACTIONS.PRESCRIPTION_DISPENSED,
-      target: { type: "medicalRecord", id: record._id, label: record.prescriptionId },
-      newValue: { status },
+      target: { type: "medicalRecord", id: updated._id, label: updated.prescriptionId },
+      newValue: { medicineIndex, quantity, resultingStatus: dispensingSummary.status },
       status: "success",
     });
 
-    res.json({ success: true, message: "Dispensing status updated" });
+    res.json({ success: true, message: "Dispensing recorded", dispensing: dispensingSummary });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -655,33 +772,43 @@ export const getPharmacyStats = async (req, res) => {
 };
 
 // =============================
-// Pharmacy — dispensing history for the logged-in Pharmacy account. Scoped
-// strictly to records this pharmacy has actually dispensed against — never
-// another pharmacy's activity or unrelated patient data.
+// Pharmacy — dispensing history for the logged-in Pharmacy account. One row
+// per dispense ACTION (from the append-only dispensingRecords ledger), not
+// one row per prescription — a prescription dispensed in two partial visits
+// shows both transactions, never collapsed/overwritten into a single latest
+// state. Scoped strictly to entries this pharmacy actually performed.
 // =============================
 export const getPharmacyHistory = async (req, res) => {
   try {
     const records = await medicalRecordModel
-      .find({ "dispensing.dispensedBy": req.pharmacyId })
-      .select("prescriptionId prescriptionStatus dispensing finalizedAt doctorId patientId hospitalId")
+      .find({ "dispensingRecords.pharmacyId": req.pharmacyId })
+      .select("prescriptionId prescriptionStatus dispensingRecords finalizedAt doctorId patientId hospitalId")
       .populate("doctorId", "name speciality")
       .populate("patientId", "name")
       .populate("hospitalId", "name")
-      .sort({ "dispensing.dispensedAt": -1 })
-      .limit(100);
+      .lean();
 
-    res.json({
-      success: true,
-      history: records.map((r) => ({
-        prescriptionId: r.prescriptionId,
-        status: r.prescriptionStatus,
-        issuedAt: r.finalizedAt,
-        patient: { name: r.patientId?.name || "" },
-        doctor: { name: r.doctorId?.name || "", speciality: r.doctorId?.speciality || "" },
-        prescribingHospital: r.hospitalId?.name || null,
-        dispensing: r.dispensing,
-      })),
-    });
+    const transactions = [];
+    for (const r of records) {
+      for (const entry of r.dispensingRecords || []) {
+        if (String(entry.pharmacyId) !== String(req.pharmacyId)) continue;
+        transactions.push({
+          prescriptionId: r.prescriptionId,
+          status: r.prescriptionStatus,
+          issuedAt: r.finalizedAt,
+          patient: { name: r.patientId?.name || "" },
+          doctor: { name: r.doctorId?.name || "", speciality: r.doctorId?.speciality || "" },
+          prescribingHospital: r.hospitalId?.name || null,
+          medicineName: entry.medicineName,
+          quantityDispensed: entry.quantityDispensed,
+          notes: entry.notes,
+          dispensedAt: entry.dispensedAt,
+        });
+      }
+    }
+    transactions.sort((a, b) => new Date(b.dispensedAt) - new Date(a.dispensedAt));
+
+    res.json({ success: true, history: transactions.slice(0, 100) });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });

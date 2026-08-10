@@ -280,6 +280,15 @@ async function main() {
             dosage: "1 tablet once daily",
             duration: "30 days",
             instructions: "Take in the morning, preferably at the same time each day",
+            // Numeric leading quantity so the Pharmacy portal's partial-
+            // dispensing math has something real to demonstrate against.
+            // This script writes the model directly (bypassing the
+            // controller's sanitizePrescription, which normally derives
+            // quantityPrescribed from `quantity` automatically) so both are
+            // set explicitly here, consistently, by hand.
+            quantity: "30 tablets",
+            quantityPrescribed: 30,
+            dispensedQuantity: 0,
           },
         ],
         status: "finalized",

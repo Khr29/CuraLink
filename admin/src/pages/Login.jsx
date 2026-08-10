@@ -200,16 +200,23 @@ const Login = () => {
       const { data } = await axios.post(`${backendUrl}${url}`, { email, password, rememberMe })
 
       if (data.success) {
-        // Only one role is ever logged in at a time — clear the other tokens.
+        // Only one role is ever logged in at a time — clear the other
+        // tokens' localStorage AND their in-memory React state. Clearing
+        // only localStorage left a stale truthy token in a still-mounted
+        // context (e.g. a Hospital session from an earlier tab visit), and
+        // SideBar/Navbar pick the first truthy token in role order — so
+        // logging in as one role while another role's context still held
+        // its old token showed that OTHER role's sidebar/navbar on top of
+        // the correct page content.
         ['aToken', 'dToken', 'hToken', 'pToken'].forEach((key) => {
           if (key !== tokenKey) localStorage.removeItem(key)
         })
         localStorage.setItem(tokenKey, data.token)
 
-        if (tokenKey === 'aToken') setAToken(data.token)
-        else if (tokenKey === 'dToken') setDToken(data.token)
-        else if (tokenKey === 'hToken') setHToken(data.token)
-        else setPToken(data.token)
+        setAToken(tokenKey === 'aToken' ? data.token : '')
+        setDToken(tokenKey === 'dToken' ? data.token : '')
+        setHToken(tokenKey === 'hToken' ? data.token : '')
+        setPToken(tokenKey === 'pToken' ? data.token : '')
 
         navigate(dashboard)
         toast.success('Login successful 🚀')

@@ -23,11 +23,6 @@ const extractToken = (input) => {
   return idx !== -1 ? trimmed.slice(idx + '/verify/'.length) : trimmed
 }
 
-const DISPENSE_OPTIONS = [
-  { value: 'partially_dispensed', label: 'Partially Dispensed' },
-  { value: 'dispensed', label: 'Fully Dispensed' },
-]
-
 const QR_READER_ID = 'pharmacy-qr-reader'
 
 const PharmacyScan = () => {
@@ -35,9 +30,12 @@ const PharmacyScan = () => {
   const [input, setInput] = useState('')
   const [token, setToken] = useState('')
   const [searching, setSearching] = useState(false)
-  const [dispenseStatus, setDispenseStatus] = useState('dispensed')
-  const [notes, setNotes] = useState('')
-  const [dispensing, setDispensing] = useState(false)
+  // Per-medicine dispense quantity draft, keyed by medicineIndex, and which
+  // row is currently submitting — a prescription can have several
+  // medicines, each dispensed independently and possibly across visits.
+  const [quantityDrafts, setQuantityDrafts] = useState({})
+  const [notesDrafts, setNotesDrafts] = useState({})
+  const [dispensingIndex, setDispensingIndex] = useState(null)
   const [scannerOpen, setScannerOpen] = useState(false)
   const scannerRef = useRef(null)
 
@@ -55,13 +53,22 @@ const PharmacyScan = () => {
     await runLookup(extractToken(input))
   }
 
-  const handleDispense = async (e) => {
-    e.preventDefault()
+  const handleDispense = async (medicineIndex, remaining) => {
     if (!token) return
-    setDispensing(true)
-    await dispensePrescription(token, dispenseStatus, notes)
-    setDispensing(false)
-    setNotes('')
+    const qty = Number(quantityDrafts[medicineIndex])
+    if (!Number.isInteger(qty) || qty <= 0) return
+    // Client-side guard is just immediate UX feedback — the backend's atomic
+    // over-dispense check (medicalRecordController.js#pharmacyDispense) is
+    // what's actually authoritative, since this `remaining` value could be
+    // stale if dispensed elsewhere a moment ago.
+    if (typeof remaining === 'number' && qty > remaining) return
+    setDispensingIndex(medicineIndex)
+    const result = await dispensePrescription(token, medicineIndex, qty, notesDrafts[medicineIndex] || '')
+    if (result.success) {
+      setQuantityDrafts((d) => ({ ...d, [medicineIndex]: '' }))
+      setNotesDrafts((d) => ({ ...d, [medicineIndex]: '' }))
+    }
+    setDispensingIndex(null)
   }
 
   // Live camera QR scanning — html5-qrcode renders its own UI into the
@@ -197,59 +204,74 @@ const PharmacyScan = () => {
             <p style={{ fontSize: 11, fontWeight: 700, color: '#334155', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 10px' }}>
               Medications ({pharmacyLookupResult.medications?.length || 0})
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
-              {(pharmacyLookupResult.medications || []).map((item, i) => (
-                <div key={i} style={{ background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: 12, padding: 12 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', margin: '0 0 4px' }}>
-                    {i + 1}. {medName(item)}{item.strength ? ` — ${item.strength}` : ''}
-                  </p>
-                  <p style={{ fontSize: 11.5, color: '#475569', margin: 0 }}>
-                    {[medDose(item), item.frequency, item.route, item.timing !== 'Anytime' ? item.timing : '', item.duration ? `for ${item.duration}` : '', item.quantity ? `Qty: ${item.quantity}` : '']
-                      .filter(Boolean).join(' · ')}
-                  </p>
-                  {item.instructions && <p style={{ fontSize: 11.5, color: '#64748B', margin: '4px 0 0', fontStyle: 'italic' }}>{item.instructions}</p>}
-                </div>
-              ))}
-            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {(pharmacyLookupResult.medications || []).map((item) => {
+                const i = item.medicineIndex
+                const fullyDispensed = item.remaining <= 0
+                return (
+                  <div key={i} style={{ background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: 12, padding: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', margin: '0 0 4px' }}>
+                          {i + 1}. {medName(item)}{item.strength ? ` — ${item.strength}` : ''}
+                        </p>
+                        <p style={{ fontSize: 11.5, color: '#475569', margin: 0 }}>
+                          {[medDose(item), item.frequency, item.route, item.timing !== 'Anytime' ? item.timing : '', item.duration ? `for ${item.duration}` : '', item.quantity ? `Qty: ${item.quantity}` : '']
+                            .filter(Boolean).join(' · ')}
+                        </p>
+                        {item.instructions && <p style={{ fontSize: 11.5, color: '#64748B', margin: '4px 0 0', fontStyle: 'italic' }}>{item.instructions}</p>}
+                      </div>
+                      <span style={{
+                        fontSize: 10.5, fontWeight: 700, padding: '4px 10px', borderRadius: 999, flexShrink: 0, whiteSpace: 'nowrap',
+                        background: fullyDispensed ? '#F0FDF4' : item.dispensedQuantity > 0 ? '#FFFBEB' : '#F1F5F9',
+                        color: fullyDispensed ? '#16A34A' : item.dispensedQuantity > 0 ? '#D97706' : '#64748B',
+                      }}>
+                        {item.dispensedQuantity} / {item.quantityPrescribed} dispensed
+                      </span>
+                    </div>
 
-            {!isRevoked && (
-              <form onSubmit={handleDispense} style={{ borderTop: '1px solid #F1F5F9', paddingTop: 18 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#334155', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 10px' }}>
-                  Record Dispensing
-                </p>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                  {DISPENSE_OPTIONS.map((opt) => (
-                    <button key={opt.value} type="button" onClick={() => setDispenseStatus(opt.value)} style={{
-                      padding: '8px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-                      border: `1.5px solid ${dispenseStatus === opt.value ? '#14B8A6' : '#E2E8F0'}`,
-                      background: dispenseStatus === opt.value ? '#F0FDFA' : '#FFFFFF',
-                      color: dispenseStatus === opt.value ? '#0D9488' : '#64748B',
-                    }}>
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Notes (optional)"
-                  rows={2}
-                  style={{ width: '100%', padding: 10, border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: 12.5, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box', marginBottom: 12, resize: 'vertical' }}
-                />
-                <button type="submit" disabled={dispensing} style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, border: 'none',
-                  background: 'linear-gradient(135deg, #22C55E, #16A34A)', color: '#fff', fontWeight: 700, fontSize: 13,
-                  cursor: dispensing ? 'not-allowed' : 'pointer', opacity: dispensing ? 0.7 : 1
-                }}>
-                  <PackageCheck size={15} /> {dispensing ? 'Saving…' : 'Save Dispensing Status'}
-                </button>
-                {alreadyDispensed && (
-                  <span style={{ marginLeft: 12, fontSize: 11.5, color: '#16A34A', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    <CheckCircle2 size={13} /> Already marked dispensed — this updates the record.
-                  </span>
-                )}
-              </form>
-            )}
+                    {!isRevoked && (
+                      fullyDispensed ? (
+                        <p style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #E2E8F0', fontSize: 11.5, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <CheckCircle2 size={13} /> Fully dispensed
+                        </p>
+                      ) : (
+                        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #E2E8F0', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            min={1}
+                            max={item.remaining}
+                            value={quantityDrafts[i] ?? ''}
+                            onChange={(e) => setQuantityDrafts((d) => ({ ...d, [i]: e.target.value }))}
+                            placeholder={`Qty (max ${item.remaining})`}
+                            style={{ width: 130, padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: 12.5, fontFamily: 'Inter, sans-serif' }}
+                          />
+                          <input
+                            value={notesDrafts[i] ?? ''}
+                            onChange={(e) => setNotesDrafts((d) => ({ ...d, [i]: e.target.value }))}
+                            placeholder="Notes (optional)"
+                            style={{ flex: 1, minWidth: 140, padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: 12.5, fontFamily: 'Inter, sans-serif' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleDispense(i, item.remaining)}
+                            disabled={dispensingIndex === i || !quantityDrafts[i]}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, border: 'none',
+                              background: 'linear-gradient(135deg, #22C55E, #16A34A)', color: '#fff', fontWeight: 700, fontSize: 12.5,
+                              cursor: dispensingIndex === i || !quantityDrafts[i] ? 'not-allowed' : 'pointer',
+                              opacity: dispensingIndex === i || !quantityDrafts[i] ? 0.6 : 1
+                            }}
+                          >
+                            <PackageCheck size={14} /> {dispensingIndex === i ? 'Saving…' : 'Dispense'}
+                          </button>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>

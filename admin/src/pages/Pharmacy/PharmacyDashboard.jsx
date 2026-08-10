@@ -87,15 +87,14 @@ const PharmacyDashboard = () => {
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', margin: 0 }}>{item.prescriptionId}</p>
                       <p style={{ fontSize: 11.5, color: '#64748B', margin: '2px 0 0' }}>
-                        {item.patient?.name || 'Patient'} · Dr. {item.doctor?.name} · {formatDate(item.issuedAt)}
+                        {item.patient?.name || 'Patient'} · Dr. {item.doctor?.name} · {formatDate(item.dispensedAt)}
                       </p>
                     </div>
                     <span style={{
-                      fontSize: 10.5, fontWeight: 700, padding: '5px 10px', borderRadius: 999, flexShrink: 0, textTransform: 'uppercase',
-                      background: item.dispensing?.status === 'dispensed' ? '#F0FDF4' : item.dispensing?.status === 'partially_dispensed' ? '#FFFBEB' : '#F1F5F9',
-                      color: item.dispensing?.status === 'dispensed' ? '#16A34A' : item.dispensing?.status === 'partially_dispensed' ? '#D97706' : '#64748B',
+                      fontSize: 10.5, fontWeight: 700, padding: '5px 10px', borderRadius: 999, flexShrink: 0,
+                      background: '#F0FDFA', color: '#0D9488',
                     }}>
-                      {(item.dispensing?.status || 'pending').replace('_', ' ')}
+                      {item.quantityDispensed} × {item.medicineName}
                     </span>
                   </div>
                 ))}
