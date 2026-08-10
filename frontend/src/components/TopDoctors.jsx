@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import StarRating from "./StarRating";
 import { formatExperience } from "../utils/experience";
+import { getAvailabilityBadge } from "../utils/availability";
 
 const FEATURED_COUNT = 6;
 
@@ -27,10 +28,15 @@ const DoctorCard = React.memo(({ item, onClick }) => (
       <div className="absolute inset-0 bg-gradient-to-t from-primary/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
       {/* Availability badge */}
       <div className="absolute top-3 left-3">
-        <span className={`badge ${item.available ? "badge-green" : "badge-slate"}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${item.available ? "bg-accent" : "bg-slate-400"}`} />
-          {item.available ? "Available" : "Unavailable"}
-        </span>
+        {(() => {
+          const badge = getAvailabilityBadge(item);
+          return (
+            <span className={`badge ${badge.className}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${badge.dotClassName}`} />
+              {badge.label}
+            </span>
+          );
+        })()}
       </div>
     </div>
 
