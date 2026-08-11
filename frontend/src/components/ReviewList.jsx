@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useCallback } from "react";
+import React, { useContext, useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import { MessageSquare } from "lucide-react";
 import { AppContext } from "../context/AppContext";
@@ -24,14 +24,23 @@ const ReviewList = ({ targetType, targetId, refreshKey, onStats, eligibility, on
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  // `targetId` can change fast (e.g. clicking a related doctor before the
+  // previous doctor's reviews finish loading) — this ref lets an in-flight
+  // fetchReviews() recognize it's no longer for the current target and skip
+  // applying its (now stale) response, instead of whichever request happens
+  // to resolve last winning regardless of which was issued last.
+  const latestTargetRef = useRef(targetId);
+
   const fetchReviews = useCallback(
     async (pageToLoad) => {
+      const requestedFor = targetId;
       setLoading(true);
       try {
         const { data } = await axios.get(
           `${backendUrl}/api/review/${targetType}/${targetId}`,
           { params: { page: pageToLoad, limit: LIMIT } }
         );
+        if (latestTargetRef.current !== requestedFor) return;
         if (data.success) {
           setReviews((prev) => (pageToLoad === 1 ? data.reviews : [...prev, ...data.reviews]));
           setTotal(data.total);
@@ -41,7 +50,7 @@ const ReviewList = ({ targetType, targetId, refreshKey, onStats, eligibility, on
       } catch (error) {
         console.error(error);
       } finally {
-        setLoading(false);
+        if (latestTargetRef.current === requestedFor) setLoading(false);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -49,6 +58,7 @@ const ReviewList = ({ targetType, targetId, refreshKey, onStats, eligibility, on
   );
 
   useEffect(() => {
+    latestTargetRef.current = targetId;
     if (targetId) fetchReviews(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetId, refreshKey]);

@@ -14,6 +14,7 @@ import {
   Users
 } from 'lucide-react'
 import { HospitalContext } from '../context/HospitalContext'
+import { revokeServerSession } from '../utils/logoutHelper'
 
 const HospitalSidebar = () => {
   const { hToken, setHToken } = useContext(HospitalContext)
@@ -33,11 +34,13 @@ const HospitalSidebar = () => {
     { name: 'Settings', path: '/hospital-settings', icon: Settings }
   ], [])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Revoke the server-side session first — see utils/logoutHelper.js.
+    await revokeServerSession('htoken', hToken)
     setHToken('')
     localStorage.removeItem('hToken')
     navigate('/')
-  }, [setHToken, navigate])
+  }, [hToken, setHToken, navigate])
 
   return (
     <div style={{

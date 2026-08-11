@@ -14,6 +14,8 @@ const PharmacyContextProvider = (props) => {
     const [pharmacyStats, setPharmacyStats] = useState(null)
     const [pharmacyHistory, setPharmacyHistory] = useState([])
     const [pharmacyLookupResult, setPharmacyLookupResult] = useState(null)
+    const [pharmacyScanLog, setPharmacyScanLog] = useState([])
+    const [pharmacyScanLogPagination, setPharmacyScanLogPagination] = useState(null)
 
     // Silently refreshes the 15-min access token using the httpOnly refresh
     // cookie whenever a request comes back 401.
@@ -101,13 +103,42 @@ const PharmacyContextProvider = (props) => {
         }
     }, [backendUrl, pToken])
 
+    // The pharmacy's own append-only scan/security log — every scan attempt
+    // it made (verified, dispensed, dispense rejected, or unauthorized/not-
+    // found), read-only. There is no update/delete counterpart by design.
+    const getPharmacyScanLog = useCallback(async (params = {}) => {
+        try {
+            const { data } = await axios.get(backendUrl + '/api/medical-records/pharmacy/scan-log', {
+                headers: { ptoken: pToken },
+                params,
+            })
+            if (data.success) {
+                setPharmacyScanLog(data.logs)
+                setPharmacyScanLogPagination(data.pagination)
+            } else {
+                toast.error(data.message)
+            }
+            return data
+        } catch (error) {
+            console.log(error)
+            toast.error(error.response?.data?.message || error.message)
+            return { success: false }
+        }
+    }, [backendUrl, pToken])
+
     // Looks up a prescription by its verification token (scanned via camera,
     // or pasted from the verify link) — the AUTHORIZED view, richer than the
     // public /verify/:token page, but still never the patient's diagnosis,
     // notes, attachments, or unrelated medical records.
     const lookupPrescription = useCallback(async (token) => {
         try {
-            const { data } = await axios.get(backendUrl + '/api/medical-records/pharmacy/verify/' + token, { headers: { ptoken: pToken } })
+            // A scanned QR that isn't a genuine CuraLink verify link can be
+            // arbitrary text — a URL to some other site, plain text, anything
+            // — and may contain "/" or other characters that would otherwise
+            // split across multiple path segments and get misrouted by Express
+            // before ever reaching pharmacyVerifyPrescription's real 404 JSON.
+            // Encoding keeps it a single opaque path segment either way.
+            const { data } = await axios.get(backendUrl + '/api/medical-records/pharmacy/verify/' + encodeURIComponent(token), { headers: { ptoken: pToken } })
             if (data.success) {
                 setPharmacyLookupResult(data.prescription)
             } else {
@@ -117,8 +148,14 @@ const PharmacyContextProvider = (props) => {
             return data
         } catch (error) {
             setPharmacyLookupResult(null)
-            toast.error(error.response?.data?.message || error.message)
-            return { success: false }
+            // A "not found" token is a 404 (medicalRecordController.js#pharmacyVerifyPrescription),
+            // so axios throws instead of resolving with data.success===false — the
+            // response body (including `reason`, which PharmacyScan.jsx keys off of
+            // to distinguish an invalid QR from an ordinary network error) still
+            // needs to be surfaced from here, not swallowed.
+            const body = error.response?.data
+            toast.error(body?.message || error.message)
+            return { success: false, message: body?.message, reason: body?.reason }
         }
     }, [backendUrl, pToken])
 
@@ -154,6 +191,7 @@ const PharmacyContextProvider = (props) => {
         pharmacyProfile, setPharmacyProfile, getPharmacyProfile, updatePharmacyProfile, changePharmacyPassword,
         pharmacyStats, getPharmacyStats,
         pharmacyHistory, getPharmacyHistory,
+        pharmacyScanLog, pharmacyScanLogPagination, getPharmacyScanLog,
         pharmacyLookupResult, setPharmacyLookupResult, lookupPrescription, dispensePrescription,
     }
 

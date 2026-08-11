@@ -217,8 +217,8 @@ const MyAppointments = () => {
               <div className="flex-shrink-0">
                 <div className="w-24 h-28 rounded-xl overflow-hidden bg-gradient-card">
                   <img
-                    src={item.docData.image}
-                    alt={item.docData.name}
+                    src={item.docData?.image}
+                    alt={item.docData?.name}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -227,10 +227,10 @@ const MyAppointments = () => {
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 flex-wrap mb-1">
-                  <h3 className="text-base font-bold text-text-primary">{item.docData.name}</h3>
+                  <h3 className="text-base font-bold text-text-primary">{item.docData?.name || "Unknown Doctor"}</h3>
                   <StatusBadge item={item} />
                 </div>
-                <p className="text-sm text-primary font-medium mb-2">{item.docData.speciality}</p>
+                <p className="text-sm text-primary font-medium mb-2">{item.docData?.speciality}</p>
 
                 <div className="flex flex-col gap-1.5 text-sm text-text-muted">
                   <div className="flex items-center gap-2">
@@ -238,7 +238,7 @@ const MyAppointments = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                     </svg>
-                    <span className="text-xs">{item.docData.address?.line1}{item.docData.address?.line2 ? `, ${item.docData.address.line2}` : ""}</span>
+                    <span className="text-xs">{item.docData?.address?.line1}{item.docData?.address?.line2 ? `, ${item.docData.address.line2}` : ""}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 flex-shrink-0 text-text-muted/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

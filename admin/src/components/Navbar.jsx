@@ -6,6 +6,7 @@ import { HospitalContext } from '../context/HospitalContext'
 import { PharmacyContext } from '../context/PharmacyContext'
 import { useNavigate } from 'react-router-dom'
 import { User, LogOut, ChevronDown } from 'lucide-react'
+import { revokeServerSession } from '../utils/logoutHelper'
 
 const ROLE_BADGE = {
   Admin: { bg: '#F0F9FF', border: '#BAE6FD', dot: '#0EA5E9', text: '#0284C7', avatar: 'A' },
@@ -49,23 +50,30 @@ const Navbar = () => {
     }
   }, [])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Revoke the server-side session first (before clearing local state) so
+    // the refresh-token cookie can't silently restore this "logged out"
+    // session — see utils/logoutHelper.js.
     if (aToken) {
+      await revokeServerSession('atoken', aToken)
       setAToken('')
-      localStorage.removeItem('atoken')
+      localStorage.removeItem('aToken')
     }
 
     if (dToken) {
+      await revokeServerSession('dtoken', dToken)
       setDToken('')
       localStorage.removeItem('dToken')
     }
 
     if (hToken) {
+      await revokeServerSession('htoken', hToken)
       setHToken('')
       localStorage.removeItem('hToken')
     }
 
     if (pToken) {
+      await revokeServerSession('ptoken', pToken)
       setPToken('')
       localStorage.removeItem('pToken')
     }

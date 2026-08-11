@@ -104,6 +104,9 @@ reviewSchema.index({ doctorId: 1 });
 reviewSchema.index({ hospitalId: 1 });
 reviewSchema.index({ userId: 1 });
 reviewSchema.index({ appointmentId: 1 });
+// Supports getRecentReviews' `{ isVisible: true }` sorted by createdAt
+// (reviewController.js) — the homepage recent-reviews widget.
+reviewSchema.index({ isVisible: 1, createdAt: -1 });
 
 // A user may leave at most one review per doctor for a given appointment
 // (doctor reviews remain tied to a specific completed appointment). Partial

@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { toast } from 'react-toastify'
 import { DoctorContext } from '../../context/DoctorContext'
 import { AppContext } from '../../context/AppContext'
 import {
@@ -121,9 +122,12 @@ const DoctorDashboard = () => {
       )
       if (data.success) {
         setProfileData(prev => ({ ...prev, available: !prev.available }))
+      } else {
+        toast.error(data.message)
       }
     } catch (error) {
       console.error(error)
+      toast.error(error.response?.data?.message || error.message)
     } finally {
       setTogglingAvailability(false)
     }

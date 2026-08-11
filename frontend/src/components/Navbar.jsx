@@ -2,6 +2,7 @@ import React, { useContext, useState, useCallback, useEffect } from "react";
 import { assets } from "../assets/assets";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+import { revokeServerSession } from "../utils/logoutHelper";
 
 const navLinks = [
   { name: "Home", path: "/" },
@@ -41,10 +42,12 @@ const Navbar = () => {
     setShowMenu(false);
   }, [location.pathname]);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Revoke the server-side session first — see utils/logoutHelper.js.
+    await revokeServerSession(token);
     setToken(false);
     localStorage.removeItem("token");
-  }, [setToken]);
+  }, [token, setToken]);
 
   return (
     <>

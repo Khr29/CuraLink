@@ -132,12 +132,18 @@ const HospitalPatientDetail = () => {
   const recordRefs = useRef({})
 
   useEffect(() => {
+    // Guards against a slower response for the PREVIOUS patientId landing
+    // after a newer one and overwriting patientDetail/notFound with the
+    // wrong patient's data — e.g. clicking through two patients quickly.
+    let cancelled = false
     setPatientDetail(null)
-    if (!hToken) return
+    if (!hToken) return undefined
     getHospitalPatientDetail(patientId).then((res) => {
+      if (cancelled) return
       if (!res?.success) setNotFound(true)
       setLoading(false)
     })
+    return () => { cancelled = true }
   }, [hToken, patientId, getHospitalPatientDetail, setPatientDetail])
 
   useEffect(() => {

@@ -132,7 +132,20 @@ const Dashboard = () => {
     [appointments, records, reviews]
   );
 
-  if (!userData) return null;
+  // Keep the portal shell (nav/sidebar) visible instead of a blank page
+  // while userData is still loading — or, on a genuine load failure, so the
+  // user isn't stranded with no way to navigate elsewhere. An invalid/
+  // expired session is handled separately by ProtectedRoute (App.jsx),
+  // which redirects to /login once AppContext clears the token.
+  if (!userData) {
+    return (
+      <PortalLayout>
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </PortalLayout>
+    );
+  }
 
   return (
     <PortalLayout>

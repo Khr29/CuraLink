@@ -7,7 +7,7 @@ import auditLogModel from "../models/auditLogModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import { sanitizeText } from "../utils/sanitize.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
-import { DRUG_FORMS, FREQUENCIES, ROUTES, TIMING_OPTIONS } from "../constants/prescription.js";
+import { DRUG_FORMS, FREQUENCIES, ROUTES, TIMING_OPTIONS, PRESCRIPTION_EXPIRY_DAYS } from "../constants/prescription.js";
 import { generatePrescriptionId, generateVerificationToken } from "../utils/prescriptionId.js";
 
 const MAX_DIAGNOSIS_LEN = 3000;
@@ -16,6 +16,12 @@ const MAX_PRESCRIPTION_ITEMS = 30;
 const MAX_DISPENSE_NOTES_LEN = 500;
 const MAX_REVOKE_REASON_LEN = 500;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const PRESCRIPTION_EXPIRY_MS = PRESCRIPTION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+
+// A finalized prescription expires PRESCRIPTION_EXPIRY_DAYS after
+// finalizedAt — computed on read, not a stored status (see constants/prescription.js).
+const isPrescriptionExpired = (record) =>
+  !!record.finalizedAt && Date.now() - new Date(record.finalizedAt).getTime() > PRESCRIPTION_EXPIRY_MS;
 
 const oneOf = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback);
 
@@ -575,14 +581,27 @@ export const pharmacyVerifyPrescription = async (req, res) => {
         action: AUDIT_ACTIONS.UNAUTHORIZED_ACCESS_ATTEMPT,
         target: { type: "medicalRecord", label: "unknown token" },
         status: "failure",
-        reason: "Prescription not found",
+        reason: "not_found",
       });
-      return res.status(404).json({ success: false, message: "Prescription not found" });
+      return res.status(404).json({ success: false, message: "Prescription not found", reason: "not_found" });
     }
 
     await backfillQuantityPrescribed(record);
 
     const pharmacy = await pharmacyModel.findById(req.pharmacyId).select("name");
+
+    // A single authoritative outcome the frontend renders off of, instead of
+    // re-deriving revoked/expired/already-dispensed from raw fields itself —
+    // checked in this priority order since a revoked or expired prescription
+    // is blocking regardless of how much of it was dispensed before that.
+    const expired = isPrescriptionExpired(record);
+    const outcome =
+      record.prescriptionStatus === "revoked" ? "revoked" :
+      expired ? "expired" :
+      record.dispensing?.status === "dispensed" ? "already_dispensed" :
+      record.dispensing?.status === "partially_dispensed" ? "partially_dispensed" :
+      "valid";
+
     await logAction({
       req,
       actorType: "pharmacy",
@@ -591,6 +610,7 @@ export const pharmacyVerifyPrescription = async (req, res) => {
       action: AUDIT_ACTIONS.PRESCRIPTION_ACCESSED_BY_PHARMACY,
       target: { type: "medicalRecord", id: record._id, label: record.prescriptionId },
       status: "success",
+      reason: outcome,
     });
 
     res.json({
@@ -598,7 +618,9 @@ export const pharmacyVerifyPrescription = async (req, res) => {
       prescription: {
         prescriptionId: record.prescriptionId,
         status: record.prescriptionStatus,
+        outcome,
         issuedAt: record.finalizedAt,
+        revokedAt: record.revokedAt || null,
         patient: { name: record.patientId?.name || "" },
         doctor: {
           name: record.doctorId?.name || "",
@@ -630,6 +652,20 @@ export const pharmacyVerifyPrescription = async (req, res) => {
           };
         }),
         dispensing: record.dispensing,
+        // Full append-only ledger (never just the latest transaction) so the
+        // pharmacist can see every prior partial fill — who, how much, and
+        // when — not only this pharmacy's own (dispensingRecords carries no
+        // diagnosis/notes-about-the-patient, only dispense-action metadata).
+        dispensingRecords: (record.dispensingRecords || [])
+          .map((entry) => ({
+            medicineIndex: entry.medicineIndex,
+            medicineName: entry.medicineName,
+            quantityDispensed: entry.quantityDispensed,
+            pharmacyName: entry.pharmacyName,
+            notes: entry.notes,
+            dispensedAt: entry.dispensedAt,
+          }))
+          .sort((a, b) => new Date(b.dispensedAt) - new Date(a.dispensedAt)),
       },
     });
   } catch (error) {
@@ -668,13 +704,32 @@ export const pharmacyDispense = async (req, res) => {
 
     const preRecord = await medicalRecordModel
       .findOne({ verificationToken: token })
-      .select("+verificationToken prescription prescriptionStatus");
+      .select("+verificationToken prescription prescriptionStatus finalizedAt prescriptionId");
+    const pharmacy = await pharmacyModel.findById(req.pharmacyId).select("name");
+
+    const rejectDispense = async (message, reason) => {
+      await logAction({
+        req,
+        actorType: "pharmacy",
+        actorId: req.pharmacyId,
+        actorLabel: pharmacy?.name || "",
+        action: AUDIT_ACTIONS.PRESCRIPTION_DISPENSE_REJECTED,
+        target: { type: "medicalRecord", id: preRecord?._id || null, label: preRecord?.prescriptionId || "unknown token" },
+        status: "failure",
+        reason,
+      });
+      return res.json({ success: false, message });
+    };
+
     if (!preRecord || preRecord.prescriptionStatus !== "active") {
-      return res.json({ success: false, message: "This prescription is not available for dispensing" });
+      return rejectDispense("This prescription is not available for dispensing", "not_active");
+    }
+    if (isPrescriptionExpired(preRecord)) {
+      return rejectDispense("This prescription has expired and can no longer be dispensed", "expired");
     }
     const targetItem = preRecord.prescription[medicineIndex];
     if (!targetItem) {
-      return res.json({ success: false, message: "Medicine not found on this prescription" });
+      return rejectDispense("Medicine not found on this prescription", "medicine_not_found");
     }
 
     // Correct any stale quantityPrescribed (see backfillQuantityPrescribed)
@@ -682,8 +737,6 @@ export const pharmacyDispense = async (req, res) => {
     // never been through pharmacyVerifyPrescription could still be guarded
     // against the wrong total.
     await backfillQuantityPrescribed(preRecord);
-
-    const pharmacy = await pharmacyModel.findById(req.pharmacyId).select("name");
 
     const updated = await medicalRecordModel.findOneAndUpdate(
       {
@@ -715,17 +768,19 @@ export const pharmacyDispense = async (req, res) => {
 
     if (!updated) {
       // The atomic guard didn't match — re-fetch to report the real reason
-      // (prescription no longer active, or not enough remaining).
+      // (prescription no longer active, or not enough remaining). This is
+      // exactly the "reuse an already-dispensed prescription" case the
+      // scan/security log exists to surface — logged distinctly below.
       const current = await medicalRecordModel.findOne({ verificationToken: token }).select("prescription prescriptionStatus");
       if (!current || current.prescriptionStatus !== "active") {
-        return res.json({ success: false, message: "This prescription is not available for dispensing" });
+        return rejectDispense("This prescription is not available for dispensing", "not_active");
       }
       const currentItem = current.prescription[medicineIndex];
       const remaining = Math.max((currentItem?.quantityPrescribed ?? 0) - (currentItem?.dispensedQuantity ?? 0), 0);
-      return res.json({
-        success: false,
-        message: `Cannot dispense ${quantity} — only ${remaining} remaining for this medicine`,
-      });
+      return rejectDispense(
+        `Cannot dispense ${quantity} — only ${remaining} remaining for this medicine`,
+        remaining === 0 ? "already_fully_dispensed" : "over_dispense_attempt"
+      );
     }
 
     // Record-level rollup, recomputed from the now-consistent per-item
@@ -846,6 +901,53 @@ export const getPharmacyHistory = async (req, res) => {
     transactions.sort((a, b) => new Date(b.dispensedAt) - new Date(a.dispensedAt));
 
     res.json({ success: true, history: transactions.slice(0, 100) });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// =============================
+// Pharmacy — the pharmacy's own append-only scan/security log: every scan
+// attempt it made, valid or not (verified, dispensed, dispense rejected, or
+// unauthorized/not-found). Reuses the existing shared auditLogModel rather
+// than a parallel log — this is a read-only, scoped view over it. GET only;
+// there is no update/delete route, so a pharmacy can never edit or clear its
+// own history.
+// =============================
+export const getPharmacyScanLog = async (req, res) => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+    const filter = {
+      actorType: "pharmacy",
+      actorId: req.pharmacyId,
+      action: {
+        $in: [
+          AUDIT_ACTIONS.PRESCRIPTION_ACCESSED_BY_PHARMACY,
+          AUDIT_ACTIONS.PRESCRIPTION_DISPENSED,
+          AUDIT_ACTIONS.PRESCRIPTION_DISPENSE_REJECTED,
+          AUDIT_ACTIONS.UNAUTHORIZED_ACCESS_ATTEMPT,
+        ],
+      },
+    };
+
+    const [logs, total] = await Promise.all([
+      auditLogModel
+        .find(filter)
+        .select("action target status reason createdAt")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      auditLogModel.countDocuments(filter),
+    ]);
+
+    res.json({
+      success: true,
+      logs,
+      pagination: { page, limit, total, pages: Math.max(1, Math.ceil(total / limit)) },
+    });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });

@@ -2,12 +2,16 @@ import React, { useContext, useState, useRef, useEffect, useCallback } from 'rea
 import { PharmacyContext } from '../../context/PharmacyContext'
 import {
   Search, User, Stethoscope, Building2, Calendar, Keyboard, Upload, CameraOff,
-  ShieldCheck, ShieldAlert, CheckCircle2, PackageCheck, Loader2, ScanLine, RotateCcw, AlertTriangle
+  ShieldCheck, ShieldAlert, ShieldX, CheckCircle2, PackageCheck, Loader2, ScanLine,
+  RotateCcw, AlertTriangle, Clock, History as HistoryIcon
 } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 
 const formatDate = (date) =>
   date ? new Date(date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''
+
+const formatDateTime = (date) =>
+  date ? new Date(date).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
 
 const medName = (item) => item.medicineName || item.medicine || ''
 const medDose = (item) => item.dose || item.dosage || ''
@@ -18,8 +22,36 @@ const DISPENSING_LABELS = {
   not_applicable: 'Not Dispensed',
   pending: 'Not Dispensed',
   partially_dispensed: 'Partially Dispensed',
-  dispensed: 'Dispensed',
+  dispensed: 'Fully Dispensed',
 }
+
+// One blocking banner per non-plain outcome the backend can return
+// (medicalRecordController.js#pharmacyVerifyPrescription) — colors reuse
+// CuraLink's existing red/orange/green tokens, just applied per this
+// explicit legend: invalid/revoked = red, expired/already-dispensed = orange.
+const OUTCOME_BANNERS = {
+  revoked: {
+    color: '#DC2626', bg: '#FEF2F2', border: '#FECACA', icon: ShieldAlert,
+    title: 'Prescription Revoked',
+    detail: 'This prescription was revoked by the prescribing doctor or an administrator and can no longer be dispensed.',
+  },
+  expired: {
+    color: '#D97706', bg: '#FFFBEB', border: '#FDE68A', icon: Clock,
+    title: 'Prescription Expired',
+    detail: 'This prescription is past its validity window and can no longer be dispensed.',
+  },
+  already_dispensed: {
+    color: '#D97706', bg: '#FFFBEB', border: '#FDE68A', icon: PackageCheck,
+    title: 'Already Fully Dispensed',
+    detail: 'Every medicine on this prescription has already been dispensed in full.',
+  },
+}
+
+// A short window to ignore an identical repeat scan/lookup — guards against
+// a burst of frames or a double-submit firing two lookups for one physical
+// scan, without suppressing genuinely repeated attempts made seconds apart
+// (those are exactly what the scan/security log exists to surface).
+const DUPLICATE_SCAN_WINDOW_MS = 2500
 
 // A pharmacist may scan a QR, upload an image of one, or paste either the
 // raw verification token or the full verify link — extract the token either
@@ -51,6 +83,12 @@ const PharmacyScan = () => {
 
   const [verifying, setVerifying] = useState(false)
   const [scanError, setScanError] = useState('')
+  // Set only when a QR/file scan (not manual entry) comes back "not a real
+  // CuraLink token at all" — drives the full-panel red INVALID QR state,
+  // kept separate from scanError's smaller inline banner (network hiccups,
+  // a mistyped manual code) so a genuine security-relevant miss reads very
+  // differently from an ordinary retry-able error.
+  const [scanBlocked, setScanBlocked] = useState(false)
   const [manualInput, setManualInput] = useState('')
   const [uploading, setUploading] = useState(false)
   const [token, setToken] = useState('')
@@ -61,15 +99,27 @@ const PharmacyScan = () => {
 
   const html5QrCodeRef = useRef(null)
   const fileInputRef = useRef(null)
+  // { token, ts } of the last lookup actually dispatched — see
+  // DUPLICATE_SCAN_WINDOW_MS above.
+  const lastAttemptRef = useRef({ token: '', ts: 0 })
 
-  const runLookup = useCallback(async (extracted) => {
+  const runLookup = useCallback(async (extracted, { viaQr = false } = {}) => {
     if (!extracted) return
+    const now = Date.now()
+    if (extracted === lastAttemptRef.current.token && now - lastAttemptRef.current.ts < DUPLICATE_SCAN_WINDOW_MS) {
+      return
+    }
+    lastAttemptRef.current = { token: extracted, ts: now }
+
     setVerifying(true)
     setScanError('')
+    setScanBlocked(false)
     const data = await lookupPrescription(extracted)
     setVerifying(false)
     if (data?.success) {
       setToken(extracted)
+    } else if (viaQr && data?.reason === 'not_found') {
+      setScanBlocked(true)
     } else {
       setScanError(data?.message || 'Invalid or expired QR code')
     }
@@ -126,7 +176,7 @@ const PharmacyScan = () => {
             html5QrCodeRef.current = null
             instance?.stop().then(() => instance.clear()).catch(() => {})
             setCameraStatus('starting')
-            runLookup(extractToken(decodedText))
+            runLookup(extractToken(decodedText), { viaQr: true })
           },
           () => { /* per-frame miss while framing the code — expected, ignore */ }
         )
@@ -178,7 +228,7 @@ const PharmacyScan = () => {
       const { Html5Qrcode } = await import('html5-qrcode')
       const instance = new Html5Qrcode(QR_FILE_READER_ID, { verbose: false })
       const decodedText = await instance.scanFile(file, false)
-      await runLookup(extractToken(decodedText))
+      await runLookup(extractToken(decodedText), { viaQr: true })
     } catch {
       setScanError('Could not read a QR code from that image.')
     } finally {
@@ -190,6 +240,7 @@ const PharmacyScan = () => {
   const resetScan = useCallback(() => {
     setPharmacyLookupResult(null)
     setScanError('')
+    setScanBlocked(false)
     setManualInput('')
     setToken('')
     setMode('camera')
@@ -214,8 +265,23 @@ const PharmacyScan = () => {
     setDispensingIndex(null)
   }
 
-  const isRevoked = pharmacyLookupResult?.status === 'revoked'
-  const alreadyDispensed = pharmacyLookupResult?.dispensing?.status === 'dispensed'
+  // The backend computes this once as the single authoritative outcome
+  // (medicalRecordController.js#pharmacyVerifyPrescription) — the frontend
+  // just reads it rather than re-deriving revoked/expired/already-dispensed
+  // from raw fields itself.
+  const outcome = pharmacyLookupResult?.outcome || 'valid'
+  const isRevoked = outcome === 'revoked'
+  const alreadyDispensed = outcome === 'already_dispensed'
+  const canDispense = outcome === 'valid' || outcome === 'partially_dispensed'
+  const outcomeBanner = OUTCOME_BANNERS[outcome]
+
+  // Every past dispense transaction for this prescription, grouped by
+  // medicine — dispensingRecords is the append-only ledger returned by
+  // pharmacyVerifyPrescription, never overwritten on a later partial fill.
+  const transactionsByMedicine = (pharmacyLookupResult?.dispensingRecords || []).reduce((acc, entry) => {
+    (acc[entry.medicineIndex] ||= []).push(entry)
+    return acc
+  }, {})
 
   return (
     <div className="curalink-fade-in" style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%)', padding: '32px 24px 48px' }}>
@@ -227,7 +293,40 @@ const PharmacyScan = () => {
 
         {!pharmacyLookupResult && (
           <div style={{ marginBottom: 24 }}>
-            {mode === 'camera' ? (
+            {scanBlocked ? (
+              // Strong, unambiguous red state for a QR that isn't a genuine
+              // CuraLink prescription token at all — deliberately shows
+              // nothing else (no patient/doctor/medicine data ever reaches
+              // this branch, since pharmacyLookupResult stays null).
+              <div style={{
+                background: '#FEF2F2', border: '2px solid #FECACA', borderRadius: 24,
+                padding: '48px 32px', textAlign: 'center', display: 'flex',
+                flexDirection: 'column', alignItems: 'center', gap: 14,
+              }}>
+                <span style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(220,38,38,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ShieldX size={30} color="#DC2626" />
+                </span>
+                <p style={{ fontSize: 19, fontWeight: 800, color: '#B91C1C', margin: 0, letterSpacing: '-0.01em' }}>
+                  INVALID QR CODE
+                </p>
+                <p style={{ fontSize: 13.5, color: '#7F1D1D', margin: 0, maxWidth: 420 }}>
+                  This QR code is not a valid CuraLink prescription.
+                </p>
+                <button
+                  type="button"
+                  onClick={resetScan}
+                  style={{
+                    marginTop: 10, display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '10px 22px', borderRadius: 12, border: 'none',
+                    background: 'linear-gradient(135deg, #DC2626, #B91C1C)', color: '#fff',
+                    fontWeight: 700, fontSize: 13.5, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    boxShadow: '0 6px 18px rgba(220,38,38,0.3)',
+                  }}
+                >
+                  <ScanLine size={15} /> Scan Again
+                </button>
+              </div>
+            ) : mode === 'camera' ? (
               <div style={{ background: '#0F172A', borderRadius: 24, padding: 20, boxShadow: '0 20px 50px rgba(15,23,42,0.25)' }}>
                 <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', aspectRatio: '4 / 3', background: '#000' }}>
                   {/* html5-qrcode injects the <video> feed into this element once the
@@ -348,10 +447,10 @@ const PharmacyScan = () => {
           <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 24, padding: 24, boxShadow: '0 8px 24px rgba(15,23,42,0.05)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 18, paddingBottom: 18, borderBottom: '1px solid #F1F5F9' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {isRevoked ? <ShieldAlert size={22} color="#D97706" /> : <ShieldCheck size={22} color="#16A34A" />}
+                {outcomeBanner ? <outcomeBanner.icon size={22} color={outcomeBanner.color} /> : <ShieldCheck size={22} color="#16A34A" />}
                 <div>
                   <p style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', margin: 0 }}>{pharmacyLookupResult.prescriptionId}</p>
-                  <p style={{ fontSize: 11.5, color: isRevoked ? '#D97706' : '#16A34A', fontWeight: 700, margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <p style={{ fontSize: 11.5, color: outcomeBanner ? outcomeBanner.color : '#16A34A', fontWeight: 700, margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     {pharmacyLookupResult.status}
                   </p>
                 </div>
@@ -359,8 +458,10 @@ const PharmacyScan = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{
                   fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 999,
-                  background: alreadyDispensed ? '#F0FDF4' : '#FFFBEB',
-                  color: alreadyDispensed ? '#16A34A' : '#D97706',
+                  background: pharmacyLookupResult.dispensing?.status === 'dispensed' ? '#F0FDF4'
+                    : pharmacyLookupResult.dispensing?.status === 'partially_dispensed' ? '#FFFBEB' : '#F1F5F9',
+                  color: pharmacyLookupResult.dispensing?.status === 'dispensed' ? '#16A34A'
+                    : pharmacyLookupResult.dispensing?.status === 'partially_dispensed' ? '#D97706' : '#64748B',
                 }}>
                   {DISPENSING_LABELS[pharmacyLookupResult.dispensing?.status] || 'Not Dispensed'}
                 </span>
@@ -369,6 +470,25 @@ const PharmacyScan = () => {
                 </button>
               </div>
             </div>
+
+            {outcomeBanner && (
+              <div style={{
+                display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 20,
+                background: outcomeBanner.bg, border: `1.5px solid ${outcomeBanner.border}`, borderRadius: 14, padding: '14px 16px',
+              }}>
+                <outcomeBanner.icon size={20} color={outcomeBanner.color} style={{ flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <p style={{ fontSize: 13.5, fontWeight: 800, color: outcomeBanner.color, margin: 0 }}>{outcomeBanner.title}</p>
+                  <p style={{ fontSize: 12, color: '#475569', margin: '3px 0 0' }}>{outcomeBanner.detail}</p>
+                  {isRevoked && pharmacyLookupResult.revokedAt && (
+                    <p style={{ fontSize: 11.5, color: '#94A3B8', margin: '4px 0 0' }}>Revoked on {formatDateTime(pharmacyLookupResult.revokedAt)}</p>
+                  )}
+                  {alreadyDispensed && pharmacyLookupResult.dispensing?.dispensedAt && (
+                    <p style={{ fontSize: 11.5, color: '#94A3B8', margin: '4px 0 0' }}>Last dispensed {formatDateTime(pharmacyLookupResult.dispensing.dispensedAt)}</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 20, fontSize: 13 }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
@@ -398,6 +518,8 @@ const PharmacyScan = () => {
               {(pharmacyLookupResult.medications || []).map((item) => {
                 const i = item.medicineIndex
                 const fullyDispensed = item.remaining <= 0
+                const transactions = transactionsByMedicine[i] || []
+                const lastTransaction = transactions[0]
                 return (
                   <div key={i} style={{ background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: 12, padding: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
@@ -420,7 +542,26 @@ const PharmacyScan = () => {
                       </span>
                     </div>
 
-                    {!isRevoked && (
+                    {lastTransaction && (
+                      <p style={{ marginTop: 8, fontSize: 11, color: '#64748B', display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <Clock size={11} /> Dispensed on: {formatDateTime(lastTransaction.dispensedAt)}
+                        {lastTransaction.pharmacyName ? ` by ${lastTransaction.pharmacyName}` : ''}
+                      </p>
+                    )}
+
+                    {transactions.length > 1 && (
+                      <div style={{ marginTop: 6, paddingLeft: 4, borderLeft: '2px solid #E2E8F0' }}>
+                        {transactions.map((t, ti) => (
+                          <p key={ti} style={{ margin: '3px 0 3px 8px', fontSize: 10.5, color: '#94A3B8', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <HistoryIcon size={10} /> {t.quantityDispensed} units — {formatDateTime(t.dispensedAt)}
+                            {t.pharmacyName ? ` — ${t.pharmacyName}` : ''}
+                            {t.notes ? ` — "${t.notes}"` : ''}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {canDispense && (
                       fullyDispensed ? (
                         <p style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #E2E8F0', fontSize: 11.5, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 5 }}>
                           <CheckCircle2 size={13} /> Fully dispensed

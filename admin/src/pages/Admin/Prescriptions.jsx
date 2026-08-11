@@ -49,8 +49,8 @@ const selectStyle = {
   outline: 'none',
 }
 
-const formatDate = (date) =>
-  date ? new Date(date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
+const formatDateTime = (date) =>
+  date ? new Date(date).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
 
 const Prescriptions = () => {
   const { aToken, prescriptions, prescriptionsPagination, getAllPrescriptions, hospitals, getAllHospitals } = useContext(AdminContext)
@@ -309,7 +309,7 @@ const PrescriptionRow = ({ rx, expanded, onToggle }) => {
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: '#475569' }}>
                       <PackageCheck size={13} color="#16A34A" style={{ flexShrink: 0 }} />
                       <span>
-                        {entry.quantityDispensed}× {entry.medicineName} dispensed by {entry.pharmacyName || 'a pharmacy'} on {formatDate(entry.dispensedAt)}
+                        {entry.quantityDispensed}× {entry.medicineName} dispensed by {entry.pharmacyName || 'a pharmacy'} on {formatDateTime(entry.dispensedAt)}
                         {entry.notes ? ` — "${entry.notes}"` : ''}
                       </span>
                     </div>

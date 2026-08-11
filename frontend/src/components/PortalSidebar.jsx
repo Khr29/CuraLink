@@ -12,6 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { AppContext } from "../context/AppContext";
+import { revokeServerSession } from "../utils/logoutHelper";
 
 // Patient portal's own in-section navigation — deliberately matches the
 // Doctor/Hospital dashboards' sidebar: flush against the true left edge of
@@ -33,14 +34,16 @@ const menuItems = [
 
 const PortalSidebar = () => {
   const items = useMemo(() => menuItems, []);
-  const { setToken } = useContext(AppContext);
+  const { token, setToken } = useContext(AppContext);
   const navigate = useNavigate();
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Revoke the server-side session first — see utils/logoutHelper.js.
+    await revokeServerSession(token);
     setToken(false);
     localStorage.removeItem("token");
     navigate("/login");
-  }, [setToken, navigate]);
+  }, [token, setToken, navigate]);
 
   return (
     <>

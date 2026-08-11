@@ -672,13 +672,14 @@ const cancelAppointment = async (req, res) => {
     //releasing doct slot
 
     const { docId, slotDate, slotTime } = appointmentData;
-    const doctorData = await doctorModel.findById(docId);
-    let slots_booked = doctorData.slots_booked;
-    slots_booked[slotDate] = slots_booked[slotDate].filter(
-      (e) => e !== slotTime,
-    );
-
-    await doctorModel.findByIdAndUpdate(docId, { slots_booked });
+    // Atomic $pull instead of read-modify-write on the whole slots_booked
+    // object — a concurrent booking/cancellation on the same doctor could
+    // otherwise have its change silently overwritten by this write landing
+    // last with a stale snapshot (same fix already applied to the
+    // doctor-initiated cancel path below).
+    await doctorModel.findByIdAndUpdate(docId, {
+      $pull: { [`slots_booked.${slotDate}`]: slotTime },
+    });
     // email notiication
     try {
       await sendEmail(
@@ -739,7 +740,15 @@ const paymentRazorpay = async (req, res) => {
     const { appointmentId } = req.body;
     const appointmentData = await appointmentModel.findById(appointmentId);
 
-    if (!appointmentData || appointmentData.cancelled) {
+    // Same ownership check as cancelAppointment above — without it, any
+    // authenticated patient could supply another patient's appointmentId to
+    // create a Razorpay order (and probe its amount/existence) for an
+    // appointment that isn't theirs.
+    if (
+      !appointmentData ||
+      appointmentData.cancelled ||
+      appointmentData.userId.toString() !== req.userId
+    ) {
       return res.json({
         success: false,
         message: "Appointment Cancelled or not found",
@@ -786,6 +795,15 @@ const verifyRazorpay = async (req, res) => {
     const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
 
     if (orderInfo.status === "paid") {
+      // orderInfo.receipt is the appointmentId (set in paymentRazorpay above)
+      // — confirm it still belongs to the caller before marking it paid, so
+      // a guessed/leaked order id can't be used to flip another patient's
+      // appointment.
+      const appointmentData = await appointmentModel.findById(orderInfo.receipt);
+      if (!appointmentData || appointmentData.userId.toString() !== req.userId) {
+        return res.json({ success: false, message: "Payment verification failed" });
+      }
+
       await appointmentModel.findByIdAndUpdate(orderInfo.receipt, {
         payment: true,
       });

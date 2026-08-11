@@ -12,18 +12,20 @@ import {
   Stethoscope,
   Building2,
   ShieldCheck,
+  Pill,
 } from 'lucide-react'
 import PageHero from '../../components/PageHero'
 import EmptyState from '../../components/EmptyState'
 import { SkeletonRow } from '../../components/Skeleton'
 
-const ACTOR_TYPES = ['admin', 'doctor', 'hospital', 'user', 'system']
+const ACTOR_TYPES = ['admin', 'doctor', 'hospital', 'pharmacy', 'user', 'system']
 const STATUSES = ['success', 'failure']
 
 const ACTOR_ICONS = {
   admin: ShieldCheck,
   doctor: Stethoscope,
   hospital: Building2,
+  pharmacy: Pill,
   user: User,
   system: ScrollText,
 }

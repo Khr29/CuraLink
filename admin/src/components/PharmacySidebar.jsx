@@ -1,7 +1,8 @@
 import React, { useContext, useMemo, useState, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ScanLine, History, UserCog, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, ScanLine, History, ShieldAlert, UserCog, Settings, LogOut } from 'lucide-react'
 import { PharmacyContext } from '../context/PharmacyContext'
+import { revokeServerSession } from '../utils/logoutHelper'
 
 const PharmacySidebar = () => {
   const { pToken, setPToken } = useContext(PharmacyContext)
@@ -12,15 +13,18 @@ const PharmacySidebar = () => {
     { name: 'Dashboard', path: '/pharmacy-dashboard', icon: LayoutDashboard },
     { name: 'Scan & Verify', path: '/pharmacy-scan', icon: ScanLine },
     { name: 'Dispensing History', path: '/pharmacy-history', icon: History },
+    { name: 'Scan History', path: '/pharmacy-scan-log', icon: ShieldAlert },
     { name: 'Profile', path: '/pharmacy-profile', icon: UserCog },
     { name: 'Settings', path: '/pharmacy-settings', icon: Settings }
   ], [])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Revoke the server-side session first — see utils/logoutHelper.js.
+    await revokeServerSession('ptoken', pToken)
     setPToken('')
     localStorage.removeItem('pToken')
     navigate('/')
-  }, [setPToken, navigate])
+  }, [pToken, setPToken, navigate])
 
   return (
     <div style={{

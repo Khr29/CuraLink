@@ -16,6 +16,7 @@ import {
   pharmacyDispense,
   getPharmacyStats,
   getPharmacyHistory,
+  getPharmacyScanLog,
 } from "../controllers/medicalRecordController.js";
 import authDoctor from "../middlewares/authDoctor.js";
 import authUser from "../middlewares/authUser.js";
@@ -93,5 +94,6 @@ medicalRecordRouter.get("/pharmacy/verify/:token", authPharmacy, pharmacyVerifyP
 medicalRecordRouter.post("/pharmacy/dispense/:token", authPharmacy, pharmacyDispense);
 medicalRecordRouter.get("/pharmacy/stats", authPharmacy, getPharmacyStats);
 medicalRecordRouter.get("/pharmacy/history", authPharmacy, getPharmacyHistory);
+medicalRecordRouter.get("/pharmacy/scan-log", authPharmacy, getPharmacyScanLog);
 
 export default medicalRecordRouter;
