@@ -65,9 +65,10 @@ const formatAddress = (address) => {
   return [line1, line2, city, state, pincode].filter(Boolean).join(", ");
 };
 
-// Fetches a same-origin bundled image (the CuraLink logo) and converts it to
-// a data URL so jsPDF's addImage() can embed it — addImage needs base64/
-// dataURL bytes, not a bare <img> src path.
+// Fetches an image — a same-origin bundled asset (CuraLink mark) or a
+// remote URL (hospital logo / doctor signature stored in Cloudinary) — and
+// converts it to a data URL so jsPDF's addImage() can embed it. addImage
+// needs base64/dataURL bytes, not a bare <img> src path.
 const loadImageAsDataUrl = (url) =>
   new Promise((resolve, reject) => {
     fetch(url)
@@ -83,6 +84,49 @@ const loadImageAsDataUrl = (url) =>
       .then(resolve)
       .catch(reject);
   });
+
+// jsPDF's addImage() needs a format string ("PNG"/"JPEG"/"WEBP") matching
+// the actual image bytes — read it off the data URL rather than assuming,
+// since uploaded logos/signatures can be any mime type multer accepts.
+const dataUrlFormat = (dataUrl) => {
+  const ext = /^data:image\/(png|jpe?g|webp)/i.exec(dataUrl || "")?.[1]?.toLowerCase();
+  if (ext === "webp") return "WEBP";
+  if (ext === "jpg" || ext === "jpeg") return "JPEG";
+  return "PNG";
+};
+
+const getImageNaturalSize = (dataUrl) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+
+// Scales an image to fit inside a maxW x maxH box without distorting it —
+// uploaded logos/signatures are rarely square, unlike the bundled CuraLink
+// mark.
+const containFit = (naturalW, naturalH, maxW, maxH) => {
+  if (!naturalW || !naturalH) return { w: maxW, h: maxH };
+  const scale = Math.min(maxW / naturalW, maxH / naturalH);
+  return { w: naturalW * scale, h: naturalH * scale };
+};
+
+// Loads a remote image and returns its data URL plus a size fitted inside
+// maxW x maxH, or null if it can't be loaded/doesn't exist — callers fall
+// back to text-only rendering so a missing logo/signature never breaks PDF
+// generation.
+const loadFittedImage = async (url, maxW, maxH) => {
+  if (!url) return null;
+  try {
+    const dataUrl = await loadImageAsDataUrl(url);
+    const { width, height } = await getImageNaturalSize(dataUrl);
+    return { dataUrl, format: dataUrlFormat(dataUrl), ...containFit(width, height, maxW, maxH) };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
 
 const CURALINK_BLUE = [37, 99, 235];
 const CURALINK_TEAL = [20, 184, 166];
@@ -105,7 +149,9 @@ const drawAccentBar = (doc, x, y, width, height = 2.2) => {
 
 // Builds the professional, print-friendly CuraLink prescription PDF. Fetches
 // the record's secure QR (server-generated, encodes only a verification
-// link — never raw medical data) just before rendering.
+// link — never raw medical data), the CuraLink mark, the hospital's stored
+// logo, and the doctor's stored signature (each optional) just before
+// rendering.
 const downloadPrescriptionPdf = async ({ record, userData, backendUrl, token }) => {
   let qr = null;
   try {
@@ -118,12 +164,11 @@ const downloadPrescriptionPdf = async ({ record, userData, backendUrl, token }) 
     console.error(error);
   }
 
-  let logoDataUrl = null;
-  try {
-    logoDataUrl = await loadImageAsDataUrl(assets.logo);
-  } catch (error) {
-    console.error(error);
-  }
+  const [curalinkLogo, hospitalLogo, doctorSignature] = await Promise.all([
+    loadFittedImage(assets.logo, 14, 14),
+    loadFittedImage(record.hospitalId?.logo, 16, 16),
+    loadFittedImage(record.doctorId?.signature, 46, 16),
+  ]);
 
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -131,39 +176,97 @@ const downloadPrescriptionPdf = async ({ record, userData, backendUrl, token }) 
   const contentWidth = pageWidth - marginX * 2;
   let y = 18;
 
-  // ---------- Header ----------
-  if (logoDataUrl) {
+  // ---------- Header: CuraLink brand (left) + hospital brand (right) ----------
+  if (curalinkLogo) {
     try {
-      doc.addImage(logoDataUrl, "PNG", marginX, y - 6, 14, 14);
+      doc.addImage(curalinkLogo.dataUrl, curalinkLogo.format, marginX, y - 6, curalinkLogo.w, curalinkLogo.h);
     } catch (error) {
       console.error(error);
     }
   }
+  const brandX = marginX + (curalinkLogo ? 18 : 0);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(17);
   doc.setTextColor(...SLATE_900);
-  doc.text("CuraLink", marginX + (logoDataUrl ? 18 : 0), y);
+  doc.text("CuraLink", brandX, y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...CURALINK_TEAL);
-  doc.text("Secure Digital Healthcare Platform", marginX + (logoDataUrl ? 18 : 0), y + 4.5);
+  doc.text("Secure Digital Healthcare Platform", brandX, y + 4.5);
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(...SLATE_900);
-  doc.text("DIGITAL PRESCRIPTION", pageWidth - marginX, y - 3, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...SLATE_500);
-  doc.text(`Prescription ID: ${qr?.prescriptionId || "—"}`, pageWidth - marginX, y + 1.5, { align: "right" });
-  doc.text(`Status: ${(qr?.status || "active").toUpperCase()}`, pageWidth - marginX, y + 6, { align: "right" });
-  doc.text(`Issued: ${formatDateTime(record.finalizedAt || record.createdAt)}`, pageWidth - marginX, y + 10.5, { align: "right" });
+  // Hospital brand — only drawn when the prescription is tied to a hospital.
+  // Falls back to name/details text alone when the hospital has no logo, and
+  // is omitted entirely for independent-practice doctors (nothing to show).
+  // Address/contact lines are measured with splitTextToSize and stacked by
+  // their actual wrapped height — a long address can wrap to two lines and
+  // must not collide with the phone/email line below it.
+  let headerBottom = y + 8; // CuraLink logo/tagline bottom, the header's minimum height
+  if (record.hospitalId?.name) {
+    const rightEdge = pageWidth - marginX;
+    const hospitalTextRight = rightEdge - (hospitalLogo ? hospitalLogo.w + 4 : 0);
+    const hospitalTextWidth = 95;
+    if (hospitalLogo) {
+      try {
+        doc.addImage(
+          hospitalLogo.dataUrl, hospitalLogo.format,
+          rightEdge - hospitalLogo.w, y - 6 + (16 - hospitalLogo.h) / 2,
+          hospitalLogo.w, hospitalLogo.h
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...SLATE_900);
+    doc.text(record.hospitalId.name, hospitalTextRight, y - 2, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...SLATE_500);
+    const hospitalLine2 = formatAddress(record.hospitalId.address);
+    const hospitalLine3 = [record.hospitalId.phone, record.hospitalId.email].filter(Boolean).join("  ·  ");
+    let hospitalLineY = y + 2.5;
+    if (hospitalLine2) {
+      const wrapped = doc.splitTextToSize(hospitalLine2, hospitalTextWidth);
+      doc.text(wrapped, hospitalTextRight, hospitalLineY, { align: "right" });
+      hospitalLineY += wrapped.length * 3.6;
+    }
+    if (hospitalLine3) {
+      const wrapped = doc.splitTextToSize(hospitalLine3, hospitalTextWidth);
+      doc.text(wrapped, hospitalTextRight, hospitalLineY, { align: "right" });
+      hospitalLineY += wrapped.length * 3.6;
+    }
+    headerBottom = Math.max(headerBottom, hospitalLineY);
+  }
 
-  y += 15;
+  y = headerBottom + 4;
   drawAccentBar(doc, marginX, y, contentWidth);
-  y += 8;
+  y += 9;
 
-  // ---------- Hospital / Doctor / Patient info blocks ----------
+  // ---------- Title — a professional document title, not the RX ID ----------
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.setTextColor(...SLATE_900);
+  doc.text("MEDICATION PRESCRIPTION", marginX, y);
+  if (record.doctorId?.speciality) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...CURALINK_TEAL);
+    doc.text(record.doctorId.speciality, marginX, y + 5.5);
+  }
+
+  // Prescription ID stays a small reference alongside the title, not the
+  // headline itself.
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...SLATE_500);
+  doc.text(`Prescription ID: ${qr?.prescriptionId || "—"}`, pageWidth - marginX, y - 3, { align: "right" });
+  doc.text(`Status: ${(qr?.status || "active").toUpperCase()}`, pageWidth - marginX, y + 1.5, { align: "right" });
+  doc.text(`Issued: ${formatDateTime(record.finalizedAt || record.createdAt)}`, pageWidth - marginX, y + 6, { align: "right" });
+
+  y += record.doctorId?.speciality ? 14 : 10;
+
+  // ---------- Patient / Prescribing Doctor info blocks ----------
   const infoBlock = (title, lines) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
@@ -181,27 +284,25 @@ const downloadPrescriptionPdf = async ({ record, userData, backendUrl, token }) 
     y += 2;
   };
 
-  if (record.hospitalId?.name) {
-    infoBlock("Hospital", [
-      record.hospitalId.name,
-      formatAddress(record.hospitalId.address),
-      [record.hospitalId.phone, record.hospitalId.email, record.hospitalId.website].filter(Boolean).join("  ·  "),
-    ]);
-  }
+  const age = calcAge(userData?.dob);
+  infoBlock("Patient", [
+    userData?.name || "-",
+    userData?._id ? `Patient ID: ${userData._id}` : "",
+    [age, userData?.gender && userData.gender !== "Not Selected" ? userData.gender : "", userData?.bloodGroup]
+      .filter(Boolean)
+      .join("  ·  "),
+  ]);
 
-  infoBlock("Doctor", [
+  infoBlock("Prescribing Doctor", [
     `${formatDoctorTitle(record.doctorId?.name || "-")}${record.doctorId?.degree ? `, ${record.doctorId.degree}` : ""}`,
     record.doctorId?.speciality || "",
     record.doctorId?.licenseNumber ? `License No. ${record.doctorId.licenseNumber}` : "",
   ]);
 
-  const age = calcAge(userData?.dob);
-  infoBlock("Patient", [
-    userData?.name || "-",
-    [age, userData?.gender && userData.gender !== "Not Selected" ? userData.gender : "", userData?.bloodGroup]
-      .filter(Boolean)
-      .join("  ·  "),
-  ]);
+  y += 1;
+  doc.setDrawColor(...SLATE_border);
+  doc.line(marginX, y, pageWidth - marginX, y);
+  y += 7;
 
   // ---------- Diagnosis / Clinical Notes ----------
   if (record.diagnosis) {
@@ -267,7 +368,7 @@ const downloadPrescriptionPdf = async ({ record, userData, backendUrl, token }) 
       if (y > 255) { doc.addPage(); y = 20; }
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      doc.text("DOCTOR'S INSTRUCTIONS", marginX, y);
+      doc.text("INSTRUCTIONS", marginX, y);
       y += 5;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
@@ -281,10 +382,26 @@ const downloadPrescriptionPdf = async ({ record, userData, backendUrl, token }) 
     }
   }
 
-  // ---------- Issuance line (not a cryptographic signature — see below) ----------
-  if (y > 250) { doc.addPage(); y = 20; }
+  // ---------- Signature / issuance (not a cryptographic signature — see below) ----------
+  const signatureBlockHeight = (doctorSignature ? doctorSignature.h + 2 : 0) + 5 + 9;
+  if (y + signatureBlockHeight > 275) { doc.addPage(); y = 20; }
   doc.setDrawColor(...SLATE_border);
-  doc.line(marginX, y, marginX + 70, y);
+  doc.line(marginX, y, pageWidth - marginX, y);
+  y += 8;
+
+  // Real, doctor-uploaded signature — drawn only when one exists. Never
+  // fabricated, never the profile photo; older doctors without one simply
+  // keep the plain signature line + honest digital-issuance wording below.
+  if (doctorSignature) {
+    try {
+      doc.addImage(doctorSignature.dataUrl, doctorSignature.format, marginX, y, doctorSignature.w, doctorSignature.h);
+    } catch (error) {
+      console.error(error);
+    }
+    y += doctorSignature.h + 2;
+  }
+  doc.setDrawColor(...SLATE_border);
+  doc.line(marginX, y, marginX + 65, y);
   y += 5;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
@@ -292,26 +409,34 @@ const downloadPrescriptionPdf = async ({ record, userData, backendUrl, token }) 
   doc.text(`Prescription finalized by ${formatDoctorTitle(record.doctorId?.name || "")}`, marginX, y);
   y += 4.5;
   doc.text("Digitally issued by CuraLink", marginX, y);
-  y += 10;
+  y += 8;
 
-  // ---------- QR verification ----------
+  // ---------- Verification — QR encodes only the opaque verify link/token,
+  // server-side verification stays authoritative (see getPrescriptionQr /
+  // verifyPrescription in the backend — untouched by this redesign). ----------
   if (qr?.qrDataUrl) {
-    if (y > 240) { doc.addPage(); y = 20; }
-    const qrSize = 30;
+    if (y > 245) { doc.addPage(); y = 20; }
+    doc.setDrawColor(...SLATE_border);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 8;
+    const qrSize = 28;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(...SLATE_900);
-    doc.text("VERIFY PRESCRIPTION", marginX, y + 6);
+    doc.text("VERIFICATION", marginX, y);
+    y += 4;
     try {
-      doc.addImage(qr.qrDataUrl, "PNG", marginX, y + 9, qrSize, qrSize);
+      doc.addImage(qr.qrDataUrl, "PNG", marginX, y, qrSize, qrSize);
     } catch (error) {
       console.error(error);
     }
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     doc.setTextColor(...SLATE_500);
-    doc.text("Scan to verify this prescription is authentic.", marginX + qrSize + 6, y + 16);
-    doc.text(`Prescription ID: ${qr.prescriptionId}`, marginX + qrSize + 6, y + 21);
+    doc.text("Scan to verify this prescription.", marginX + qrSize + 6, y + 9);
+    doc.text("Secure CuraLink verification.", marginX + qrSize + 6, y + 14);
+    doc.text(`Prescription ID: ${qr.prescriptionId}`, marginX + qrSize + 6, y + 19);
+    y += qrSize;
   }
 
   // ---------- Footer on every page ----------
@@ -324,7 +449,10 @@ const downloadPrescriptionPdf = async ({ record, userData, backendUrl, token }) 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(...SLATE_500);
-    doc.text("CuraLink — Secure Digital Healthcare Platform · Confidential Medical Document", marginX, pageHeight - 9);
+    const footerLeft = qr?.prescriptionId
+      ? `CuraLink — Secure Digital Healthcare Platform · Confidential · Ref: ${qr.prescriptionId}`
+      : "CuraLink — Secure Digital Healthcare Platform · Confidential Medical Document";
+    doc.text(footerLeft, marginX, pageHeight - 9);
     doc.text(`Page ${i} of ${pageCount}`, pageWidth - marginX, pageHeight - 9, { align: "right" });
   }
 
