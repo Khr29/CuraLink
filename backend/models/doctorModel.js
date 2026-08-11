@@ -29,6 +29,14 @@ const doctorSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Doctor's uploaded signature image, shown on finalized prescription
+    // PDFs. Optional — never auto-generated, and never falls back to the
+    // profile photo (see updateDoctorProffile / uploadDoctorSignature).
+    signature: {
+      type: String,
+      default: "",
+    },
+
     // ==========================
     // Professional Information
     // ==========================

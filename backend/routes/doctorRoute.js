@@ -1,5 +1,5 @@
 import express from 'express'
-import { appointmentCancel, appointmentComplete, appointmentsDoctor, doctorDashboard, doctorList, doctorProfile, loginDoctor, logoutDoctor, updateDoctorProffile } from '../controllers/doctorController.js'
+import { appointmentCancel, appointmentComplete, appointmentsDoctor, doctorDashboard, doctorList, doctorProfile, loginDoctor, logoutDoctor, updateDoctorProffile, uploadDoctorSignature, removeDoctorSignature } from '../controllers/doctorController.js'
 import {
   requestHospital,
   leaveHospital,
@@ -34,6 +34,12 @@ doctorRouter.post('/cancel-appointment',authDoctor,appointmentCancel)
 doctorRouter.get('/dashboard',authDoctor,doctorDashboard)
 doctorRouter.get('/profile',authDoctor,doctorProfile)
 doctorRouter.post('/update-profile',upload.single('image'),authDoctor,updateDoctorProffile)
+
+// Signature management — auth runs before multer here since authDoctor only
+// reads the `dtoken` header, so an unauthenticated request never reaches the
+// file-processing step.
+doctorRouter.post('/signature',authDoctor,upload.single('signature'),uploadDoctorSignature)
+doctorRouter.delete('/signature',authDoctor,removeDoctorSignature)
 
 // Hospital affiliation lifecycle
 doctorRouter.post('/request-hospital',authDoctor,requestHospital)

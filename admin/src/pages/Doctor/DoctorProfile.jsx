@@ -24,6 +24,7 @@ import {
   AlertCircle,
   UserRound,
   Camera,
+  PenTool,
   Phone,
   Mail,
   Clock,
@@ -133,6 +134,9 @@ const DoctorProfile = () => {
   const [imageRemoved, setImageRemoved] = useState(false)
   const [removeAvatarConfirmOpen, setRemoveAvatarConfirmOpen] = useState(false)
   const [languageInput, setLanguageInput] = useState('')
+
+  const [signatureUploading, setSignatureUploading] = useState(false)
+  const [removeSignatureConfirmOpen, setRemoveSignatureConfirmOpen] = useState(false)
 
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0]
@@ -322,6 +326,49 @@ const DoctorProfile = () => {
     getProfileData() // discard any unsaved local edits
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Signature is managed independently of the main profile form — it saves
+  // immediately on selection/removal rather than batching into Save Changes,
+  // since it isn't part of the editable-fields validate()/updateProfile() flow.
+  const handleSignatureSelect = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setSignatureUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('signature', file)
+      const { data } = await axios.post(backendUrl + '/api/doctor/signature', formData, { headers: { dToken } })
+      if (data.success) {
+        toast.success(data.message)
+        setProfileData(prev => ({ ...prev, signature: data.signature }))
+      } else {
+        toast.error(data.message)
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message)
+    } finally {
+      setSignatureUploading(false)
+    }
+  }
+
+  const confirmRemoveSignature = async () => {
+    setRemoveSignatureConfirmOpen(false)
+    setSignatureUploading(true)
+    try {
+      const { data } = await axios.delete(backendUrl + '/api/doctor/signature', { headers: { dToken } })
+      if (data.success) {
+        toast.success(data.message)
+        setProfileData(prev => ({ ...prev, signature: '' }))
+      } else {
+        toast.error(data.message)
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message)
+    } finally {
+      setSignatureUploading(false)
+    }
+  }
 
   const submitReply = async (text) => {
     if (!replyTarget) return
@@ -785,6 +832,58 @@ const DoctorProfile = () => {
           )}
         </SectionCard>
 
+        {/* ══════════ PRESCRIPTION SIGNATURE ══════════ */}
+        <SectionCard title="Prescription Signature" icon={PenTool}>
+          <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 18px', lineHeight: 1.6 }}>
+            Upload your real signature to show on finalized prescription PDFs, next to "Prescription finalized by". Only you can manage this — it's separate from your profile photo.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+            <div style={{
+              width: 220, height: 100, borderRadius: 14, flexShrink: 0, overflow: 'hidden',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: profileData.signature ? '1.5px solid #E2E8F0' : '1.5px dashed #E2E8F0',
+              background: profileData.signature ? '#FFFFFF' : '#F8FAFC'
+            }}>
+              {profileData.signature ? (
+                <img src={profileData.signature} alt="Your signature" style={{ maxWidth: '90%', maxHeight: '80%', objectFit: 'contain' }} />
+              ) : (
+                <span style={{ fontSize: 12.5, color: '#94A3B8' }}>No signature uploaded</span>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label
+                htmlFor="doctor-signature-upload"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 99,
+                  border: 'none', background: 'linear-gradient(135deg, #2563EB, #14B8A6)', color: '#FFFFFF',
+                  fontSize: 13, fontWeight: 700, cursor: signatureUploading ? 'not-allowed' : 'pointer',
+                  opacity: signatureUploading ? 0.7 : 1, fontFamily: 'Inter, sans-serif', width: 'fit-content'
+                }}
+              >
+                {signatureUploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                {signatureUploading ? 'Uploading…' : (profileData.signature ? 'Replace Signature' : 'Upload Signature')}
+                <input
+                  id="doctor-signature-upload" type="file" accept="image/png,image/jpeg,image/webp" hidden
+                  disabled={signatureUploading} onChange={handleSignatureSelect}
+                />
+              </label>
+              {profileData.signature && (
+                <button
+                  type="button" onClick={() => setRemoveSignatureConfirmOpen(true)} disabled={signatureUploading}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 99,
+                    border: '1.5px solid #FECACA', background: '#FFFFFF', color: '#DC2626',
+                    fontSize: 13, fontWeight: 700, cursor: signatureUploading ? 'not-allowed' : 'pointer',
+                    fontFamily: 'Inter, sans-serif', width: 'fit-content'
+                  }}
+                >
+                  <Trash2 size={14} /> Remove
+                </button>
+              )}
+            </div>
+          </div>
+        </SectionCard>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }} className="curalink-profile-grid">
           {/* ══════════ HOSPITAL CARD ══════════ */}
           <div style={{ background: '#FFFFFF', borderRadius: 24, border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,23,42,0.04)', overflow: 'hidden' }}>
@@ -1032,6 +1131,16 @@ const DoctorProfile = () => {
         destructive
         onConfirm={confirmRemoveAvatar}
         onClose={() => setRemoveAvatarConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={removeSignatureConfirmOpen}
+        title="Remove your signature?"
+        message="Finalized prescription PDFs will go back to showing the standard digital-issuance wording instead of your signature."
+        confirmLabel="Remove"
+        destructive
+        onConfirm={confirmRemoveSignature}
+        onClose={() => setRemoveSignatureConfirmOpen(false)}
       />
     </div>
   )

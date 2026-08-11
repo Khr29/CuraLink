@@ -395,9 +395,9 @@ export const getRecordByAppointment = async (req, res) => {
     const { appointmentId } = req.params;
     const record = await medicalRecordModel
       .findOne({ appointmentId })
-      .populate("doctorId", "name speciality image degree licenseNumber")
+      .populate("doctorId", "name speciality image degree licenseNumber signature")
       .populate("patientId", "name image")
-      .populate("hospitalId", "name phone email website address");
+      .populate("hospitalId", "name phone email website address logo");
 
     if (!record) return res.json({ success: false, message: "Record not found" });
     if (!canView(record, req)) {
@@ -866,8 +866,8 @@ export const getMyRecords = async (req, res) => {
 
     const records = await medicalRecordModel
       .find(filter)
-      .populate("doctorId", "name speciality image degree licenseNumber")
-      .populate("hospitalId", "name phone email website address")
+      .populate("doctorId", "name speciality image degree licenseNumber signature")
+      .populate("hospitalId", "name phone email website address logo")
       .sort({ createdAt: -1 });
     res.json({ success: true, records });
   } catch (error) {

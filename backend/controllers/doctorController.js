@@ -495,6 +495,43 @@ const updateDoctorProffile = async (req, res) => {
     }
 }
 
+// Upload / replace the doctor's signature — a distinct image from the
+// profile photo, used only on finalized prescription PDFs. authDoctor runs
+// before this (see doctorRoute.js), so req.docId is always the signature's
+// own owner.
+const uploadDoctorSignature = async (req, res) => {
+    try {
+        const docId = req.docId
+
+        if (!req.file) {
+            return res.json({ success: false, message: 'No signature image provided' })
+        }
+
+        const signatureUpload = await cloudinary.uploader.upload(req.file.path, { resource_type: 'image' })
+        await doctorModel.findByIdAndUpdate(docId, { signature: signatureUpload.secure_url })
+
+        res.json({ success: true, message: 'Signature updated', signature: signatureUpload.secure_url })
+
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+// Remove the doctor's stored signature. Prescription PDFs fall back to the
+// existing honest digital-issuance wording when none is set.
+const removeDoctorSignature = async (req, res) => {
+    try {
+        const docId = req.docId
+        await doctorModel.findByIdAndUpdate(docId, { signature: '' })
+        res.json({ success: true, message: 'Signature removed' })
+
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
 export {
     changeAvailability,
     doctorList,
@@ -505,5 +542,7 @@ export {
     appointmentComplete,
     doctorDashboard,
     doctorProfile,
-    updateDoctorProffile
+    updateDoctorProffile,
+    uploadDoctorSignature,
+    removeDoctorSignature
 }
