@@ -54,6 +54,7 @@ const HospitalSettings = lazy(() => import('./pages/Hospital/HospitalSettings'))
 const PharmacyDashboard = lazy(() => import('./pages/Pharmacy/PharmacyDashboard'))
 const PharmacyScan = lazy(() => import('./pages/Pharmacy/PharmacyScan'))
 const PharmacyHistory = lazy(() => import('./pages/Pharmacy/PharmacyHistory'))
+const PharmacyScanLog = lazy(() => import('./pages/Pharmacy/PharmacyScanLog'))
 const PharmacyProfile = lazy(() => import('./pages/Pharmacy/PharmacyProfile'))
 const PharmacySettings = lazy(() => import('./pages/Pharmacy/PharmacySettings'))
 
@@ -225,6 +226,10 @@ const App = () => {
 
       <Route path="/pharmacy-history" element={
         <ProtectedRoute token={pToken}><PanelLayout><PharmacyHistory /></PanelLayout></ProtectedRoute>
+      } />
+
+      <Route path="/pharmacy-scan-log" element={
+        <ProtectedRoute token={pToken}><PanelLayout><PharmacyScanLog /></PanelLayout></ProtectedRoute>
       } />
 
       <Route path="/pharmacy-profile" element={

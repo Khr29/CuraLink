@@ -49,3 +49,9 @@ export const TIMING_OPTIONS = [
   "Empty Stomach",
   "Anytime",
 ];
+
+// A finalized prescription is no longer valid for pharmacy dispensing this
+// many days after finalizedAt. Computed on read (medicalRecordController.js)
+// rather than a stored status, since it changes purely with the passage of
+// time — no background job needed to keep it correct.
+export const PRESCRIPTION_EXPIRY_DAYS = 30;
