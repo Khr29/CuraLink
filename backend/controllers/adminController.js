@@ -153,6 +153,7 @@
 
 import validator from "validator";
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 import { v2 as cloudinary } from "cloudinary";
 import doctorModel from "../models/doctorModel.js";
 import hospitalModel from "../models/hospitalModel.js";
@@ -176,6 +177,7 @@ const addDoctor = async (req, res) => {
       password,
       speciality,
       degree,
+      licenseNumber,
       experience,
       about,
       fees,
@@ -228,6 +230,7 @@ const addDoctor = async (req, res) => {
       password: hashedPassword,
       speciality,
       degree,
+      licenseNumber: licenseNumber ? sanitizeText(licenseNumber, { maxLength: 100 }) : "",
       experience,
       about: sanitizeText(about, { maxLength: 3000 }),
       fees,
@@ -712,6 +715,119 @@ const setHospitalVerification = async (req, res) => {
   }
 };
 
+// ✅ PRESCRIPTION MONITORING (paginated, filterable) — system-wide view for
+// admin oversight. Only ever exposes what pharmacy already sees (medicine
+// name/quantity math, status) plus who prescribed/dispensed it — never
+// diagnosis, clinical notes, or attachments, matching the same
+// least-privilege projection used by pharmacyVerifyPrescription
+// (medicalRecordController.js).
+const getAllPrescriptions = async (req, res) => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+    const { status, dispensingStatus, hospitalId, search } = req.query;
+
+    // Only records that actually carry a prescription (finalizeRecord only
+    // assigns prescriptionStatus once prescription.length > 0).
+    const match = { prescriptionStatus: { $ne: "none" } };
+    if (status) match.prescriptionStatus = status;
+    if (dispensingStatus) match["dispensing.status"] = dispensingStatus;
+    if (hospitalId && mongoose.isValidObjectId(hospitalId)) {
+      match.hospitalId = new mongoose.Types.ObjectId(hospitalId);
+    }
+
+    const pipeline = [
+      { $match: match },
+      { $lookup: { from: "users", localField: "patientId", foreignField: "_id", as: "patient" } },
+      { $lookup: { from: "doctors", localField: "doctorId", foreignField: "_id", as: "doctor" } },
+      { $lookup: { from: "hospitals", localField: "hospitalId", foreignField: "_id", as: "hospital" } },
+      { $unwind: { path: "$patient", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$doctor", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$hospital", preserveNullAndEmptyArrays: true } },
+    ];
+
+    if (search) {
+      const re = new RegExp(search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      pipeline.push({
+        $match: {
+          $or: [
+            { prescriptionId: re },
+            { "patient.name": re },
+            { "doctor.name": re },
+          ],
+        },
+      });
+    }
+
+    pipeline.push({
+      $project: {
+        prescriptionId: 1,
+        prescriptionStatus: 1,
+        finalizedAt: 1,
+        revokedAt: 1,
+        dispensing: 1,
+        dispensingRecords: 1,
+        prescription: 1,
+        "patient.name": 1,
+        "doctor.name": 1,
+        "doctor.speciality": 1,
+        "hospital.name": 1,
+      },
+    });
+
+    pipeline.push({
+      $facet: {
+        data: [
+          { $sort: { finalizedAt: -1 } },
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+        ],
+        totalCount: [{ $count: "count" }],
+      },
+    });
+
+    const [result] = await medicalRecordModel.aggregate(pipeline);
+    const rows = result?.data || [];
+    const total = result?.totalCount?.[0]?.count || 0;
+
+    const prescriptions = rows.map((r) => ({
+      _id: r._id,
+      prescriptionId: r.prescriptionId,
+      status: r.prescriptionStatus,
+      finalizedAt: r.finalizedAt,
+      revokedAt: r.revokedAt || null,
+      patient: r.patient ? { name: r.patient.name } : null,
+      doctor: r.doctor ? { name: r.doctor.name, speciality: r.doctor.speciality } : null,
+      hospital: r.hospital ? { name: r.hospital.name } : null,
+      dispensing: r.dispensing,
+      medicines: (r.prescription || []).map((item, index) => ({
+        medicineIndex: index,
+        name: item.medicineName || item.medicine || "",
+        quantityPrescribed: item.quantityPrescribed,
+        dispensedQuantity: item.dispensedQuantity,
+        remaining: Math.max(0, (item.quantityPrescribed || 0) - (item.dispensedQuantity || 0)),
+      })),
+      dispensingRecords: (r.dispensingRecords || [])
+        .slice()
+        .sort((a, b) => new Date(b.dispensedAt) - new Date(a.dispensedAt)),
+    }));
+
+    res.json({
+      success: true,
+      prescriptions,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.max(1, Math.ceil(total / limit)),
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 export {
   addDoctor,
   loginAdmin,
@@ -726,4 +842,5 @@ export {
   deleteUser,
   setDoctorVerification,
   setHospitalVerification,
+  getAllPrescriptions,
 };

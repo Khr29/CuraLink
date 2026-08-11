@@ -12,6 +12,15 @@ const formatDate = (date) =>
 const medName = (item) => item.medicineName || item.medicine || ''
 const medDose = (item) => item.dose || item.dosage || ''
 
+// Display labels only — the stored dispensing.status enum (pending/
+// not_applicable/partially_dispensed/dispensed) never changes.
+const DISPENSING_LABELS = {
+  not_applicable: 'Not Dispensed',
+  pending: 'Not Dispensed',
+  partially_dispensed: 'Partially Dispensed',
+  dispensed: 'Dispensed',
+}
+
 // A pharmacist may scan a QR, upload an image of one, or paste either the
 // raw verification token or the full verify link — extract the token either
 // way. The QR itself only ever encodes this opaque token inside a verify
@@ -353,7 +362,7 @@ const PharmacyScan = () => {
                   background: alreadyDispensed ? '#F0FDF4' : '#FFFBEB',
                   color: alreadyDispensed ? '#16A34A' : '#D97706',
                 }}>
-                  {(pharmacyLookupResult.dispensing?.status || 'pending').replace('_', ' ').toUpperCase()}
+                  {DISPENSING_LABELS[pharmacyLookupResult.dispensing?.status] || 'Not Dispensed'}
                 </span>
                 <button type="button" onClick={resetScan} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '7px 12px', color: '#334155', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
                   <ScanLine size={13} /> Scan Another

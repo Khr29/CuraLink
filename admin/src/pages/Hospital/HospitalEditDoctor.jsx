@@ -51,6 +51,7 @@ const HospitalEditDoctor = () => {
         image: doctor.image,
         speciality: doctor.speciality,
         degree: doctor.degree,
+        licenseNumber: doctor.licenseNumber || '',
         experience: parseExperienceYears(doctor.experience) ?? 1,
         fees: doctor.fees,
         about: doctor.about,
@@ -79,6 +80,7 @@ const HospitalEditDoctor = () => {
         if (docImg) formData.append('image', docImg)
         formData.append('speciality', form.speciality)
         formData.append('degree', form.degree)
+        formData.append('licenseNumber', form.licenseNumber || '')
         formData.append('experience', formatExperienceYears(form.experience))
         formData.append('fees', form.fees)
         formData.append('about', form.about)
@@ -190,6 +192,10 @@ const HospitalEditDoctor = () => {
                   </div>
                 </div>
                 <FormInput label="Consultation Fees" type="number" value={form.fees} onChange={(e) => setForm((p) => ({ ...p, fees: e.target.value }))} placeholder="500" icon={IndianRupee} required />
+              </div>
+
+              <div style={{ marginBottom: 18 }}>
+                <FormInput label="License Number (optional)" value={form.licenseNumber} onChange={(e) => setForm((p) => ({ ...p, licenseNumber: e.target.value }))} placeholder="e.g. MCI-123456" icon={FileText} />
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: 14, padding: '14px 18px' }}>

@@ -42,6 +42,14 @@ const formatDateTime = (date) =>
 const medName = (item) => item.medicineName || item.medicine || "";
 const medDose = (item) => item.dose || item.dosage || "";
 
+// Doctor names are sometimes stored with a "Dr." prefix already baked in
+// and sometimes without — prepend it only when it's missing so the PDF
+// never renders "Dr. Dr. <name>".
+const formatDoctorTitle = (name) => {
+  const trimmed = (name || "").trim();
+  return /^dr\.?\s/i.test(trimmed) ? trimmed : `Dr. ${trimmed}`;
+};
+
 const calcAge = (dob) => {
   if (!dob || dob === "Not Selected") return "";
   const birth = new Date(dob);
@@ -182,8 +190,9 @@ const downloadPrescriptionPdf = async ({ record, userData, backendUrl, token }) 
   }
 
   infoBlock("Doctor", [
-    `Dr. ${record.doctorId?.name || "-"}${record.doctorId?.degree ? `, ${record.doctorId.degree}` : ""}`,
+    `${formatDoctorTitle(record.doctorId?.name || "-")}${record.doctorId?.degree ? `, ${record.doctorId.degree}` : ""}`,
     record.doctorId?.speciality || "",
+    record.doctorId?.licenseNumber ? `License No. ${record.doctorId.licenseNumber}` : "",
   ]);
 
   const age = calcAge(userData?.dob);
@@ -280,7 +289,7 @@ const downloadPrescriptionPdf = async ({ record, userData, backendUrl, token }) 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...SLATE_500);
-  doc.text(`Prescription finalized by Dr. ${record.doctorId?.name || ""}`, marginX, y);
+  doc.text(`Prescription finalized by ${formatDoctorTitle(record.doctorId?.name || "")}`, marginX, y);
   y += 4.5;
   doc.text("Digitally issued by CuraLink", marginX, y);
   y += 10;

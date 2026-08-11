@@ -136,6 +136,9 @@ const AdminContextProvider = (props) => {
     const [auditLogs, setAuditLogs] = useState([])
     const [auditLogsPagination, setAuditLogsPagination] = useState({ page: 1, limit: 25, total: 0, pages: 1 })
 
+    const [prescriptions, setPrescriptions] = useState([])
+    const [prescriptionsPagination, setPrescriptionsPagination] = useState({ page: 1, limit: 25, total: 0, pages: 1 })
+
     const backendUrl = import.meta.env.VITE_BACKEND_URL
 
     // 🔥 common config (avoid repeat)
@@ -548,6 +551,27 @@ const changeHospitalStatus = async (hospitalId) => {
     }, [aToken])
 
 
+    // ✅ PRESCRIPTION MONITORING (paginated + filterable)
+    const getAllPrescriptions = useCallback(async (params = {}) => {
+        try {
+            const { data } = await axios.get(
+                backendUrl + '/api/admin/prescriptions',
+                { ...config, params }
+            )
+
+            if (data.success) {
+                setPrescriptions(data.prescriptions)
+                setPrescriptionsPagination(data.pagination)
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }, [aToken])
+
+
     const exportAuditLogs = async (params = {}) => {
         try {
             const response = await axios.get(
@@ -733,6 +757,11 @@ const changeHospitalStatus = async (hospitalId) => {
     auditLogsPagination,
     getAuditLogs,
     exportAuditLogs,
+
+    // Prescription Monitoring
+    prescriptions,
+    prescriptionsPagination,
+    getAllPrescriptions,
 
     // Doctor <-> Hospital Association
     doctorRequests,

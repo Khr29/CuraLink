@@ -444,7 +444,7 @@ const updateDoctorProffile = async (req, res) => {
     try {
         const docId = req.docId
         const {
-            name, phone, about, degree, experience, speciality,
+            name, phone, about, degree, licenseNumber, experience, speciality,
             workingHours, languages, fees, address, available
         } = req.body
 
@@ -459,6 +459,7 @@ const updateDoctorProffile = async (req, res) => {
         if (phone !== undefined) updateData.phone = sanitizeText(phone, { maxLength: 20 })
         if (about !== undefined) updateData.about = sanitizeText(about, { maxLength: 2000 })
         if (degree !== undefined) updateData.degree = sanitizeText(degree, { maxLength: 200 })
+        if (licenseNumber !== undefined) updateData.licenseNumber = sanitizeText(licenseNumber, { maxLength: 100 })
         if (experience !== undefined) updateData.experience = sanitizeText(experience, { maxLength: 40 })
         if (speciality !== undefined) updateData.speciality = sanitizeText(speciality, { maxLength: 100 })
         if (workingHours !== undefined) updateData.workingHours = sanitizeText(workingHours, { maxLength: 200 })

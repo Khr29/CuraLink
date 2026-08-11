@@ -395,7 +395,7 @@ export const getRecordByAppointment = async (req, res) => {
     const { appointmentId } = req.params;
     const record = await medicalRecordModel
       .findOne({ appointmentId })
-      .populate("doctorId", "name speciality image degree")
+      .populate("doctorId", "name speciality image degree licenseNumber")
       .populate("patientId", "name image")
       .populate("hospitalId", "name phone email website address");
 
@@ -563,7 +563,7 @@ export const pharmacyVerifyPrescription = async (req, res) => {
     const record = await medicalRecordModel
       .findOne({ verificationToken: token })
       .select("+verificationToken")
-      .populate("doctorId", "name speciality")
+      .populate("doctorId", "name speciality licenseNumber")
       .populate("hospitalId", "name")
       .populate("patientId", "name");
 
@@ -600,7 +600,11 @@ export const pharmacyVerifyPrescription = async (req, res) => {
         status: record.prescriptionStatus,
         issuedAt: record.finalizedAt,
         patient: { name: record.patientId?.name || "" },
-        doctor: { name: record.doctorId?.name || "", speciality: record.doctorId?.speciality || "" },
+        doctor: {
+          name: record.doctorId?.name || "",
+          speciality: record.doctorId?.speciality || "",
+          licenseNumber: record.doctorId?.licenseNumber || "",
+        },
         hospital: record.hospitalId?.name || null,
         // Least-privilege projection — only dispensing-relevant medicine
         // fields, plus the per-medicine quantity math a pharmacist needs to
@@ -862,7 +866,7 @@ export const getMyRecords = async (req, res) => {
 
     const records = await medicalRecordModel
       .find(filter)
-      .populate("doctorId", "name speciality image degree")
+      .populate("doctorId", "name speciality image degree licenseNumber")
       .populate("hospitalId", "name phone email website address")
       .sort({ createdAt: -1 });
     res.json({ success: true, records });

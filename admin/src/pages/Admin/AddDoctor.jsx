@@ -36,6 +36,7 @@ const AddDoctor = () => {
   const [employmentType, setEmploymentType] = useState('hospital')
   const [hospitalId, setHospitalId] = useState('')
   const [degree, setDegree] = useState('')
+  const [licenseNumber, setLicenseNumber] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
   const [saving, setSaving] = useState(false)
@@ -80,6 +81,7 @@ useEffect(() => {
         formData.append('employmentType', employmentType)
         if (employmentType === 'hospital') formData.append('hospitalId', hospitalId)
         formData.append('degree', degree.trim())
+        formData.append('licenseNumber', licenseNumber.trim())
         formData.append(
           'address',
           JSON.stringify({
@@ -108,6 +110,7 @@ useEffect(() => {
           setEmploymentType('hospital')
           setHospitalId('')
           setDegree('')
+          setLicenseNumber('')
           setAddress1('')
           setAddress2('')
         } else {
@@ -132,6 +135,7 @@ useEffect(() => {
       employmentType,
       hospitalId,
       degree,
+      licenseNumber,
       address1,
       address2,
       backendUrl,
@@ -345,8 +349,8 @@ useEffect(() => {
                 </div>
               </div>
 
-              {/* Consultation Fees */}
-              <div>
+              {/* Consultation Fees & License */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
                 <InputField
                   label="Consultation Fees"
                   type="number"
@@ -355,6 +359,13 @@ useEffect(() => {
                   placeholder="500"
                   icon={IndianRupee}
                   required
+                />
+                <InputField
+                  label="License Number (optional)"
+                  value={licenseNumber}
+                  onChange={(e) => setLicenseNumber(e.target.value)}
+                  placeholder="e.g. MCI-123456"
+                  icon={FileText}
                 />
               </div>
 

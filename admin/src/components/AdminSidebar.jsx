@@ -138,6 +138,16 @@ const AdminSidebar = () => {
       },
 
       // -------------------------
+      // Prescription Monitoring
+      // -------------------------
+
+      {
+        name: 'Prescriptions',
+        path: '/admin-prescriptions',
+        icon: assets.list_icon
+      },
+
+      // -------------------------
       // Audit
       // -------------------------
 
