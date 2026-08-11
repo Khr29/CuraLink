@@ -42,6 +42,14 @@ const doctorSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Optional — shown on prescription PDFs and to pharmacies for
+    // traceability. Left blank on existing doctors, no migration needed.
+    licenseNumber: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     experience: {
       type: String,
       required: true,

@@ -12,6 +12,15 @@ const formatDate = (date) =>
 const medName = (item) => item.medicineName || item.medicine || ''
 const medDose = (item) => item.dose || item.dosage || ''
 
+// Display labels only — the stored dispensing.status enum (pending/
+// not_applicable/partially_dispensed/dispensed) never changes.
+const DISPENSING_LABELS = {
+  not_applicable: 'Not Dispensed',
+  pending: 'Not Dispensed',
+  partially_dispensed: 'Partially Dispensed',
+  dispensed: 'Dispensed',
+}
+
 // A pharmacist may scan a QR, upload an image of one, or paste either the
 // raw verification token or the full verify link — extract the token either
 // way. The QR itself only ever encodes this opaque token inside a verify
@@ -71,9 +80,23 @@ const PharmacyScan = () => {
   // native camera app) rather than behind a "Request Camera Permissions"
   // button. If the browser already granted permission, this is instant; if
   // not, the browser's own permission prompt appears once.
+  //
+  // This effect only ever runs while PharmacyScan itself is mounted (it's
+  // page-local state, not lifted into PharmacyContext/App.jsx/any shared
+  // layout) — so the camera is structurally impossible to be active on the
+  // Dashboard, History, Profile, or Settings pages; navigating there simply
+  // unmounts this component and this cleanup runs.
   useEffect(() => {
     if (mode !== 'camera' || pharmacyLookupResult) return undefined
     let cancelled = false
+    // Tracks whether instance.start() has actually resolved (camera stream
+    // genuinely attached) — calling stop() before that resolves races the
+    // library's internal state and can leave the MediaStream track (and the
+    // browser's camera-active indicator) running with nothing left to stop
+    // it. Cleanup uses this to decide whether to stop immediately or let the
+    // in-flight start() call stop it the moment it actually finishes.
+    let started = false
+    let instance = null
 
     const start = async () => {
       setCameraStatus('starting')
@@ -89,7 +112,7 @@ const PharmacyScan = () => {
           return
         }
 
-        const instance = new Html5Qrcode(QR_READER_ID, { verbose: false })
+        instance = new Html5Qrcode(QR_READER_ID, { verbose: false })
         html5QrCodeRef.current = instance
 
         await instance.start(
@@ -97,17 +120,24 @@ const PharmacyScan = () => {
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
             // Stop immediately so a burst of frames around the same QR
-            // can't fire multiple lookups for one scan.
-            const current = html5QrCodeRef.current
+            // can't fire multiple lookups for one scan, and so the camera
+            // is off the moment a result is about to be shown.
+            started = false
             html5QrCodeRef.current = null
-            current?.stop().catch(() => {})
+            instance?.stop().then(() => instance.clear()).catch(() => {})
             setCameraStatus('starting')
             runLookup(extractToken(decodedText))
           },
           () => { /* per-frame miss while framing the code — expected, ignore */ }
         )
+        started = true
         if (cancelled) {
-          instance.stop().catch(() => {})
+          // Unmounted/mode changed while start() was in flight — stop it
+          // now that it has actually taken effect, rather than the cleanup
+          // below racing a scanner that hadn't started yet.
+          started = false
+          html5QrCodeRef.current = null
+          instance.stop().then(() => instance.clear()).catch(() => {})
           return
         }
         setCameraStatus('scanning')
@@ -123,11 +153,14 @@ const PharmacyScan = () => {
 
     return () => {
       cancelled = true
-      const instance = html5QrCodeRef.current
-      html5QrCodeRef.current = null
-      if (instance) {
+      if (started && instance) {
+        started = false
+        html5QrCodeRef.current = null
         instance.stop().then(() => instance.clear()).catch(() => {})
       }
+      // If start() hasn't resolved yet, its own `if (cancelled)` branch
+      // above stops it the moment it does — calling stop() here too would
+      // be exactly the premature-stop race this is written to avoid.
     }
   }, [mode, pharmacyLookupResult, runLookup, retryKey])
 
@@ -329,7 +362,7 @@ const PharmacyScan = () => {
                   background: alreadyDispensed ? '#F0FDF4' : '#FFFBEB',
                   color: alreadyDispensed ? '#16A34A' : '#D97706',
                 }}>
-                  {(pharmacyLookupResult.dispensing?.status || 'pending').replace('_', ' ').toUpperCase()}
+                  {DISPENSING_LABELS[pharmacyLookupResult.dispensing?.status] || 'Not Dispensed'}
                 </span>
                 <button type="button" onClick={resetScan} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '7px 12px', color: '#334155', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
                   <ScanLine size={13} /> Scan Another

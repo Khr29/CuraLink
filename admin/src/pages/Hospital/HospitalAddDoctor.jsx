@@ -32,6 +32,7 @@ const HospitalAddDoctor = () => {
   const [about, setAbout] = useState('')
   const [speciality, setSpeciality] = useState('General physician')
   const [degree, setDegree] = useState('')
+  const [licenseNumber, setLicenseNumber] = useState('')
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
   const [saving, setSaving] = useState(false)
@@ -64,6 +65,7 @@ const HospitalAddDoctor = () => {
         formData.append('about', about.trim())
         formData.append('speciality', speciality)
         formData.append('degree', degree.trim())
+        formData.append('licenseNumber', licenseNumber.trim())
         formData.append(
           'address',
           JSON.stringify({ line1: address1.trim(), line2: address2.trim() })
@@ -88,7 +90,7 @@ const HospitalAddDoctor = () => {
         setSaving(false)
       }
     },
-    [docImg, name, email, password, experience, fees, about, speciality, degree, address1, address2, backendUrl, hToken, navigate]
+    [docImg, name, email, password, experience, fees, about, speciality, degree, licenseNumber, address1, address2, backendUrl, hToken, navigate]
   )
 
   return (
@@ -159,7 +161,10 @@ const HospitalAddDoctor = () => {
                 </div>
               </div>
 
-              <FormInput label="Consultation Fees" type="number" value={fees} onChange={(e) => setFees(e.target.value)} placeholder="500" icon={IndianRupee} required />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+                <FormInput label="Consultation Fees" type="number" value={fees} onChange={(e) => setFees(e.target.value)} placeholder="500" icon={IndianRupee} required />
+                <FormInput label="License Number (optional)" value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} placeholder="e.g. MCI-123456" icon={FileText} />
+              </div>
             </FormCard>
 
             <FormCard title="Contact Information" icon={Mail}>

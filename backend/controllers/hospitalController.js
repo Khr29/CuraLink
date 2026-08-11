@@ -47,6 +47,7 @@ const DOCTOR_SELF_EDITABLE_FIELDS = [
   "fees",
   "available",
   "degree",
+  "licenseNumber",
   "address",
   "speciality",
 ];
@@ -716,7 +717,7 @@ const getHospitalSelfDoctors = async (req, res) => {
 // =============================
 const hospitalAddDoctor = async (req, res) => {
   try {
-    const { name, email, password, speciality, degree, experience, about, fees, address } =
+    const { name, email, password, speciality, degree, licenseNumber, experience, about, fees, address } =
       req.body;
     const imageFile = req.file;
 
@@ -758,6 +759,7 @@ const hospitalAddDoctor = async (req, res) => {
       password: hashedPassword,
       speciality,
       degree,
+      licenseNumber: licenseNumber ? sanitizeText(licenseNumber, { maxLength: 100 }) : "",
       experience,
       about: sanitizeText(about, { maxLength: 3000 }),
       fees,

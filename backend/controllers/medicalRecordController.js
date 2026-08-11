@@ -75,6 +75,31 @@ const sanitizePrescription = (prescription, previousPrescription = []) => {
   }).filter((item) => item.medicineName);
 };
 
+// Self-healing backfill for quantityPrescribed. Records finalized before
+// this field's computation existed (or whose prescription array was last
+// written by an older server process) have it sitting at the schema
+// default (1) even though the doctor's real prescribed quantity is right
+// there in the free-text `quantity` field — sanitizePrescription only ever
+// computes this on a fresh draft save/amend, so a record that hasn't been
+// touched since never got the correct value. This recomputes it from the
+// same authoritative source (`quantity`) the first time such a mismatch is
+// found and persists the correction, mirroring ensurePrescriptionIdentity's
+// lazy-migration pattern. Only ever widens: an item with dispensing
+// progress that would exceed the freshly-derived total is left untouched
+// rather than risk dispensedQuantity > quantityPrescribed.
+const backfillQuantityPrescribed = async (record) => {
+  let changed = false;
+  record.prescription.forEach((item) => {
+    const derived = parseLeadingQuantity(item.quantity);
+    if (derived && derived !== item.quantityPrescribed && (item.dispensedQuantity || 0) <= derived) {
+      item.quantityPrescribed = derived;
+      changed = true;
+    }
+  });
+  if (changed) await record.save();
+  return record;
+};
+
 // Public — lets both admin apps and the patient frontend fetch the same
 // canonical dropdown options instead of hardcoding a second copy.
 export const getPrescriptionOptions = (req, res) => {
@@ -370,7 +395,7 @@ export const getRecordByAppointment = async (req, res) => {
     const { appointmentId } = req.params;
     const record = await medicalRecordModel
       .findOne({ appointmentId })
-      .populate("doctorId", "name speciality image degree")
+      .populate("doctorId", "name speciality image degree licenseNumber")
       .populate("patientId", "name image")
       .populate("hospitalId", "name phone email website address");
 
@@ -538,7 +563,7 @@ export const pharmacyVerifyPrescription = async (req, res) => {
     const record = await medicalRecordModel
       .findOne({ verificationToken: token })
       .select("+verificationToken")
-      .populate("doctorId", "name speciality")
+      .populate("doctorId", "name speciality licenseNumber")
       .populate("hospitalId", "name")
       .populate("patientId", "name");
 
@@ -554,6 +579,8 @@ export const pharmacyVerifyPrescription = async (req, res) => {
       });
       return res.status(404).json({ success: false, message: "Prescription not found" });
     }
+
+    await backfillQuantityPrescribed(record);
 
     const pharmacy = await pharmacyModel.findById(req.pharmacyId).select("name");
     await logAction({
@@ -573,7 +600,11 @@ export const pharmacyVerifyPrescription = async (req, res) => {
         status: record.prescriptionStatus,
         issuedAt: record.finalizedAt,
         patient: { name: record.patientId?.name || "" },
-        doctor: { name: record.doctorId?.name || "", speciality: record.doctorId?.speciality || "" },
+        doctor: {
+          name: record.doctorId?.name || "",
+          speciality: record.doctorId?.speciality || "",
+          licenseNumber: record.doctorId?.licenseNumber || "",
+        },
         hospital: record.hospitalId?.name || null,
         // Least-privilege projection — only dispensing-relevant medicine
         // fields, plus the per-medicine quantity math a pharmacist needs to
@@ -645,6 +676,12 @@ export const pharmacyDispense = async (req, res) => {
     if (!targetItem) {
       return res.json({ success: false, message: "Medicine not found on this prescription" });
     }
+
+    // Correct any stale quantityPrescribed (see backfillQuantityPrescribed)
+    // BEFORE the atomic guard below reads it — otherwise a record that's
+    // never been through pharmacyVerifyPrescription could still be guarded
+    // against the wrong total.
+    await backfillQuantityPrescribed(preRecord);
 
     const pharmacy = await pharmacyModel.findById(req.pharmacyId).select("name");
 
@@ -829,7 +866,7 @@ export const getMyRecords = async (req, res) => {
 
     const records = await medicalRecordModel
       .find(filter)
-      .populate("doctorId", "name speciality image degree")
+      .populate("doctorId", "name speciality image degree licenseNumber")
       .populate("hospitalId", "name phone email website address")
       .sort({ createdAt: -1 });
     res.json({ success: true, records });

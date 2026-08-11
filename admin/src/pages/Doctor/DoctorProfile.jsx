@@ -284,6 +284,7 @@ const DoctorProfile = () => {
       formData.append('phone', profileData.phone || '')
       formData.append('about', profileData.about || '')
       formData.append('degree', profileData.degree || '')
+      formData.append('licenseNumber', profileData.licenseNumber || '')
       formData.append('experience', profileData.experience || '')
       formData.append('speciality', profileData.speciality || '')
       formData.append('languages', JSON.stringify(profileData.languages || []))
@@ -547,6 +548,21 @@ const DoctorProfile = () => {
               ) : (
                 <p style={{ fontSize: 14, color: '#0F172A', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
                   <GraduationCap size={15} color="#94A3B8" /> {profileData.degree}
+                </p>
+              )}
+            </Field>
+
+            <Field label="License Number">
+              {isEdit ? (
+                <input
+                  type="text" value={profileData.licenseNumber || ''}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, licenseNumber: e.target.value }))}
+                  placeholder="e.g. MCI-123456 (optional)" style={inputStyle}
+                  onFocus={focusTeal} onBlur={blurDefault}
+                />
+              ) : (
+                <p style={{ fontSize: 14, color: profileData.licenseNumber ? '#0F172A' : '#94A3B8', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <ShieldCheck size={15} color="#94A3B8" /> {profileData.licenseNumber || 'Not set'}
                 </p>
               )}
             </Field>

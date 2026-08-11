@@ -24,14 +24,13 @@ const PharmacySidebar = () => {
 
   return (
     <div style={{
-      height: '100%', flexShrink: 0,
+      height: '100%', minHeight: 0, flexShrink: 0,
       background: 'linear-gradient(180deg,#0F172A,#172554)',
       width: collapsed ? 68 : 240,
       minWidth: collapsed ? 68 : 240,
       transition: 'width 0.3s ease, min-width 0.3s ease',
       display: 'flex', flexDirection: 'column',
-      position: 'relative',
-      overflowY: 'auto'
+      position: 'relative'
     }}>
 
       {/* Logo area */}
@@ -40,7 +39,8 @@ const PharmacySidebar = () => {
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'space-between'
+        justifyContent: collapsed ? 'center' : 'space-between',
+        flexShrink: 0
       }}>
         {!collapsed && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
@@ -86,7 +86,7 @@ const PharmacySidebar = () => {
 
       {/* Menu */}
       {pToken && (
-        <nav style={{ padding: '12px 10px', flex: 1 }}>
+        <nav style={{ padding: '12px 10px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {!collapsed && (
             <p style={{ fontSize: 10, fontWeight: 700, color: '#334155', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 10px', marginBottom: 8 }}>
               Menu
@@ -137,8 +137,10 @@ const PharmacySidebar = () => {
         </nav>
       )}
 
-      {/* Footer / Logout */}
-      <div style={{ padding: '16px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      {/* Footer / Logout — flexShrink: 0 so it's always fully visible and
+          pinned to the bottom, never compressed by the menu above it on a
+          short viewport (only .menu above scrolls, via its own overflowY). */}
+      <div style={{ padding: '16px 10px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
         <button
           onClick={logout}
           style={{

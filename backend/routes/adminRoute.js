@@ -13,6 +13,7 @@ import {
   deleteUser,
   setDoctorVerification,
   setHospitalVerification,
+  getAllPrescriptions,
 } from "../controllers/adminController.js";
 
 import upload from "../middlewares/multer.js";
@@ -127,6 +128,12 @@ adminRouter.patch("/user-status/:id", authAdmin, changeUserStatus);
 
 // Delete User
 adminRouter.delete("/delete-user/:id", authAdmin, deleteUser);
+
+// =====================================
+// Prescription Monitoring
+// =====================================
+
+adminRouter.get("/prescriptions", authAdmin, getAllPrescriptions);
 
 // =====================================
 // Audit Logs
