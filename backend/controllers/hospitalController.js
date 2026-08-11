@@ -193,10 +193,12 @@ const getHospitalById = async (req, res) => {
       });
     }
 
-    // Get all doctors belonging to this hospital
+    // Get all doctors belonging to this hospital — public route, so strip
+    // email too (matches the public doctor-list endpoint's projection in
+    // doctorController.js#doctorList), not just password.
     const doctors = await doctorModel
       .find({ hospitalId: id })
-      .select("-password");
+      .select("-password -email");
 
     res.json({
       success: true,

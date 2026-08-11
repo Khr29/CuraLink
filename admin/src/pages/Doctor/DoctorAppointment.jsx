@@ -644,8 +644,8 @@ const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency, o
       </span>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <img src={item.userData.image} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #E2E8F0' }} />
-        <p style={{ fontWeight: 700, color: '#0F172A', margin: 0, fontSize: 13 }}>{item.userData.name}</p>
+        <img src={item.userData?.image} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #E2E8F0' }} />
+        <p style={{ fontWeight: 700, color: '#0F172A', margin: 0, fontSize: 13 }}>{item.userData?.name || 'Unknown Patient'}</p>
       </div>
 
       <span style={{
@@ -660,7 +660,7 @@ const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency, o
         {item.payment ? 'Online' : 'Cash'}
       </span>
 
-      <span style={{ color: '#475569', fontWeight: 500 }}>{calculateAge(item.userData.dob)}</span>
+      <span style={{ color: '#475569', fontWeight: 500 }}>{item.userData?.dob ? calculateAge(item.userData.dob) : '—'}</span>
 
       <div>
         <p style={{ color: '#0F172A', fontWeight: 600, fontSize: 13, margin: 0 }}>{slotDateFormat(item.slotDate)}</p>

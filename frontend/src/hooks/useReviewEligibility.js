@@ -1,4 +1,4 @@
-import { useContext, useCallback, useEffect, useState } from "react";
+import { useContext, useCallback, useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { AppContext } from "../context/AppContext";
 
@@ -22,7 +22,15 @@ const useReviewEligibility = (targetType, targetId) => {
   const targetField = targetType === "doctor" ? "docId" : "hospitalId";
   const reviewField = targetType === "doctor" ? "doctorId" : "hospitalId";
 
+  // `targetId` can change fast (e.g. navigating between two doctors before
+  // the first one's eligibility check resolves) — this ref lets an
+  // in-flight refresh() recognize its response is now stale and skip
+  // applying it, instead of whichever request happens to resolve last
+  // winning regardless of which was issued last.
+  const latestTargetRef = useRef(targetId);
+
   const refresh = useCallback(async () => {
+    const requestedFor = targetId;
     if (!token || !targetId) {
       setLoading(false);
       return;
@@ -31,6 +39,7 @@ const useReviewEligibility = (targetType, targetId) => {
     try {
       if (targetType === "hospital") {
         const { data } = await axios.get(`${backendUrl}/api/review/my-reviews`, { headers: { token } });
+        if (latestTargetRef.current !== requestedFor) return;
         const myReviews = data.success ? data.reviews : [];
         const hasReviewed = myReviews.some((r) => {
           const id = r.hospitalId?._id || r.hospitalId;
@@ -45,6 +54,7 @@ const useReviewEligibility = (targetType, targetId) => {
         axios.get(`${backendUrl}/api/user/appointments`, { headers: { token } }),
         axios.get(`${backendUrl}/api/review/my-reviews`, { headers: { token } }),
       ]);
+      if (latestTargetRef.current !== requestedFor) return;
 
       const myReviews = reviewsRes.data.success ? reviewsRes.data.reviews : [];
       const reviewedAppointmentIds = new Set(
@@ -74,13 +84,15 @@ const useReviewEligibility = (targetType, targetId) => {
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false);
+      if (latestTargetRef.current === requestedFor) setLoading(false);
     }
   }, [backendUrl, token, targetId, targetType, targetField, reviewField]);
 
   useEffect(() => {
+    latestTargetRef.current = targetId;
     refresh();
-  }, [refresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refresh, targetId]);
 
   const eligible =
     targetType === "hospital" ? Boolean(token) && !alreadyReviewed : Boolean(appointmentId);

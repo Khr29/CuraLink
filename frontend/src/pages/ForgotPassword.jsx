@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useState, useRef } from 'react'
 import { AppContext } from '../context/AppContext'
 import { toast } from 'react-toastify'
 import { useNavigate, Link } from 'react-router-dom'
@@ -13,20 +13,37 @@ const ForgotPassword = () => {
   const [otp, setOtp] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  // A ref, not just the `submitting` state, guards the actual double-submit
+  // check: two clicks fired faster than React can commit a re-render would
+  // otherwise both read `submitting` as still false from the same stale
+  // closure and both get through. Refs update synchronously, so the second
+  // click always sees the first's lock. Shared by both steps since only one
+  // form is ever visible/submittable at a time.
+  const submittingRef = useRef(false)
 
   const requestCode = async (event) => {
     event.preventDefault()
+    if (submittingRef.current) return
+    submittingRef.current = true
+    setSubmitting(true)
     try {
       const { data } = await axios.post(`${backendUrl}/api/user/forgot-password`, { email })
       toast.success(data.message)
       setStep('reset')
     } catch (error) {
       toast.error(error.response?.data?.message || error.message)
+    } finally {
+      submittingRef.current = false
+      setSubmitting(false)
     }
   }
 
   const resetPassword = async (event) => {
     event.preventDefault()
+    if (submittingRef.current) return
+    submittingRef.current = true
+    setSubmitting(true)
     try {
       const { data } = await axios.post(`${backendUrl}/api/user/reset-password`, {
         email, otp, newPassword, confirmPassword,
@@ -39,6 +56,9 @@ const ForgotPassword = () => {
       }
     } catch (error) {
       toast.error(error.response?.data?.message || error.message)
+    } finally {
+      submittingRef.current = false
+      setSubmitting(false)
     }
   }
 
@@ -60,8 +80,8 @@ const ForgotPassword = () => {
                 required
               />
             </div>
-            <button type='submit' className='bg-primary text-white w-full py-2 rounded-md text-base'>
-              Send reset code
+            <button type='submit' disabled={submitting} className='bg-primary text-white w-full py-2 rounded-md text-base disabled:opacity-70 disabled:cursor-not-allowed'>
+              {submitting ? 'Sending...' : 'Send reset code'}
             </button>
           </form>
         ) : (
@@ -96,8 +116,8 @@ const ForgotPassword = () => {
                 required
               />
             </div>
-            <button type='submit' className='bg-primary text-white w-full py-2 rounded-md text-base'>
-              Reset password
+            <button type='submit' disabled={submitting} className='bg-primary text-white w-full py-2 rounded-md text-base disabled:opacity-70 disabled:cursor-not-allowed'>
+              {submitting ? 'Resetting...' : 'Reset password'}
             </button>
           </form>
         )}

@@ -185,6 +185,11 @@ const medicalRecordSchema = new mongoose.Schema(
 medicalRecordSchema.index({ patientId: 1 });
 medicalRecordSchema.index({ doctorId: 1 });
 medicalRecordSchema.index({ hospitalId: 1 });
+// Supports getPharmacyHistory's filter on this pharmacy's own dispensing
+// ledger entries (medicalRecordController.js).
+medicalRecordSchema.index({ "dispensingRecords.pharmacyId": 1 });
+// Supports getAllPrescriptions' admin-monitoring $match (adminController.js).
+medicalRecordSchema.index({ prescriptionStatus: 1 });
 
 const medicalRecordModel =
   mongoose.models.medicalRecord ||

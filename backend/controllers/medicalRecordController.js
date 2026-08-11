@@ -704,7 +704,7 @@ export const pharmacyDispense = async (req, res) => {
 
     const preRecord = await medicalRecordModel
       .findOne({ verificationToken: token })
-      .select("+verificationToken prescription prescriptionStatus finalizedAt");
+      .select("+verificationToken prescription prescriptionStatus finalizedAt prescriptionId");
     const pharmacy = await pharmacyModel.findById(req.pharmacyId).select("name");
 
     const rejectDispense = async (message, reason) => {

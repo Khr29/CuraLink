@@ -131,7 +131,7 @@ const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency })
         <img src={patient.image} alt={patient.name} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #E2E8F0' }} />
         <div>
           <p style={{ fontWeight: 700, color: '#0F172A', margin: 0, fontSize: 13.5 }}>{patient.name}</p>
-          <p style={{ color: '#64748B', fontSize: 11.5, marginTop: 1 }}>{calculateAge(patient)} yrs</p>
+          <p style={{ color: '#64748B', fontSize: 11.5, marginTop: 1 }}>{patient.dob ? `${calculateAge(patient.dob)} yrs` : '—'}</p>
         </div>
       </div>
 

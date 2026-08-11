@@ -370,20 +370,19 @@ const appointmentCancel = async (req, res) => {
 
     const { docId, slotDate, slotTime } = appointmentData;
 
-    const doctorData = await doctorModel.findById(docId);
-    if (!doctorData) {
+    const doctorExists = await doctorModel.exists({ _id: docId });
+    if (!doctorExists) {
       return res.json({ success: false, message: "Doctor not found" });
     }
 
-    let slots_booked = doctorData.slots_booked || {};
-
-    if (slots_booked[slotDate]) {
-      slots_booked[slotDate] = slots_booked[slotDate].filter(
-        (e) => e !== slotTime,
-      );
-    }
-
-    await doctorModel.findByIdAndUpdate(docId, { slots_booked });
+    // Atomic $pull instead of read-modify-write on the whole slots_booked
+    // object — a concurrent booking/cancellation on the same doctor could
+    // otherwise have its change silently overwritten by this write landing
+    // last with a stale snapshot (same fix already applied to the
+    // doctor-initiated cancel path in doctorController.js).
+    await doctorModel.findByIdAndUpdate(docId, {
+      $pull: { [`slots_booked.${slotDate}`]: slotTime },
+    });
 
     res.json({ success: true, message: "Appointment cancelled" });
   } catch (error) {

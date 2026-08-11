@@ -81,6 +81,12 @@ const appointmentSchema = new mongoose.Schema(
 appointmentSchema.index({ userId: 1 });
 appointmentSchema.index({ docId: 1 });
 appointmentSchema.index({ hospitalId: 1 });
+// Supports adminController.js#adminDashboard's `.sort({ date: -1 }).limit(5)`.
+appointmentSchema.index({ date: -1 });
+// Support the "does this doctor/patient have any active appointment" existence
+// checks in adminController.js (deleteDoctor/deleteUser).
+appointmentSchema.index({ docId: 1, cancelled: 1, isCompleted: 1 });
+appointmentSchema.index({ userId: 1, cancelled: 1, isCompleted: 1 });
 
 const appointmentModel =
   mongoose.models.appointment ||

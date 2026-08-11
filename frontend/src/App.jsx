@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useContext } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -8,6 +8,8 @@ import Footer from "./components/Footer";
 import PortalTopBar from "./components/PortalTopBar";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AppContext } from "./context/AppContext";
 
 // Authenticated Patient Portal routes (every page wrapped in PortalLayout —
 // see components/PortalLayout.jsx) get their own application-style shell
@@ -57,6 +59,7 @@ const PageLoader = () => (
 
 const App = () => {
   const location = useLocation();
+  const { token } = useContext(AppContext);
   const isPortalRoute = PORTAL_PATH_PREFIXES.some((p) => location.pathname.startsWith(p));
 
   return (
@@ -102,15 +105,18 @@ const App = () => {
                   element={<HospitalDetails />}
                 />
 
-                {/* User Portal */}
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/my-profile" element={<MyProfile />} />
-                <Route path="/medical-records" element={<MedicalRecordsPage />} />
-                <Route path="/prescriptions" element={<PrescriptionsPage />} />
-                <Route path="/my-appointments" element={<MyAppointments />} />
-                <Route path="/reviews" element={<ReviewsPage />} />
-                <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
+                {/* User Portal — every route requires a token, so an expired/
+                    missing session redirects to /login immediately instead of
+                    rendering a page that spins or blanks forever waiting on
+                    data that will never arrive. */}
+                <Route path="/dashboard" element={<ProtectedRoute token={token}><Dashboard /></ProtectedRoute>} />
+                <Route path="/my-profile" element={<ProtectedRoute token={token}><MyProfile /></ProtectedRoute>} />
+                <Route path="/medical-records" element={<ProtectedRoute token={token}><MedicalRecordsPage /></ProtectedRoute>} />
+                <Route path="/prescriptions" element={<ProtectedRoute token={token}><PrescriptionsPage /></ProtectedRoute>} />
+                <Route path="/my-appointments" element={<ProtectedRoute token={token}><MyAppointments /></ProtectedRoute>} />
+                <Route path="/reviews" element={<ProtectedRoute token={token}><ReviewsPage /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute token={token}><NotificationsPage /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute token={token}><SettingsPage /></ProtectedRoute>} />
 
                 {/* Public prescription verification */}
                 <Route path="/verify/:token" element={<VerifyPrescription />} />
