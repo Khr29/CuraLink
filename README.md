@@ -169,31 +169,27 @@ The result is a healthcare ecosystem where decisions are backed by data and ever
 <td width="50%">
 
 **Patient Portal Dashboard**
-<!-- 📌 Screenshot placeholder — drop the image at docs/screenshots/patient-portal.png -->
-<img src="" alt="Patient portal dashboard (screenshot placeholder)" width="100%" />
+<img src="docs/screenshots/patient-portal.png" alt="Patient portal dashboard" width="100%" />
 
 </td>
 <td width="50%">
 
 **Medical Records / Prescription (with QR + PDF export)**
-<!-- 📌 Screenshot placeholder — drop the image at docs/screenshots/prescription-qr.png -->
-<img src="" alt="Medical record and prescription detail (screenshot placeholder)" width="100%" />
+<img src="docs/screenshots/prescription-qr.png" alt="Medical record and prescription detail with QR verification" width="100%" />
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-**Reviews & Rating Distribution**
-<!-- 📌 Screenshot placeholder — drop the image at docs/screenshots/reviews.png -->
-<img src="" alt="Reviews and rating distribution (screenshot placeholder)" width="100%" />
+**Reviews & Rating Moderation (Admin)**
+<img src="docs/screenshots/reviews.png" alt="Admin hospital reviews and rating moderation" width="100%" />
 
 </td>
 <td width="50%">
 
 **Audit Logs (Admin)**
-<!-- 📌 Screenshot placeholder — drop the image at docs/screenshots/audit-logs.png -->
-<img src="" alt="Admin audit logs (screenshot placeholder)" width="100%" />
+<img src="docs/screenshots/audit-logs.png" alt="Admin audit logs" width="100%" />
 
 </td>
 </tr>
