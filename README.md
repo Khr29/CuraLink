@@ -25,7 +25,8 @@
 <br />
 
 <div align="center">
-  <img width="900" alt="CuraLink home page" src="https://github.com/user-attachments/assets/82a4f9fe-dfe2-4981-a31d-1d7b7f4f37fa" />
+  <!-- 📌 Hero screenshot placeholder — drop the homepage screenshot here -->
+  <img width="900" alt="CuraLink home page (screenshot placeholder)" src="" />
   <p><em>CuraLink's public homepage — hospital &amp; doctor discovery, platform stats, and patient reviews.</em></p>
 </div>
 
@@ -63,7 +64,7 @@ CuraLink lets patients:
 - **Manage** a secure digital health profile — medical history, allergies, medications, insurance, and appointment-linked prescriptions — in one place.
 - **Track** every prescription with a structured, versioned record and a downloadable PDF.
 
-On the provider side, CuraLink gives **doctors** a dashboard to manage appointments, availability, and patient records; gives **hospitals** a portal to manage their doctor roster, departments, and patients; and gives **administrators** full oversight — verification workflows, platform analytics, review moderation, and a tamper-evident audit log of every sensitive action taken on the platform.
+On the provider side, CuraLink gives **doctors** a dashboard to manage appointments, availability, and patient records; gives **hospitals** a portal to manage their doctor roster, departments, and patients; gives **pharmacies** a scan-and-dispense workflow for verifying prescriptions via QR code; and gives **administrators** full oversight — verification workflows, platform analytics, review moderation, and a tamper-evident audit log of every sensitive action taken on the platform.
 
 The result is a healthcare ecosystem where decisions are backed by data and every account, role, and action is authenticated, authorized, and logged.
 
@@ -108,6 +109,17 @@ The result is a healthcare ecosystem where decisions are backed by data and ever
 | Doctor requests inbox | Approve, reject, or invite doctors to join |
 | Review replies | Respond to hospital reviews |
 
+### 💊 Pharmacy *(via the Admin app)*
+
+| Feature | Description |
+|---|---|
+| Pharmacy authentication | Dedicated login/session flow; accounts are **admin-provisioned only** (no public self-registration) |
+| QR prescription scan | Scan a patient's prescription QR (via `html5-qrcode`) or verification link to pull up authorized prescription details |
+| Dispense workflow | Mark a verified prescription as dispensed, recorded against the pharmacy account |
+| Scan log | Append-only log of every scan/verification attempt for security review |
+| Dashboard & history | At-a-glance stats plus a searchable history of past verifications/dispenses |
+| Profile & settings | Manage pharmacy profile, license number, and account password |
+
 ### 🛡️ Admin
 
 | Feature | Description |
@@ -118,48 +130,73 @@ The result is a healthcare ecosystem where decisions are backed by data and ever
 | Appointment oversight | View and cancel any appointment on the platform |
 | Review moderation | Toggle review visibility, reply on behalf of the platform, remove abusive content |
 | Doctor ↔ hospital control | Assign, transfer, or remove doctor-hospital associations |
+| Pharmacy provisioning | Add, edit, and activate/deactivate pharmacy accounts |
 | **Audit log system** | Searchable, filterable log of every sensitive action, exportable to CSV |
-
-> **Note:** A dedicated pharmacy portal is **not yet implemented** in this codebase — see [Roadmap](#-roadmap).
 
 ---
 
 ## 📸 Screenshots
+
+<!-- 📌 Screenshot placeholders — replace the empty src="" below with real images -->
 
 <table>
 <tr>
 <td width="50%">
 
 **Hospital Discovery**
-<img src="https://github.com/user-attachments/assets/1bea4171-a74d-4388-a426-7d29fb4b61be" alt="Hospital discovery" width="100%" />
+<img src="" alt="Hospital discovery (screenshot placeholder)" width="100%" />
 
 </td>
 <td width="50%">
 
 **Admin Dashboard**
-<img src="https://github.com/user-attachments/assets/d9b08d33-9462-41f9-a082-bd237b6ccb36" alt="Admin dashboard" width="100%" />
+<img src="" alt="Admin dashboard (screenshot placeholder)" width="100%" />
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Patient Portal Dashboard**
+<img src="" alt="Patient portal dashboard (screenshot placeholder)" width="100%" />
+
+</td>
+<td width="50%">
+
+**Doctor Dashboard & Schedule Editor**
+<img src="" alt="Doctor dashboard and schedule editor (screenshot placeholder)" width="100%" />
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Medical Records / Prescription (with QR + PDF export)**
+<img src="" alt="Medical record and prescription detail (screenshot placeholder)" width="100%" />
+
+</td>
+<td width="50%">
+
+**Pharmacy Scan & Dispense**
+<img src="" alt="Pharmacy QR scan and dispense flow (screenshot placeholder)" width="100%" />
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Reviews & Rating Distribution**
+<img src="" alt="Reviews and rating distribution (screenshot placeholder)" width="100%" />
+
+</td>
+<td width="50%">
+
+**Audit Logs (Admin)**
+<img src="" alt="Admin audit logs (screenshot placeholder)" width="100%" />
 
 </td>
 </tr>
 </table>
-
-<details>
-<summary><strong>📌 Screenshots still needed (help wanted!)</strong></summary>
-
-The following views exist in the app but don't have a screenshot in this README yet:
-
-- [ ] Login / Registration
-- [ ] Patient Portal Dashboard
-- [ ] Doctor Dashboard & Schedule Editor
-- [ ] Hospital Dashboard & Patient Directory
-- [ ] Medical Records / Prescription Detail (with PDF export)
-- [ ] Reviews & Rating Distribution
-- [ ] Audit Logs (Admin)
-- [ ] Mobile-responsive views
-
-Contributions with screenshots via PR are welcome.
-
-</details>
 
 ---
 
@@ -182,6 +219,7 @@ Contributions with screenshots via PR are welcome.
 | Lucide React | Icon set |
 | jsPDF | Client-side prescription PDF export |
 | react-phone-number-input | Phone number entry & validation |
+| html5-qrcode | Pharmacy-side QR scanning of prescriptions (`admin` app) |
 
 </td>
 <td valign="top" width="33%">
@@ -202,6 +240,7 @@ Contributions with screenshots via PR are welcome.
 | Nodemailer | Transactional email & OTP delivery |
 | validator | Input/email sanitization |
 | Morgan / Compression | Logging & response compression |
+| qrcode | Server-side QR code generation for prescription verification |
 
 </td>
 <td valign="top" width="33%">
@@ -226,11 +265,12 @@ Contributions with screenshots via PR are welcome.
 ## 🧩 System Architecture
 
 ```
-┌───────────────────────────┐        ┌────────────────────────────────┐
-│    Frontend (React/Vite)   │        │       Admin (React/Vite)         │
-│  Public site + Patient      │        │  Doctor / Hospital / Admin        │
-│  Portal                     │        │  Portals (role-based routing)     │
-└──────────────┬─────────────┘        └─────────────────┬────────────────┘
+┌───────────────────────────┐        ┌───────────────────────────────────┐
+│    Frontend (React/Vite)   │        │         Admin (React/Vite)          │
+│  Public site + Patient      │        │  Doctor / Hospital / Pharmacy /       │
+│  Portal (incl. public QR      │        │  Admin Portals (role-based routing)   │
+│  prescription verify page)    │        │                                        │
+└──────────────┬─────────────┘        └─────────────────┬──────────────────────┘
                │                                          │
                │           Axios · JWT + httpOnly refresh cookies
                └───────────────────────┬──────────────────┘
@@ -238,14 +278,14 @@ Contributions with screenshots via PR are welcome.
                           ┌─────────────▼──────────────┐
                           │      Express REST API       │
                           │  /api/user  /api/doctor      │
-                          │  /api/hospital  /api/admin    │
-                          │  /api/medical-records          │
-                          │  /api/review /api/schedule       │
-                          │  /api/stats                       │
-                          │                                     │
-                          │  Role middleware → Controllers →     │
-                          │  Mongoose Models → Audit Logger       │
-                          └───┬──────────┬──────────┬────────┬───┘
+                          │  /api/hospital  /api/pharmacy  │
+                          │  /api/admin  /api/medical-records│
+                          │  /api/review /api/schedule         │
+                          │  /api/stats                          │
+                          │                                        │
+                          │  Role middleware → Controllers →        │
+                          │  Mongoose Models → Audit Logger          │
+                          └───┬──────────┬──────────┬────────┬──────┘
                               │          │          │        │
                      ┌────────▼───┐ ┌────▼─────┐ ┌──▼─────┐ ┌▼────────────┐
                      │  MongoDB   │ │Cloudinary │ │Razorpay │ │ Nodemailer   │
@@ -280,15 +320,16 @@ CuraLink/
 │       │   └── Portal/                # Logged-in patient portal (dashboard, records, prescriptions, notifications)
 │       └── utils/
 │
-├── admin/                        # Doctor / Hospital / Admin React app (Vite)
+├── admin/                        # Doctor / Hospital / Pharmacy / Admin React app (Vite)
 │   └── src/
 │       ├── assets/
 │       ├── components/               # Sidebars, ScheduleEditor, ReviewsPanel…
-│       ├── context/                   # AdminContext, DoctorContext, HospitalContext
+│       ├── context/                   # AdminContext, DoctorContext, HospitalContext, PharmacyContext
 │       ├── pages/
 │       │   ├── Admin/                  # Dashboard, verification, users, audit logs…
 │       │   ├── Doctor/                  # Dashboard, schedule, appointments, profile
-│       │   └── Hospital/                 # Dashboard, doctors, patients, departments, gallery
+│       │   ├── Hospital/                 # Dashboard, doctors, patients, departments, gallery
+│       │   └── Pharmacy/                  # Dashboard, QR scan, dispense history, scan log
 │       └── utils/
 │
 ├── CURALINK_THEME.md              # Design system reference (colors, typography, components)
@@ -415,20 +456,21 @@ All routes are mounted under `/api` in `backend/server.js`, guarded by role-spec
 | `/api/user` | Patient auth, profile, appointments, payments | register, login, book-appointment, payment-razorpay, verifyRazorpay |
 | `/api/doctor` | Doctor auth, appointments, dashboard, hospital affiliation | login, appointments, complete/cancel-appointment, request-hospital |
 | `/api/hospital` | Hospital auth, profile, doctor roster, patients, media | self/doctors, self/appointments, self/patients, self/media |
+| `/api/pharmacy` | Pharmacy auth & admin-provisioned account management | login, self/profile, add (admin-only), list, status |
 | `/api/admin` | Platform administration | add-doctor, doctor-verification, all-doctors, appointments, users |
-| `/api/medical-records` | Structured prescriptions & attachments | draft, finalize, amend, mine, hospital/mine, doctor/mine |
+| `/api/medical-records` | Structured prescriptions, QR verification & pharmacy dispensing | draft, finalize, amend, mine, hospital/mine, doctor/mine, `:id/qr`, `verify/:token` (public), `pharmacy/verify/:token`, `pharmacy/dispense/:token` |
 | `/api/review` | Ratings & reviews for doctors and hospitals | add, doctor/:id, hospital/:id, admin moderation, replies |
 | `/api/schedule` | Doctor weekly availability & computed slots | get/upsert schedule, doctor/:id/slots |
 | `/api/stats` | Public platform-wide statistics | `GET /` |
 
-Shared across `user` / `doctor` / `hospital` / `admin` routers: refresh-token rotation, session listing/revocation, logout-all, change/forgot/reset password, email verification OTP — implemented once in `authSharedController.js` and mounted per role.
+Shared across `user` / `doctor` / `hospital` / `pharmacy` / `admin` routers: refresh-token rotation, session listing/revocation, logout-all, change/forgot/reset password, email verification OTP — implemented once in `authSharedController.js` and mounted per role.
 
 ---
 
 ## 🔒 Security
 
 - **JWT access tokens** (15-minute TTL) + **rotating refresh tokens** stored as hashed values, delivered via httpOnly cookies, with "Remember Me" (30-day) support
-- **Role-based access control** across four distinct actor types — patient, doctor, hospital, admin — each with dedicated auth middleware
+- **Role-based access control** across five distinct actor types — patient, doctor, hospital, pharmacy, admin — each with dedicated auth middleware
 - **Session management** — list active sessions, revoke a single session, or log out everywhere
 - **bcrypt password hashing** with a server-side strength policy and reuse prevention against the last 5 passwords
 - **Email OTP verification** for account email verification and password reset, with hashed, time-limited, single-use codes
@@ -464,27 +506,38 @@ There is no LLM-based symptom checker, diagnosis, or ML recommendation model in 
    Doctor finalizes the record ── amendments are
    versioned, preserving the prior snapshot
              │
-             ▼
-   Patient views the record (read-only) in the
-   Patient Portal and exports it as a PDF (jsPDF)
+             ├──────────────────────────────────────┐
+             ▼                                        ▼
+   Patient views the record (read-only) in the   A QR code (qrcode) is generated,
+   Patient Portal and exports it as a PDF (jsPDF)  encoding a public verification link
+                                                        │
+                                                        ▼
+                                          Pharmacy scans the QR (html5-qrcode) or
+                                          opens the verify link — public visitors see
+                                          only ID/status/date/doctor/hospital; an
+                                          authenticated pharmacy can pull full details
+                                          and mark the prescription as dispensed
+                                                        │
+                                                        ▼
+                                          Every scan/verification is written to an
+                                          append-only pharmacy scan log; a doctor or
+                                          admin can revoke a prescription at any time
 ```
 
-Attachments (lab reports, scans) can be uploaded to the record via Cloudinary. QR-code-based prescription verification and pharmacy dispensing are **not implemented yet** — see [Roadmap](#-roadmap).
+Attachments (lab reports, scans) can be uploaded to the record via Cloudinary.
 
 ---
 
 ## 🚧 Roadmap
 
-- [ ] QR-code prescriptions & pharmacy verification workflow
 - [ ] OCR ingestion for scanned lab reports / prescriptions
 - [ ] AI-assisted symptom-to-specialty triage
 - [ ] Interactive hospital map & distance-based search
 - [ ] Video consultations
-- [ ] Dedicated pharmacy portal
 - [ ] In-app medical chatbot
 - [ ] Electronic Health Record (EHR) / ABHA integration
 - [ ] Multi-language support
-- [ ] Health insurance integration
+- [ ] Deeper health insurance integration (claims, coverage verification)
 
 ---
 
