@@ -25,8 +25,7 @@
 <br />
 
 <div align="center">
-  <!-- 📌 Hero screenshot placeholder — drop the homepage screenshot here -->
-  <img width="900" alt="CuraLink home page (screenshot placeholder)" src="" />
+  <img width="900" alt="CuraLink home page" src="docs/screenshots/homepage.png" />
   <p><em>CuraLink's public homepage — hospital &amp; doctor discovery, platform stats, and patient reviews.</em></p>
 </div>
 
@@ -137,20 +136,32 @@ The result is a healthcare ecosystem where decisions are backed by data and ever
 
 ## 📸 Screenshots
 
-<!-- 📌 Screenshot placeholders — replace the empty src="" below with real images -->
-
 <table>
 <tr>
 <td width="50%">
 
-**Hospital Discovery**
-<img src="" alt="Hospital discovery (screenshot placeholder)" width="100%" />
+**Admin Dashboard**
+<img src="docs/screenshots/admin-dashboard.png" alt="Admin dashboard" width="100%" />
 
 </td>
 <td width="50%">
 
-**Admin Dashboard**
-<img src="" alt="Admin dashboard (screenshot placeholder)" width="100%" />
+**Doctor Dashboard**
+<img src="docs/screenshots/doctor-dashboard.png" alt="Doctor dashboard" width="100%" />
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Hospital Dashboard**
+<img src="docs/screenshots/hospital-dashboard.png" alt="Hospital dashboard" width="100%" />
+
+</td>
+<td width="50%">
+
+**Pharmacy Dashboard**
+<img src="docs/screenshots/pharmacy-dashboard.png" alt="Pharmacy dashboard" width="100%" />
 
 </td>
 </tr>
@@ -158,27 +169,15 @@ The result is a healthcare ecosystem where decisions are backed by data and ever
 <td width="50%">
 
 **Patient Portal Dashboard**
+<!-- 📌 Screenshot placeholder — drop the image at docs/screenshots/patient-portal.png -->
 <img src="" alt="Patient portal dashboard (screenshot placeholder)" width="100%" />
 
 </td>
 <td width="50%">
 
-**Doctor Dashboard & Schedule Editor**
-<img src="" alt="Doctor dashboard and schedule editor (screenshot placeholder)" width="100%" />
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
 **Medical Records / Prescription (with QR + PDF export)**
+<!-- 📌 Screenshot placeholder — drop the image at docs/screenshots/prescription-qr.png -->
 <img src="" alt="Medical record and prescription detail (screenshot placeholder)" width="100%" />
-
-</td>
-<td width="50%">
-
-**Pharmacy Scan & Dispense**
-<img src="" alt="Pharmacy QR scan and dispense flow (screenshot placeholder)" width="100%" />
 
 </td>
 </tr>
@@ -186,12 +185,14 @@ The result is a healthcare ecosystem where decisions are backed by data and ever
 <td width="50%">
 
 **Reviews & Rating Distribution**
+<!-- 📌 Screenshot placeholder — drop the image at docs/screenshots/reviews.png -->
 <img src="" alt="Reviews and rating distribution (screenshot placeholder)" width="100%" />
 
 </td>
 <td width="50%">
 
 **Audit Logs (Admin)**
+<!-- 📌 Screenshot placeholder — drop the image at docs/screenshots/audit-logs.png -->
 <img src="" alt="Admin audit logs (screenshot placeholder)" width="100%" />
 
 </td>
@@ -264,33 +265,25 @@ The result is a healthcare ecosystem where decisions are backed by data and ever
 
 ## 🧩 System Architecture
 
-```
-┌───────────────────────────┐        ┌───────────────────────────────────┐
-│    Frontend (React/Vite)   │        │         Admin (React/Vite)          │
-│  Public site + Patient      │        │  Doctor / Hospital / Pharmacy /       │
-│  Portal (incl. public QR      │        │  Admin Portals (role-based routing)   │
-│  prescription verify page)    │        │                                        │
-└──────────────┬─────────────┘        └─────────────────┬──────────────────────┘
-               │                                          │
-               │           Axios · JWT + httpOnly refresh cookies
-               └───────────────────────┬──────────────────┘
-                                        │
-                          ┌─────────────▼──────────────┐
-                          │      Express REST API       │
-                          │  /api/user  /api/doctor      │
-                          │  /api/hospital  /api/pharmacy  │
-                          │  /api/admin  /api/medical-records│
-                          │  /api/review /api/schedule         │
-                          │  /api/stats                          │
-                          │                                        │
-                          │  Role middleware → Controllers →        │
-                          │  Mongoose Models → Audit Logger          │
-                          └───┬──────────┬──────────┬────────┬──────┘
-                              │          │          │        │
-                     ┌────────▼───┐ ┌────▼─────┐ ┌──▼─────┐ ┌▼────────────┐
-                     │  MongoDB   │ │Cloudinary │ │Razorpay │ │ Nodemailer   │
-                     │ (Mongoose) │ │ (Media)   │ │(Payments)│ │ (Email/OTP)  │
-                     └────────────┘ └───────────┘ └─────────┘ └──────────────┘
+```mermaid
+flowchart TB
+    FE["Frontend (React/Vite)<br/>Public site + Patient Portal<br/>incl. public QR prescription verify page"]
+    AD["Admin (React/Vite)<br/>Doctor / Hospital / Pharmacy / Admin Portals<br/>role-based routing"]
+
+    FE -- "Axios · JWT + httpOnly refresh cookies" --> API
+    AD -- "Axios · JWT + httpOnly refresh cookies" --> API
+
+    subgraph API["Express REST API"]
+        direction TB
+        ROUTES["/api/user · /api/doctor · /api/hospital<br/>/api/pharmacy · /api/admin<br/>/api/medical-records · /api/review<br/>/api/schedule · /api/stats"]
+        FLOW["Role middleware → Controllers →<br/>Mongoose Models → Audit Logger"]
+        ROUTES --> FLOW
+    end
+
+    API --> DB[("MongoDB<br/>(Mongoose)")]
+    API --> CDN["Cloudinary<br/>(Media)"]
+    API --> PAY["Razorpay<br/>(Payments)"]
+    API --> MAIL["Nodemailer<br/>(Email/OTP)"]
 ```
 
 ---
@@ -495,33 +488,14 @@ There is no LLM-based symptom checker, diagnosis, or ML recommendation model in 
 
 ## 🧾 Digital Medical Records & Prescriptions
 
-```
-   Doctor writes prescription
-             │
-             ▼
-   Structured record (medicine, strength, dose,
-   frequency, route, timing) saved as a draft
-             │
-             ▼
-   Doctor finalizes the record ── amendments are
-   versioned, preserving the prior snapshot
-             │
-             ├──────────────────────────────────────┐
-             ▼                                        ▼
-   Patient views the record (read-only) in the   A QR code (qrcode) is generated,
-   Patient Portal and exports it as a PDF (jsPDF)  encoding a public verification link
-                                                        │
-                                                        ▼
-                                          Pharmacy scans the QR (html5-qrcode) or
-                                          opens the verify link — public visitors see
-                                          only ID/status/date/doctor/hospital; an
-                                          authenticated pharmacy can pull full details
-                                          and mark the prescription as dispensed
-                                                        │
-                                                        ▼
-                                          Every scan/verification is written to an
-                                          append-only pharmacy scan log; a doctor or
-                                          admin can revoke a prescription at any time
+```mermaid
+flowchart TD
+    A["Doctor writes prescription"] --> B["Structured record (medicine, strength,<br/>dose, frequency, route, timing) saved as a draft"]
+    B --> C["Doctor finalizes the record —<br/>amendments are versioned, preserving the prior snapshot"]
+    C --> D["Patient views the record (read-only) in the<br/>Patient Portal and exports it as a PDF (jsPDF)"]
+    C --> E["A QR code (qrcode) is generated,<br/>encoding a public verification link"]
+    E --> F["Pharmacy scans the QR (html5-qrcode) or opens the verify link —<br/>public visitors see only ID/status/date/doctor/hospital;<br/>an authenticated pharmacy can pull full details<br/>and mark the prescription as dispensed"]
+    F --> G["Every scan/verification is written to an append-only<br/>pharmacy scan log; a doctor or admin can revoke<br/>a prescription at any time"]
 ```
 
 Attachments (lab reports, scans) can be uploaded to the record via Cloudinary.
