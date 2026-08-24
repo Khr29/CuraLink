@@ -61,6 +61,15 @@ import { generalApiLimiter } from "./middlewares/rateLimiters.js";
 const app = express();
 const port = process.env.PORT || 4000;
 
+// Trust the platform's reverse proxy (Render/Railway/Heroku/etc.) so
+// express-rate-limit and req.ip read the real client IP from
+// X-Forwarded-For instead of the proxy's own address. Only enabled in
+// production — locally there is no proxy in front of the server, so
+// trusting X-Forwarded-For there would let a client spoof its own IP.
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 // connect services (parallel execution for speed)
 await Promise.all([connectDB(), connectCloudinary()]);
 
