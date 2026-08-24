@@ -1,0 +1,7 @@
+/node_modules/
+graphify-out/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
