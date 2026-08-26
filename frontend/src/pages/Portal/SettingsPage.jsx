@@ -127,7 +127,7 @@ const SessionsCard = () => {
       localStorage.removeItem("token");
       setToken(false);
       navigate("/login");
-    } catch (error) {
+    } catch {
       toast.error("Something went wrong");
       setLoggingOutAll(false);
     }

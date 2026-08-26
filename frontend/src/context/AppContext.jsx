@@ -13,6 +13,24 @@ const AppContextProvider = (props) => {
     const currencySymbol = '$'
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL
+
+    // VITE_BACKEND_URL is inlined at build time — a missing/stale value here
+    // isn't a runtime bug to catch-and-continue from, it means every API call
+    // below silently resolves against the frontend's own origin (or "undefined/...")
+    // instead of the backend. Fail loudly in the console so a bad build's env
+    // config is obvious immediately instead of surfacing as "0 doctors" with no clue why.
+    if (!backendUrl) {
+      console.error(
+        '[CuraLink] VITE_BACKEND_URL is not set — this build has no backend to call. ' +
+        'Set VITE_BACKEND_URL in the frontend host\'s build environment and redeploy.'
+      )
+    } else if (/^https?:\/\/localhost/i.test(backendUrl) && import.meta.env.PROD) {
+      console.error(
+        `[CuraLink] Production build is configured with a localhost backend (${backendUrl}). ` +
+        'Set VITE_BACKEND_URL to the deployed backend URL and redeploy.'
+      )
+    }
+
       const [doctors, setDoctors] = useState([])
       const [hospitals, setHospitals] = useState([])
       const [platformStats, setPlatformStats] = useState(null)

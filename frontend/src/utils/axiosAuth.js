@@ -101,7 +101,7 @@ export const installAuthInterceptor = (backendUrl) => {
             originalRequest.headers.token = data.token;
             return axios(originalRequest);
           }
-        } catch (refreshError) {
+        } catch {
           // session is unrecoverable — fall through to sign-out below
         }
         handleSessionExpired();

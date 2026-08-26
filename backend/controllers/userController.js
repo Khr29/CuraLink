@@ -128,9 +128,11 @@ const registerUser = async (req, res) => {
     const newUser = new userModel(userData);
     const user = await newUser.save();
 
-    // ✅ EMAIL SEND (ADDED)
+    // Registration already succeeded and is persisted — the welcome email
+    // is a nice-to-have, not a precondition, so it must not make the
+    // response wait on an SMTP round-trip (see utils/email.js).
     try {
-      await sendEmail(
+      sendEmail(
         email,
         "Welcome to CuraLink 🎉",
         `
@@ -564,9 +566,10 @@ const bookAppointment = async (req, res) => {
       throw saveError;
     }
 
-    // ✅ EMAIL SEND (ADDED)
+    // Booking already saved — confirmation email is best-effort and must
+    // not block the response on an SMTP round-trip (see utils/email.js).
     try {
-      await sendEmail(
+      sendEmail(
         userData.email,
         "Appointment Confirmed ✅",
         `
@@ -680,9 +683,10 @@ const cancelAppointment = async (req, res) => {
     await doctorModel.findByIdAndUpdate(docId, {
       $pull: { [`slots_booked.${slotDate}`]: slotTime },
     });
-    // email notiication
+    // Cancellation already saved — notification email is best-effort and
+    // must not block the response on an SMTP round-trip (see utils/email.js).
     try {
-      await sendEmail(
+      sendEmail(
         appointmentData.userData.email,
         "Appointment Cancelled ❌",
         `
@@ -811,9 +815,10 @@ const verifyRazorpay = async (req, res) => {
       // ✅ GET APPOINTMENT DATA (for email)
       const appointment = await appointmentModel.findById(orderInfo.receipt);
 
-      // ✅ EMAIL SEND (ADDED)
+      // Payment already verified and saved — receipt email is best-effort
+      // and must not block the response on an SMTP round-trip (see utils/email.js).
       try {
-        await sendEmail(
+        sendEmail(
           appointment.userData.email,
           "Payment Successful 💳",
           `

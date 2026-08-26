@@ -299,7 +299,7 @@ const MedicalRecordModal = ({ appointment, dToken, backendUrl, onClose }) => {
           setNotes(data.record.notes || '')
           if (data.record.prescription?.length) setPrescription(data.record.prescription.map(normalizeRow))
         }
-      } catch (error) {
+      } catch {
         // 404 just means no draft exists yet — that's fine, form starts empty.
       } finally {
         setLoading(false)
