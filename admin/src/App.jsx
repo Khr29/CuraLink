@@ -72,10 +72,6 @@ const App = () => {
   const { hToken } = useContext(HospitalContext)
   const { pToken } = useContext(PharmacyContext)
 
-  const isAdmin = !!aToken
-  const isDoctor = !!dToken
-  const isLoggedIn = isAdmin || isDoctor
-
   return (
   <div className='min-h-screen bg-gradient-to-br from-[#f8f9fd] to-[#eef1ff]'>
     <ToastContainer />
