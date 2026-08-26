@@ -1,6 +1,25 @@
+# Render Blueprint documenting the CuraLink deployment architecture.
+#
+# IMPORTANT: this file does NOT retroactively attach to or reconfigure
+# services that already exist in the Render dashboard (CuraLink-Frontend,
+# CuraLink-Backend). Render only adopts an existing service into a Blueprint
+# sync when the `name:` below matches that service's name exactly, and even
+# then only via an explicit "New Blueprint Instance" sync you run yourself
+# from the dashboard — pushing this file alone changes nothing.
+#
+# Names below match the existing services as given: CuraLink-Frontend,
+# CuraLink-Backend. Do NOT rename these or you'll create duplicates.
+# The old/failed "CuraLink" service is intentionally not listed here — do
+# not resurrect or duplicate it.
+#
+# The admin app's existing Render service name is unknown (not provided) —
+# CuraLink-Admin below is a placeholder. Rename it to match the real
+# service before using this file for a Blueprint sync, or delete this
+# block if the admin app is not deployed on Render yet.
+
 services:
   - type: web
-    name: curalink-backend
+    name: CuraLink-Backend
     runtime: node
     rootDir: backend
     plan: free
@@ -10,15 +29,45 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20.19.0
+      - key: PORT
+        sync: false
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
         sync: false
-      - key: FRONTEND_URL
+      - key: ADMIN_EMAIL
         sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: CLOUDINARY_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_SECRET_KEY
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: CURRENCY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://curalink-frontend-5y9u.onrender.com
+      - key: CORS_ORIGIN
+        value: https://curalink-frontend-5y9u.onrender.com
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAME_SITE
+        sync: false
+      - key: EMAIL_VERIFICATION_REQUIRED
+        sync: false
+      - key: DISABLE_RATE_LIMITING
+        value: "false"
 
   - type: web
-    name: curalink-frontend
+    name: CuraLink-Frontend
     runtime: static
     rootDir: frontend
     plan: free
@@ -30,13 +79,17 @@ services:
         value: 20.19.0
       - key: VITE_BACKEND_URL
         value: https://curalink-backend-921r.onrender.com
+      - key: VITE_RAZORPAY_KEY_ID
+        sync: false
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
 
+  # Placeholder — rename `name` to match the real admin service if one
+  # exists on Render, or remove this block entirely if admin isn't deployed.
   - type: web
-    name: curalink-admin
+    name: CuraLink-Admin
     runtime: static
     rootDir: admin
     plan: free
@@ -48,6 +101,8 @@ services:
         value: 20.19.0
       - key: VITE_BACKEND_URL
         value: https://curalink-backend-921r.onrender.com
+      - key: VITE_FRONTEND_URL
+        value: https://curalink-frontend-5y9u.onrender.com
     routes:
       - type: rewrite
         source: /*
