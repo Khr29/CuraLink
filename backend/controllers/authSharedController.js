@@ -158,7 +158,7 @@ export const makeChangePasswordHandler = (actorType, getActorId) => async (req, 
     });
 
     try {
-      await sendEmail(actor.email, "Your CuraLink password was changed", passwordChangedEmailHtml(actor.name || ""));
+      sendEmail(actor.email, "Your CuraLink password was changed", passwordChangedEmailHtml(actor.name || ""));
     } catch (e) {
       // Notification failure must never block the password change itself.
     }
@@ -269,7 +269,7 @@ export const makeResetPasswordHandler = (actorType) => async (req, res) => {
     });
 
     try {
-      await sendEmail(actor.email, "Your CuraLink password was reset", passwordChangedEmailHtml(actor.name || ""));
+      sendEmail(actor.email, "Your CuraLink password was reset", passwordChangedEmailHtml(actor.name || ""));
     } catch (e) {}
 
     res.json({ success: true, message: "Password reset successful. Please log in." });

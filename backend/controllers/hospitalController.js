@@ -544,7 +544,7 @@ const changeHospitalSelfPassword = async (req, res) => {
     });
 
     try {
-      await sendEmail(
+      sendEmail(
         hospital.email,
         "Your CuraLink password was changed",
         passwordChangedEmailHtml(hospital.name || "")
