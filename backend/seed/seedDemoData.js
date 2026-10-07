@@ -13,7 +13,7 @@
 // Does NOT touch any other existing data (real patients, other hospitals,
 // admin, audit logs, etc).
 
-import "dotenv/config";
+import "../config/loadEnv.js";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import connectDB from "../config/mongodb.js";

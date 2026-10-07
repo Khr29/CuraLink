@@ -1,18 +1,23 @@
 import dns from "node:dns/promises";
 import mongoose from "mongoose";
+import { assertSafeDatabaseTarget } from "./dbSafety.js";
 
 // Some local dev environments (e.g. a Linux systemd-resolved stub at
-// 127.0.0.53) fail to resolve MongoDB Atlas SRV records, so we force a
-// public resolver. Production hosts provide a working DNS resolver by
-// default, so this stays dev-only and never overrides resolver behavior
-// in production.
-if (process.env.NODE_ENV !== "production") {
-  console.log(await dns.getServers()); // Agar 127.0.0.53 dikhe, change karo
-  dns.setServers(["1.1.1.1"]); // Cloudflare DNS
+// 127.0.0.53) fail to resolve MongoDB Atlas SRV records. Instead of always
+// forcing a public resolver (which itself times out on networks that block
+// it), this is opt-in: set MONGODB_DNS_SERVERS=1.1.1.1,8.8.8.8 to use it.
+// Never applied in production, where the host's resolver works.
+if (process.env.NODE_ENV !== "production" && process.env.MONGODB_DNS_SERVERS) {
+  dns.setServers(
+    process.env.MONGODB_DNS_SERVERS.split(",").map((s) => s.trim()).filter(Boolean)
+  );
 }
 
 const connectDB = async () => {
-  mongoose.connection.on("connected", () => console.log("Databas Connected"));
+  // Local/dev processes may only use a local database unless explicitly
+  // allowed — see config/dbSafety.js.
+  assertSafeDatabaseTarget();
+  mongoose.connection.on("connected", () => console.log("Database Connected"));
   await mongoose.connect(process.env.MONGODB_URI);
 };
 
