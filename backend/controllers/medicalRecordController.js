@@ -396,6 +396,11 @@ const canView = (record, req) => {
   return false;
 };
 
+// Privacy rule: a patient may only ever see a record once the doctor has
+// finalized it. Drafts are the doctor's working notes and stay hidden from
+// the patient on every read path (enforced here, server-side).
+export const PATIENT_VISIBLE_STATUS = "finalized";
+
 export const getRecordByAppointment = async (req, res) => {
   try {
     const { appointmentId } = req.params;
@@ -408,6 +413,11 @@ export const getRecordByAppointment = async (req, res) => {
     if (!record) return res.json({ success: false, message: "Record not found" });
     if (!canView(record, req)) {
       return res.status(403).json({ success: false, message: "Not authorized to view this record" });
+    }
+    // Owner patient asking for their own unfinalized record: answer exactly
+    // like a missing record so a draft's existence isn't disclosed.
+    if (req.userId && record.status !== PATIENT_VISIBLE_STATUS) {
+      return res.json({ success: false, message: "Record not found" });
     }
 
     res.json({ success: true, record });
@@ -954,16 +964,15 @@ export const getPharmacyScanLog = async (req, res) => {
   }
 };
 
-// Patient: every record belonging to them. Optional ?status= and
-// ?hasPrescription=true narrow the query — omitting both keeps the original
-// unfiltered behavior, so existing callers (Medical Records page) are
-// unaffected. Used by the Prescriptions page to fetch only finalized
-// records that actually have medicines on them.
+// Patient: every FINALIZED record belonging to them. Drafts are never
+// returned, regardless of query params. Optional ?hasPrescription=true
+// narrows further (Prescriptions page: only records with medicines).
+// ?status= is accepted for backward compatibility but can never widen the
+// result beyond finalized records.
 export const getMyRecords = async (req, res) => {
   try {
-    const { status, hasPrescription } = req.query;
-    const filter = { patientId: req.userId };
-    if (status) filter.status = status;
+    const { hasPrescription } = req.query;
+    const filter = { patientId: req.userId, status: PATIENT_VISIBLE_STATUS };
     if (hasPrescription === "true") filter["prescription.0"] = { $exists: true };
 
     const records = await medicalRecordModel
