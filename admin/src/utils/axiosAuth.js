@@ -14,6 +14,28 @@ const ROLE_CONFIG = {
   ptoken: { refreshPath: "/api/pharmacy/refresh-token", storageKey: "pToken" },
 };
 
+// Wire convention: role headers are lowercase (atoken/dtoken/htoken/ptoken),
+// which is what the backend reads. HTTP header names are case-insensitive, but
+// axios preserves whatever casing a call site used (`{ dToken }` is common for
+// doctor calls), and a plain `headers["dtoken"]` property lookup is
+// case-sensitive. All header access therefore goes through these helpers so a
+// differently-cased call site is recognised and updated correctly.
+const readHeader = (headers, name) => {
+  if (!headers) return undefined;
+  if (typeof headers.get === "function") return headers.get(name) || undefined; // AxiosHeaders: case-insensitive
+  const key = Object.keys(headers).find((k) => k.toLowerCase() === name);
+  return key ? headers[key] : undefined;
+};
+
+const writeHeader = (headers, name, value) => {
+  if (typeof headers.set === "function") {
+    headers.set(name, value, true); // case-insensitive match: overwrites e.g. "dToken" rather than adding a second header
+    return;
+  }
+  for (const k of Object.keys(headers)) if (k.toLowerCase() === name) delete headers[k];
+  headers[name] = value;
+};
+
 const setters = {};
 
 export const registerTokenSetter = (headerName, setter) => {
@@ -95,11 +117,9 @@ export const installAuthInterceptor = (backendUrl) => {
     async (error) => {
       const originalRequest = error.config;
       const status = error.response?.status;
-      const headers = originalRequest?.headers || {};
+      const headers = originalRequest?.headers;
 
-      const headerName = Object.keys(ROLE_CONFIG).find(
-        (name) => headers[name] || headers[name.toUpperCase()]
-      );
+      const headerName = Object.keys(ROLE_CONFIG).find((name) => readHeader(headers, name));
 
       if (status === 429) {
         applyFriendlyRateLimitMessage(error);
@@ -108,12 +128,24 @@ export const installAuthInterceptor = (backendUrl) => {
       if (status === 401 && headerName && !originalRequest._retry) {
         originalRequest._retry = true;
         const { refreshPath, storageKey } = ROLE_CONFIG[headerName];
+
+        // This request may have been sent with a token that a concurrent
+        // refresh has already replaced (it 401'd after that refresh finished,
+        // so the shared in-flight promise is gone). Rotating AGAIN would be a
+        // needless second rotation; just retry once with the newer token.
+        const usedToken = readHeader(headers, headerName);
+        const currentToken = localStorage.getItem(storageKey);
+        if (currentToken && currentToken !== usedToken) {
+          writeHeader(originalRequest.headers, headerName, currentToken);
+          return axios(originalRequest);
+        }
+
         try {
           const { data } = await refreshAccessToken(backendUrl, headerName, refreshPath);
           if (data?.success && data.token) {
             localStorage.setItem(storageKey, data.token);
             setters[headerName]?.(data.token);
-            originalRequest.headers[headerName] = data.token;
+            writeHeader(originalRequest.headers, headerName, data.token);
             return axios(originalRequest);
           }
         } catch {

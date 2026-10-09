@@ -68,13 +68,17 @@ export const rotateSession = async ({ req, res, actorType }) => {
   if (!refreshToken) return null;
 
   const tokenHash = hashToken(refreshToken);
-  const session = await refreshTokenModel.findOne({ tokenHash, actorType });
-  if (!session || session.revokedAt || session.expiresAt < new Date()) {
-    return null;
-  }
-
-  session.revokedAt = new Date();
-  await session.save();
+  // Atomic claim: validity check and revocation are ONE database operation,
+  // so two simultaneous requests carrying the same refresh token can never
+  // both succeed (a find-then-save would let both pass the check). Exactly
+  // one caller gets the row; every other caller / replay gets null.
+  const now = new Date();
+  const session = await refreshTokenModel.findOneAndUpdate(
+    { tokenHash, actorType, revokedAt: null, expiresAt: { $gt: now } },
+    { revokedAt: now },
+    { returnDocument: "before" }
+  );
+  if (!session) return null;
 
   const newRefreshToken = generateRefreshToken();
   const { userAgent, ip } = requestMeta(req);
