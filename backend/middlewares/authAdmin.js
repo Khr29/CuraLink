@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import { isConfiguredAdminEmail } from '../utils/authConfig.js'
 
 const authAdmin = async (req, res, next) => {
     try {
@@ -13,7 +14,9 @@ const authAdmin = async (req, res, next) => {
         const decoded = jwt.verify(atoken, process.env.JWT_SECRET)
 
         // ✅ check email
-        if (decoded.email !== process.env.ADMIN_EMAIL) {
+        // Fails closed: an unset/blank ADMIN_EMAIL or a token without an
+        // email must never match (undefined === undefined).
+        if (!isConfiguredAdminEmail(decoded.email)) {
             return res.status(403).json({ success: false, message: "Not Authorized Login Again" })
         }
 

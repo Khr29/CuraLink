@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { isProtectedAttachment, signAttachmentUrl, ATTACHMENT_URL_TTL_SECONDS } from "../utils/attachmentAccess.js";
 import { DRUG_FORMS, FREQUENCIES, ROUTES, TIMING_OPTIONS } from "../constants/prescription.js";
 
 // One medical record per completed appointment. A doctor drafts it, then
@@ -39,15 +40,38 @@ const prescriptionItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// New uploads are Cloudinary "authenticated" assets: only publicId (+ the
+// delivery details needed to sign a link) is stored, and `url` stays empty —
+// a deliverable link is generated per read (utils/attachmentAccess.js). Legacy
+// attachments have just a public `url` and no publicId.
 const attachmentSchema = new mongoose.Schema(
   {
-    url: { type: String, required: true },
+    url: { type: String, default: "" },
+    publicId: { type: String, default: "" },
+    resourceType: { type: String, default: "image" },
+    format: { type: String, default: "" },
     fileName: { type: String, default: "" },
     fileType: { type: String, default: "" },
     uploadedAt: { type: Date, default: Date.now },
   },
   { _id: false }
 );
+
+// Applies to every toJSON() of a record, including the copies archived inside
+// versions[].snapshot.attachments: swaps in a short-lived signed url and
+// removes the storage identifiers from the serialized output.
+attachmentSchema.set("toJSON", {
+  transform: (doc, ret) => {
+    if (isProtectedAttachment(ret)) {
+      ret.url = signAttachmentUrl(ret);
+      ret.expiresInSeconds = ATTACHMENT_URL_TTL_SECONDS;
+    }
+    delete ret.publicId;
+    delete ret.resourceType;
+    delete ret.format;
+    return ret;
+  },
+});
 
 const versionSchema = new mongoose.Schema(
   {

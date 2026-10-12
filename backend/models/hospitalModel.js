@@ -204,6 +204,7 @@ const hospitalSchema = new mongoose.Schema(
     previousPasswords: {
       type: [String],
       default: [],
+      select: false,
     },
 
     // ==========================

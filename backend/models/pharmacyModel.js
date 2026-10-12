@@ -43,7 +43,7 @@ const pharmacySchema = new mongoose.Schema(
     // ==========================
     emailVerified: { type: Boolean, default: true },
     passwordChangedAt: { type: Date, default: null },
-    previousPasswords: { type: [String], default: [] },
+    previousPasswords: { type: [String], default: [], select: false },
   },
   {
     timestamps: true,

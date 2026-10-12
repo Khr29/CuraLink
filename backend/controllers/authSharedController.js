@@ -8,6 +8,7 @@ import { otpEmailHtml, passwordChangedEmailHtml } from "../utils/securityEmails.
 import { validatePasswordStrength, applyNewPassword, isPasswordReused } from "../utils/passwordSecurity.js";
 import { rotateSession, revokeAllSessions } from "../utils/session.js";
 import { hashToken, signAccessToken } from "../utils/tokens.js";
+import { isConfiguredAdminEmail } from "../utils/authConfig.js";
 import { REFRESH_COOKIE_NAMES } from "../utils/cookies.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 
@@ -28,6 +29,11 @@ export const makeRefreshTokenHandler = (actorType) => async (req, res) => {
   try {
     const session = await rotateSession({ req, res, actorType });
     if (!session) {
+      return res.status(401).json({ success: false, message: "Session expired, please login again" });
+    }
+    // An admin session is only refreshable while it belongs to the configured
+    // admin (fails closed if ADMIN_EMAIL is unset or the session has no label).
+    if (actorType === "admin" && !isConfiguredAdminEmail(session.actorLabel)) {
       return res.status(401).json({ success: false, message: "Session expired, please login again" });
     }
     const payload =
@@ -128,7 +134,7 @@ export const makeChangePasswordHandler = (actorType, getActorId) => async (req, 
       return res.json({ success: false, message: strength.message });
     }
 
-    const actor = await Model.findById(actorId);
+    const actor = await Model.findById(actorId).select("+previousPasswords");
     if (!actor) return res.json({ success: false, message: "Not found" });
 
     if (actor.password) {
@@ -243,7 +249,7 @@ export const makeResetPasswordHandler = (actorType) => async (req, res) => {
       return res.json({ success: false, message: "Invalid code" });
     }
 
-    const actor = await Model.findById(otpRecord.actorId);
+    const actor = await Model.findById(otpRecord.actorId).select("+previousPasswords");
     if (!actor) return res.json({ success: false, message: "Account not found" });
 
     if (await isPasswordReused(actor, newPassword)) {

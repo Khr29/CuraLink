@@ -28,7 +28,7 @@ const userSchema =new mongoose.Schema({
     // before this instant are rejected by authUser (see middlewares/authUser.js).
     passwordChangedAt: {type: Date, default: null},
     // Hashes of the last few passwords, used to block re-use on change/reset.
-    previousPasswords: {type: [String], default: []},
+    previousPasswords: {type: [String], default: [], select: false},
 
     // ==========================
     // Medical Profile (optional — collected at registration or added later)

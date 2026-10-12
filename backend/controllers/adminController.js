@@ -165,6 +165,7 @@ import crypto from "crypto";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 import { issueSession, revokeSession, revokeAllSessions } from "../utils/session.js";
 import { signAccessToken } from "../utils/tokens.js";
+import { getMissingAuthConfig, adminCredentialsMatch } from "../utils/authConfig.js";
 import { validatePasswordStrength } from "../utils/passwordSecurity.js";
 import { sanitizeText } from "../utils/sanitize.js";
 
@@ -267,12 +268,19 @@ const addDoctor = async (req, res) => {
 // ✅ LOGIN ADMIN (minor improvement)
 const loginAdmin = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
-    if (
-      email !== process.env.ADMIN_EMAIL ||
-      password !== process.env.ADMIN_PASSWORD
-    ) {
+    // Fail closed before touching sessions/tokens if the server itself isn't
+    // configured for admin auth (names only are logged, never values).
+    const missingConfig = getMissingAuthConfig();
+    if (missingConfig.length) {
+      console.error(`Admin login disabled — missing configuration: ${missingConfig.join(", ")}`);
+      return res
+        .status(503)
+        .json({ success: false, message: "Admin login is not available" });
+    }
+
+    if (!adminCredentialsMatch(email, password)) {
       await logAction({
         req,
         actorType: "admin",

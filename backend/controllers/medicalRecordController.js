@@ -342,12 +342,19 @@ export const addAttachment = async (req, res) => {
     const record = await medicalRecordModel.findOne({ appointmentId });
     if (!record) return res.json({ success: false, message: "Save a draft before attaching files" });
 
+    // "authenticated" delivery: the asset has no public URL. Only its
+    // public_id is stored; short-lived signed links are minted on read
+    // (utils/attachmentAccess.js).
     const upload = await cloudinary.uploader.upload(req.file.path, {
       resource_type: "auto",
+      type: "authenticated",
     });
 
     const attachment = {
-      url: upload.secure_url,
+      url: "",
+      publicId: upload.public_id,
+      resourceType: upload.resource_type || "image",
+      format: upload.format || "",
       fileName: req.file.originalname,
       fileType: req.file.mimetype,
       uploadedAt: new Date(),

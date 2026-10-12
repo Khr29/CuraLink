@@ -36,6 +36,7 @@
 import express from "express";
 import cors from "cors";
 import "./config/loadEnv.js";
+import { getMissingAuthConfig } from "./utils/authConfig.js";
 
 import connectDB from "./config/mongodb.js";
 import connectCloudinary from "./config/cloudinary.js";
@@ -68,6 +69,14 @@ const port = process.env.PORT || 4000;
 // trusting X-Forwarded-For there would let a client spoof its own IP.
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
+}
+
+// Auth fails closed when these are missing (see utils/authConfig.js), but the
+// public, read-only parts of the site keep working — so warn loudly instead of
+// refusing to boot. Names only; values are never logged.
+const missingAuthConfig = getMissingAuthConfig();
+if (missingAuthConfig.length) {
+  console.error(`[CONFIG] Missing required auth configuration: ${missingAuthConfig.join(", ")}. Logins will fail until these are set.`);
 }
 
 // connect services (parallel execution for speed)

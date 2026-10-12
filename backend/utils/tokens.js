@@ -8,8 +8,12 @@ export const ACCESS_TOKEN_TTL = "15m";
 const REFRESH_TOKEN_TTL_DEFAULT_MS = 24 * 60 * 60 * 1000; // 1 day
 const REFRESH_TOKEN_TTL_REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // 30 days ("Remember Me")
 
-export const signAccessToken = (payload) =>
-  jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: ACCESS_TOKEN_TTL });
+export const signAccessToken = (payload) => {
+  if (typeof process.env.JWT_SECRET !== "string" || !process.env.JWT_SECRET.trim()) {
+    throw new Error("Server authentication is not configured (JWT_SECRET)");
+  }
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: ACCESS_TOKEN_TTL });
+};
 
 // Refresh tokens are opaque random strings, never JWTs — only their SHA-256
 // hash is stored, so a leaked DB never reveals a usable token, and

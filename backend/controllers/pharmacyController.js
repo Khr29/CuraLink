@@ -160,7 +160,7 @@ const changePharmacySelfPassword = async (req, res) => {
       return res.json({ success: false, message: strength.message });
     }
 
-    const pharmacy = await pharmacyModel.findById(req.pharmacyId);
+    const pharmacy = await pharmacyModel.findById(req.pharmacyId).select("+previousPasswords");
     if (!pharmacy) return res.json({ success: false, message: "Not found" });
 
     const isMatch = await bcrypt.compare(currentPassword || "", pharmacy.password);

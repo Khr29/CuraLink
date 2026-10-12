@@ -167,6 +167,7 @@ import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js"
 import { issueSession, revokeSession } from "../utils/session.js"
 import { signAccessToken } from "../utils/tokens.js"
 import { sanitizeText, isSafeName } from "../utils/sanitize.js"
+import { PUBLIC_DOCTOR_FIELDS } from "../utils/publicProjections.js"
 
 // Change Availability
 const changeAvailability = async (req, res) => {
@@ -190,7 +191,9 @@ const changeAvailability = async (req, res) => {
 // Doctor List
 const doctorList = async (req, res) => {
     try {
-        const doctors = await doctorModel.find({}, { password: 0, email: 0 }).populate("hospitalId", "name")
+        // Explicit public whitelist (utils/publicProjections.js). slots_booked is
+        // loaded only to compute todaySlotCount below and is stripped before responding.
+        const doctors = await doctorModel.find({}, `${PUBLIC_DOCTOR_FIELDS} slots_booked`).populate("hospitalId", "name")
 
         // `available` (below) is a manual on/off toggle (see changeAvailability
         // above) — it says nothing about whether TODAY specifically has open
@@ -219,6 +222,7 @@ const doctorList = async (req, res) => {
             // no slots left today" — same 3-state distinction Appointments.jsx
             // already draws for the profile-page badge.
             obj.todaySlotCount = computeAvailableSlots(schedule, now, bookedToday, now).length
+            delete obj.slots_booked
             return obj
         })
 

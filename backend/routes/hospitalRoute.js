@@ -2,6 +2,7 @@ import express from "express";
 import {
   addHospital,
   getAllHospitals,
+  getPublicHospitals,
   getHospitalById,
   updateHospital,
   deleteHospital,
@@ -132,7 +133,7 @@ hospitalRouter.post(
 );
 
 // Get All Hospitals
-hospitalRouter.get("/list", getAllHospitals);
+hospitalRouter.get("/list", getPublicHospitals);
 
 // Get Single Hospital
 hospitalRouter.get("/:id", getHospitalById);

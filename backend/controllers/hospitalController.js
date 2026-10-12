@@ -17,6 +17,8 @@ import {
 import { sendEmail } from "../utils/email.js";
 import { passwordChangedEmailHtml } from "../utils/securityEmails.js";
 import { sanitizeText } from "../utils/sanitize.js";
+import { presentRecordAttachments } from "../utils/attachmentAccess.js";
+import { PUBLIC_DOCTOR_FIELDS, PUBLIC_HOSPITAL_FIELDS } from "../utils/publicProjections.js";
 
 // Fields a hospital is allowed to edit about its own profile — everything
 // else (password, active, doctors, averageRating, totalReviews, media) is
@@ -159,6 +161,18 @@ const addHospital = async (req, res) => {
 // =============================
 // Get All Hospitals
 // =============================
+// PUBLIC list (GET /api/hospital/list) — explicit whitelist only. The admin
+// route (/api/admin/all-hospitals) keeps using getAllHospitals below.
+const getPublicHospitals = async (req, res) => {
+  try {
+    const hospitals = await hospitalModel.find({}).select(PUBLIC_HOSPITAL_FIELDS);
+    res.json({ success: true, hospitals });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 const getAllHospitals = async (req, res) => {
   try {
     const hospitals = await hospitalModel.find({}).select("-password");
@@ -184,7 +198,7 @@ const getHospitalById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const hospital = await hospitalModel.findById(id).select("-password");
+    const hospital = await hospitalModel.findById(id).select(PUBLIC_HOSPITAL_FIELDS);
 
     if (!hospital) {
       return res.json({
@@ -198,7 +212,7 @@ const getHospitalById = async (req, res) => {
     // doctorController.js#doctorList), not just password.
     const doctors = await doctorModel
       .find({ hospitalId: id })
-      .select("-password -email");
+      .select(PUBLIC_DOCTOR_FIELDS);
 
     res.json({
       success: true,
@@ -511,7 +525,7 @@ const changeHospitalSelfPassword = async (req, res) => {
       return res.json({ success: false, message: strength.message });
     }
 
-    const hospital = await hospitalModel.findById(req.hospitalId);
+    const hospital = await hospitalModel.findById(req.hospitalId).select("+previousPasswords");
     if (!hospital) {
       return res.json({ success: false, message: "Hospital not found" });
     }
@@ -958,7 +972,14 @@ const getHospitalSelfPatientDetail = async (req, res) => {
       .select("name speciality image email")
       .lean();
 
-    res.json({ success: true, patient, appointments, records, doctors });
+    res.json({
+      success: true,
+      patient,
+      appointments,
+      // .lean() bypasses the schema toJSON transform — sign attachments explicitly.
+      records: records.map(presentRecordAttachments),
+      doctors,
+    });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -968,6 +989,7 @@ const getHospitalSelfPatientDetail = async (req, res) => {
 export {
   addHospital,
   getAllHospitals,
+  getPublicHospitals,
   getHospitalById,
   updateHospital,
   deleteHospital,

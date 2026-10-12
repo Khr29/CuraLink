@@ -88,6 +88,26 @@ appointmentSchema.index({ date: -1 });
 appointmentSchema.index({ docId: 1, cancelled: 1, isCompleted: 1 });
 appointmentSchema.index({ userId: 1, cancelled: 1, isCompleted: 1 });
 
+// userData/docData are point-in-time snapshots of the patient/doctor document.
+// Snapshots taken before previousPasswords became select:false (and any with a
+// stray password field) may still carry credential hashes in storage — strip
+// them from every read result (hydrated or .lean()) so no appointment endpoint
+// can return them. In-memory only: nothing is written back to the database.
+const SNAPSHOT_SECRET_FIELDS = ["password", "previousPasswords"];
+const scrubSnapshots = (result) => {
+  const docs = Array.isArray(result) ? result : result ? [result] : [];
+  for (const doc of docs) {
+    for (const key of ["userData", "docData"]) {
+      const snapshot = typeof doc.get === "function" ? doc.get(key) : doc[key];
+      if (snapshot && typeof snapshot === "object") {
+        for (const field of SNAPSHOT_SECRET_FIELDS) delete snapshot[field];
+      }
+    }
+  }
+};
+appointmentSchema.post("find", scrubSnapshots);
+appointmentSchema.post("findOne", scrubSnapshots);
+
 const appointmentModel =
   mongoose.models.appointment ||
   mongoose.model("appointment", appointmentSchema);
