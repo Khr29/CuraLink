@@ -13,6 +13,7 @@ import { sendEmail } from "../utils/email.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 import { validatePasswordStrength } from "../utils/passwordSecurity.js";
 import { sanitizeText, isSafeName } from "../utils/sanitize.js";
+import { toPatientAppointmentView } from "../utils/publicProjections.js";
 import { issueSession, revokeSession } from "../utils/session.js";
 import { signAccessToken } from "../utils/tokens.js";
 import { issueEmailVerificationOtp } from "./authSharedController.js";
@@ -646,7 +647,8 @@ const listAppointment = async (req, res) => {
 
     const appointments = await appointmentModel.find({ userId });
 
-    res.json({ success: true, appointments });
+    // docData is a full doctor snapshot; the patient only gets what the UI shows.
+    res.json({ success: true, appointments: appointments.map(toPatientAppointmentView) });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });

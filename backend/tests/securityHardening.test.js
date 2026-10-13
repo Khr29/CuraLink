@@ -321,6 +321,54 @@ test("2d: legacy appointment snapshots with stored hashes are scrubbed on every 
   assert.ok(raw.userData.previousPasswords?.length, "scrub must not write back to the database");
 });
 
+test("2f: patient appointment list returns only the doctor fields the UI renders", async (t) => {
+  if (guard(t)) return;
+  // Full doctor snapshot as stored at booking time (everything but slots_booked).
+  const storedDoc = {
+    _id: new mongoose.Types.ObjectId(ids.doctor), name: "Dr Snapshot", image: "https://img.test/d.png", speciality: "Cardiologist",
+    address: { line1: "1 Clinic Rd", line2: "Floor 2" }, degree: "MBBS", about: "bio", fees: 50, experience: "9 Years",
+    email: "doc-snapshot@hardening.test", phone: "555-0177", licenseNumber: "LIC-APPT-77", signature: "SIG-APPT-IMG",
+    emailVerified: true, verificationStatus: "verified", verifiedBy: "admin-x", verifiedAt: new Date(), hospitalId: new mongoose.Types.ObjectId(ids.hospital),
+    password: HASH, previousPasswords: OLD_HASHES,
+  };
+  const inserted = await models.appointment.collection.insertOne({
+    userId: new mongoose.Types.ObjectId(ids.patient2), docId: storedDoc._id, hospitalId: storedDoc.hospitalId,
+    slotDate: "2_2_2031", slotTime: "11:00", userData: { name: "Patient Two" }, docData: storedDoc,
+    amount: 50, date: Date.now(), cancelled: false, payment: false, isCompleted: false,
+  });
+  try {
+    const r = await api("/api/user/appointments", { headers: { token: tokens.patient2 } });
+    assert.equal(r.body.success, true, text(r.body));
+    assert.equal(r.body.appointments.length, 1);
+    const appt = r.body.appointments[0];
+
+    // Only what the patient screens render (name, photo, speciality, address) plus _id.
+    assert.deepEqual(Object.keys(appt.docData).sort(), ["_id", "address", "image", "name", "speciality"]);
+    assert.equal(appt.docData.name, "Dr Snapshot");
+    assert.equal(appt.docData.speciality, "Cardiologist");
+    assert.equal(appt.docData.address.line1, "1 Clinic Rd");
+    assert.equal(appt.docData.address.line2, "Floor 2");
+    const s = text(r.body);
+    for (const secret of ["doc-snapshot@hardening.test", "555-0177", "LIC-APPT-77", "SIG-APPT-IMG", "verifiedBy", "admin-x", "emailVerified", "licenseNumber", "signature"]) {
+      assert.ok(!s.includes(secret), `patient appointments leaked ${secret}`);
+    }
+    assertNoSecrets(r.body, "patient appointments (doctor snapshot)");
+
+    // Response structure for the rest of the appointment is unchanged.
+    for (const f of ["_id", "userId", "docId", "slotDate", "slotTime", "userData", "amount", "cancelled", "payment", "isCompleted"]) {
+      assert.ok(f in appt, `appointment lost ${f}`);
+    }
+    assert.equal(appt.userData.name, "Patient Two");
+
+    // Trimmed at the response only: the stored snapshot (read by doctor/admin views) is untouched.
+    const raw = await models.appointment.collection.findOne({ _id: inserted.insertedId });
+    assert.equal(raw.docData.licenseNumber, "LIC-APPT-77");
+    assert.equal(raw.docData.email, "doc-snapshot@hardening.test");
+  } finally {
+    await models.appointment.collection.deleteOne({ _id: inserted.insertedId });
+  }
+});
+
 test("2e: previousPasswords is select:false but password-reuse protection still works", async (t) => {
   if (guard(t)) return;
   assert.equal((await models.user.findById(ids.patient)).previousPasswords, undefined);
