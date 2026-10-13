@@ -4,6 +4,7 @@ import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 import { issueSession, revokeSession } from "../utils/session.js";
 import { signAccessToken } from "../utils/tokens.js";
 import { validatePasswordStrength, applyNewPassword, isPasswordReused } from "../utils/passwordSecurity.js";
+import { readLoginCredentials } from "../utils/loginInput.js";
 
 // Fields a pharmacy is allowed to edit about its own profile — password/
 // active/email are managed through their own dedicated paths (self/password,
@@ -15,7 +16,12 @@ const SELF_EDITABLE_FIELDS = ["name", "phone", "address", "licenseNumber"];
 // =============================
 const loginPharmacy = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // Plain non-empty strings only (blocks {"$ne":""}-style operator objects).
+    const credentials = readLoginCredentials(req.body);
+    if (!credentials) {
+      return res.json({ success: false, message: "Missing Details" });
+    }
+    const { email, password } = credentials;
 
     const pharmacy = await pharmacyModel.findOne({ email });
     if (!pharmacy) {

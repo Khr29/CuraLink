@@ -19,6 +19,7 @@ import { passwordChangedEmailHtml } from "../utils/securityEmails.js";
 import { sanitizeText } from "../utils/sanitize.js";
 import { presentRecordAttachments } from "../utils/attachmentAccess.js";
 import { PUBLIC_DOCTOR_FIELDS, PUBLIC_HOSPITAL_FIELDS } from "../utils/publicProjections.js";
+import { readLoginCredentials } from "../utils/loginInput.js";
 
 // Fields a hospital is allowed to edit about its own profile — everything
 // else (password, active, doctors, averageRating, totalReviews, media) is
@@ -368,7 +369,12 @@ const changeHospitalStatus = async (req, res) => {
 // =============================
 const loginHospital = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // Plain non-empty strings only (blocks {"$ne":""}-style operator objects).
+    const credentials = readLoginCredentials(req.body);
+    if (!credentials) {
+      return res.json({ success: false, message: "Missing Details" });
+    }
+    const { email, password } = credentials;
 
     const hospital = await hospitalModel.findOne({ email });
     if (!hospital || !hospital.password) {

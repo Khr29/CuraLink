@@ -168,6 +168,7 @@ import { issueSession, revokeSession } from "../utils/session.js"
 import { signAccessToken } from "../utils/tokens.js"
 import { sanitizeText, isSafeName } from "../utils/sanitize.js"
 import { PUBLIC_DOCTOR_FIELDS } from "../utils/publicProjections.js"
+import { readLoginCredentials } from "../utils/loginInput.js"
 
 // Change Availability
 const changeAvailability = async (req, res) => {
@@ -236,7 +237,12 @@ const doctorList = async (req, res) => {
 // Login Doctor
 const loginDoctor = async (req, res) => {
     try {
-        const { email, password } = req.body
+        // Plain non-empty strings only (blocks {"$ne":""}-style operator objects).
+        const credentials = readLoginCredentials(req.body)
+        if (!credentials) {
+            return res.json({ success: false, message: "Missing Details" })
+        }
+        const { email, password } = credentials
 
         const doctor = await doctorModel.findOne({ email })
         if (!doctor) {
