@@ -37,6 +37,7 @@ import express from "express";
 import cors from "cors";
 import "./config/loadEnv.js";
 import { getMissingAuthConfig } from "./utils/authConfig.js";
+import { buildCorsOptions } from "./utils/corsConfig.js";
 
 import connectDB from "./config/mongodb.js";
 import connectCloudinary from "./config/cloudinary.js";
@@ -89,20 +90,10 @@ app.use(morgan("dev")); // HTTP request logger
 app.use(express.json({ limit: "10kb" })); // prevent large payload attacks
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // reads the httpOnly refresh-token cookies
-// A literal "*" origin is invalid alongside credentials: true (the CORS
-// spec forbids sending credentials to a wildcard origin). Use an explicit
-// allowlist from CORS_ORIGIN in production; fall back to reflecting the
-// request's own origin for local development against any dev-server port.
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
-  : true;
-
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  }),
-);
+// Fails closed: explicit allowlist from CORS_ORIGIN; with it unset, nothing is
+// allowed in production and only localhost origins in development. See
+// utils/corsConfig.js.
+app.use(cors(buildCorsOptions()));
 
 // General, role-tiered safety net against abuse/flooding — NOT the
 // security control for sensitive endpoints (those are the dedicated
