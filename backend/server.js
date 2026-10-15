@@ -54,7 +54,7 @@ import scheduleRouter from "./routes/scheduleRoute.js";
 
 import helmet from "helmet";
 import compression from "compression";
-import morgan from "morgan";
+import { createRequestLogger } from "./utils/logRedaction.js";
 import cookieParser from "cookie-parser";
 import multer from "multer";
 import { generalApiLimiter } from "./middlewares/rateLimiters.js";
@@ -86,7 +86,9 @@ await Promise.all([connectDB(), connectCloudinary()]);
 // middlewares
 app.use(helmet()); // Security headers
 app.use(compression()); // Compress responses
-app.use(morgan("dev")); // HTTP request logger
+// HTTP request logger. Redacts prescription-verification tokens (they are in the
+// URL path) and other secret query params — see utils/logRedaction.js.
+app.use(createRequestLogger());
 app.use(express.json({ limit: "10kb" })); // prevent large payload attacks
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // reads the httpOnly refresh-token cookies

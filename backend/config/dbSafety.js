@@ -44,3 +44,20 @@ export const assertSafeDatabaseTarget = (env = process.env) => {
       "ALLOW_REMOTE_DB=true if you deliberately want a remote staging database."
   );
 };
+
+// The database NAME a MongoDB URI selects: the path after the host list
+// (mongodb[+srv]://[user:pass@]hosts[/dbname][?options]). Returns "" when the
+// URI names none — in which case MongoDB/Mongoose silently use the default
+// database "test", so a URI that merely forgot "/<dbname>" connects to an empty
+// database and every public list (doctors, hospitals...) comes back empty with
+// no error. Never returns credentials.
+export const getMongoDatabaseName = (uri) => {
+  if (typeof uri !== "string") return "";
+  const m = uri.trim().match(/^mongodb(?:\+srv)?:\/\/(?:[^/?]*@)?[^/?]+\/([^?#]*)/i);
+  if (!m) return "";
+  try {
+    return decodeURIComponent(m[1]);
+  } catch {
+    return m[1];
+  }
+};

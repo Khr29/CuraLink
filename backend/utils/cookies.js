@@ -9,28 +9,25 @@ export const REFRESH_COOKIE_NAMES = {
   pharmacy: "curalink_pharmacy_rt",
 };
 
-const isProd = process.env.NODE_ENV === "production";
-
 // `site` (for SameSite purposes) ignores port, so this works unmodified for
 // local dev where frontend/admin/backend all run on localhost at different
 // ports. In production, set COOKIE_SAME_SITE=none + COOKIE_SECURE=true if
 // the frontend and API end up on genuinely different domains.
-const secure = process.env.COOKIE_SECURE
-  ? process.env.COOKIE_SECURE === "true"
-  : isProd;
-const sameSite = process.env.COOKIE_SAME_SITE || "lax";
-
-export const refreshCookieOptions = (rememberMe) => ({
+//
+// Read lazily (per call, not at import) so set and clear can never disagree
+// and the policy is testable. A browser only honours a clearing Set-Cookie
+// whose Secure/SameSite/Path match the original (and rejects SameSite=None
+// without Secure), so EVERY cookie write/clear must go through these.
+const cookieFlags = (env = process.env) => ({
   httpOnly: true,
-  secure,
-  sameSite,
+  secure: env.COOKIE_SECURE ? env.COOKIE_SECURE === "true" : env.NODE_ENV === "production",
+  sameSite: env.COOKIE_SAME_SITE || "lax",
   path: "/",
+});
+
+export const refreshCookieOptions = (rememberMe, env = process.env) => ({
+  ...cookieFlags(env),
   maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
 });
 
-export const clearCookieOptions = () => ({
-  httpOnly: true,
-  secure,
-  sameSite,
-  path: "/",
-});
+export const clearCookieOptions = (env = process.env) => cookieFlags(env);

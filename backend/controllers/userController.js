@@ -8,7 +8,14 @@ import doctorScheduleModel from "../models/doctorScheduleModel.js";
 import hospitalModel from "../models/hospitalModel.js";
 import { computeAvailableSlots, parseSlotDate, parseSlotTime } from "../utils/slotGenerator.js";
 import { nowIST, istCalendarDate } from "../utils/istTime.js";
-import razorpay from "razorpay";
+import { razorpayInstance } from "../utils/razorpayClient.js";
+import {
+  toMinorUnits,
+  getConfiguredCurrency,
+  checkOrderPaysAppointment,
+  isValidRazorpayOrderId,
+  isValidObjectIdString,
+} from "../utils/payments.js";
 import { sendEmail } from "../utils/email.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 import { validatePasswordStrength } from "../utils/passwordSecurity.js";
@@ -734,16 +741,14 @@ const cancelAppointment = async (req, res) => {
   }
 };
 
-const razorpayInstance = new razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
-
 //API FOR RAZORPAAY
 
 const paymentRazorpay = async (req, res) => {
   try {
     const { appointmentId } = req.body;
+    if (!isValidObjectIdString(appointmentId)) {
+      return res.json({ success: false, message: "Appointment Cancelled or not found" });
+    }
     const appointmentData = await appointmentModel.findById(appointmentId);
 
     // Same ownership check as cancelAppointment above — without it, any
@@ -761,19 +766,32 @@ const paymentRazorpay = async (req, res) => {
       });
     }
 
-    //create option
+    // Nothing to charge for an appointment that is already paid or finished —
+    // a second order would invite a double payment.
+    if (appointmentData.payment || appointmentData.isCompleted) {
+      return res.json({ success: false, message: "This appointment is already paid" });
+    }
 
-    const options = {
-      amount: appointmentData.amount * 100,
-      currency: process.env.CURRENCY,
-      receipt: appointmentId,
-    };
+    const amount = toMinorUnits(appointmentData.amount);
+    const currency = getConfiguredCurrency();
+    if (amount === null || !currency) {
+      console.error(
+        `[PAYMENT] Cannot create order for appointment ${appointmentId}: ` +
+          (amount === null ? "invalid appointment amount" : "CURRENCY not configured"),
+      );
+      return res.json({ success: false, message: "Payment is unavailable for this appointment" });
+    }
+
     //creation of an order
-    const order = await razorpayInstance.orders.create(options);
+    const order = await razorpayInstance.orders.create({
+      amount,
+      currency,
+      receipt: appointmentId,
+    });
     res.json({ success: true, order });
   } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    console.error("[PAYMENT] Order creation failed:", error?.error?.description || error?.message);
+    res.json({ success: false, message: "Could not start the payment. Please try again." });
   }
 };
 
@@ -797,6 +815,9 @@ const paymentRazorpay = async (req, res) => {
 const verifyRazorpay = async (req, res) => {
   try {
     const { razorpay_order_id } = req.body;
+    if (!isValidRazorpayOrderId(razorpay_order_id)) {
+      return res.json({ success: false, message: "Payment verification failed" });
+    }
 
     const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
 
@@ -805,17 +826,46 @@ const verifyRazorpay = async (req, res) => {
       // — confirm it still belongs to the caller before marking it paid, so
       // a guessed/leaked order id can't be used to flip another patient's
       // appointment.
+      const failed = (reason) => {
+        console.error(`[PAYMENT] Verification rejected for ${razorpay_order_id}: ${reason}`);
+        return res.json({ success: false, message: "Payment verification failed" });
+      };
+      if (!isValidObjectIdString(orderInfo.receipt)) return failed("invalid_receipt");
       const appointmentData = await appointmentModel.findById(orderInfo.receipt);
       if (!appointmentData || appointmentData.userId.toString() !== req.userId) {
-        return res.json({ success: false, message: "Payment verification failed" });
+        return failed("appointment_not_found_or_not_owned");
       }
 
-      await appointmentModel.findByIdAndUpdate(orderInfo.receipt, {
-        payment: true,
-      });
+      // The order must be a complete payment of exactly what this appointment
+      // costs, in the configured currency — not merely "some paid order".
+      const match = checkOrderPaysAppointment(orderInfo, appointmentData);
+      if (!match.ok) return failed(match.reason);
 
-      // ✅ GET APPOINTMENT DATA (for email)
-      const appointment = await appointmentModel.findById(orderInfo.receipt);
+      if (appointmentData.cancelled) {
+        // Money was taken for an appointment that no longer exists: never mark
+        // it paid. Needs a manual refund, so say so rather than a generic error.
+        console.error(`[PAYMENT] Paid order ${razorpay_order_id} belongs to cancelled appointment ${orderInfo.receipt} — refund needed`);
+        return res.json({
+          success: false,
+          message: "This appointment was cancelled. Please contact support about a refund.",
+        });
+      }
+
+      // Atomic claim: only ONE concurrent/repeated verification flips
+      // payment false -> true. Repeats are idempotent successes and do not
+      // re-send the receipt email.
+      const appointment = await appointmentModel.findOneAndUpdate(
+        { _id: orderInfo.receipt, userId: req.userId, cancelled: false, payment: false },
+        { payment: true },
+        { returnDocument: "after" },
+      );
+      if (!appointment) {
+        const current = await appointmentModel.findById(orderInfo.receipt);
+        if (current && current.payment && !current.cancelled) {
+          return res.json({ success: true, message: "Payment Successful" });
+        }
+        return failed("state_changed_during_verification");
+      }
 
       // Payment already verified and saved — receipt email is best-effort
       // and must not block the response on an SMTP round-trip (see utils/email.js).
@@ -888,8 +938,8 @@ const verifyRazorpay = async (req, res) => {
       res.json({ success: false, message: "Payment failed" });
     }
   } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    console.error("[PAYMENT] Verification error:", error?.error?.description || error?.message);
+    res.json({ success: false, message: "Could not verify the payment. Please try again." });
   }
 };
 

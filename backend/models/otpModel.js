@@ -7,7 +7,7 @@ const otpSchema = new mongoose.Schema(
   {
     actorType: {
       type: String,
-      enum: ["doctor", "hospital", "user"],
+      enum: ["doctor", "hospital", "user", "pharmacy"],
       required: true,
     },
     actorId: {

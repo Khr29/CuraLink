@@ -2,14 +2,15 @@ import bcrypt from "bcrypt";
 import { ACTOR_MODELS } from "../utils/actorRegistry.js";
 import otpModel from "../models/otpModel.js";
 import refreshTokenModel from "../models/refreshTokenModel.js";
-import { generateOtp, hashOtp, OTP_TTL_MS, OTP_MAX_ATTEMPTS } from "../utils/otp.js";
+import { generateOtp, hashOtp, OTP_TTL_MS } from "../utils/otp.js";
+import { verifyOtp, releaseOtp, canIssueOtp } from "../utils/otpVerification.js";
 import { sendEmail } from "../utils/email.js";
 import { otpEmailHtml, passwordChangedEmailHtml } from "../utils/securityEmails.js";
 import { validatePasswordStrength, applyNewPassword, isPasswordReused } from "../utils/passwordSecurity.js";
 import { rotateSession, revokeAllSessions } from "../utils/session.js";
 import { hashToken, signAccessToken } from "../utils/tokens.js";
 import { isConfiguredAdminEmail } from "../utils/authConfig.js";
-import { REFRESH_COOKIE_NAMES } from "../utils/cookies.js";
+import { REFRESH_COOKIE_NAMES, clearCookieOptions } from "../utils/cookies.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 
 // ============================================================
@@ -18,6 +19,22 @@ import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 // four panels (user/doctor/hospital/admin) don't each reimplement the same
 // refresh/session/OTP logic. Mounted into the existing route files.
 // ============================================================
+
+// Same wording the endpoints always used, keyed by verifyOtp's failure reason.
+const OTP_FAILURE_MESSAGES = {
+  reset: {
+    missing_or_expired: "Code expired or invalid, please request a new one",
+    already_used: "Code expired or invalid, please request a new one",
+    locked: "Too many attempts, please request a new code",
+    invalid: "Invalid code",
+  },
+  verify: {
+    missing_or_expired: "Code expired, please request a new one",
+    already_used: "Code expired, please request a new one",
+    locked: "Too many attempts, please request a new code",
+    invalid: "Invalid code",
+  },
+};
 
 const accessPayloadFor = (actorType, actor) =>
   actorType === "admin" ? { email: actor.email } : { id: actor._id.toString() };
@@ -53,7 +70,7 @@ export const makeLogoutAllHandler = (actorType, getActorId) => async (req, res) 
   try {
     const actorId = getActorId(req);
     await revokeAllSessions({ actorType, actorId });
-    res.clearCookie(REFRESH_COOKIE_NAMES[actorType], { path: "/" });
+    res.clearCookie(REFRESH_COOKIE_NAMES[actorType], clearCookieOptions());
     res.json({ success: true, message: "Logged out of all sessions" });
   } catch (error) {
     res.json({ success: false, message: error.message });
@@ -180,11 +197,13 @@ export const makeChangePasswordHandler = (actorType, getActorId) => async (req, 
 export const makeForgotPasswordHandler = (actorType) => async (req, res) => {
   try {
     const Model = ACTOR_MODELS[actorType];
-    const email = req.body.email?.trim().toLowerCase();
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
     if (!email) return res.json({ success: false, message: "Email is required" });
 
     const actor = await Model.findOne({ email });
-    if (actor) {
+    // Past the per-account issuance cap we stay silent (same generic reply),
+    // so an attacker can't mint unlimited fresh codes with fresh guesses.
+    if (actor && (await canIssueOtp({ actorType, actorId: actor._id, purpose: "password_reset" }))) {
       const otp = generateOtp();
       await otpModel.create({
         actorType,
@@ -210,7 +229,13 @@ export const makeForgotPasswordHandler = (actorType) => async (req, res) => {
       message: "If an account exists for this email, a reset code has been sent.",
     });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    // Generic on purpose: an internal error message here would differ between
+    // existing and non-existing accounts and re-open user enumeration.
+    console.error("[OTP] forgot-password failed:", error.message);
+    res.json({
+      success: true,
+      message: "If an account exists for this email, a reset code has been sent.",
+    });
   }
 };
 
@@ -219,7 +244,7 @@ export const makeForgotPasswordHandler = (actorType) => async (req, res) => {
 export const makeResetPasswordHandler = (actorType) => async (req, res) => {
   try {
     const Model = ACTOR_MODELS[actorType];
-    const email = req.body.email?.trim().toLowerCase();
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const { otp, newPassword, confirmPassword } = req.body;
 
     if (!email || !otp || !newPassword || !confirmPassword) {
@@ -233,26 +258,17 @@ export const makeResetPasswordHandler = (actorType) => async (req, res) => {
       return res.json({ success: false, message: strength.message });
     }
 
-    const otpRecord = await otpModel
-      .findOne({ actorType, email, purpose: "password_reset", consumedAt: null })
-      .sort({ createdAt: -1 });
-
-    if (!otpRecord || otpRecord.expiresAt < new Date()) {
-      return res.json({ success: false, message: "Code expired or invalid, please request a new one" });
+    const verified = await verifyOtp({ filter: { actorType, email, purpose: "password_reset" }, code: otp });
+    if (!verified.ok) {
+      return res.json({ success: false, message: OTP_FAILURE_MESSAGES.reset[verified.reason] });
     }
-    if (otpRecord.attempts >= OTP_MAX_ATTEMPTS) {
-      return res.json({ success: false, message: "Too many attempts, please request a new code" });
-    }
-    if (hashOtp(otp) !== otpRecord.codeHash) {
-      otpRecord.attempts += 1;
-      await otpRecord.save();
-      return res.json({ success: false, message: "Invalid code" });
-    }
+    const otpRecord = verified.record; // already atomically consumed
 
     const actor = await Model.findById(otpRecord.actorId).select("+previousPasswords");
-    if (!actor) return res.json({ success: false, message: "Account not found" });
+    if (!actor) return res.json({ success: false, message: OTP_FAILURE_MESSAGES.reset.missing_or_expired });
 
     if (await isPasswordReused(actor, newPassword)) {
+      await releaseOtp(otpRecord); // let the code holder retry with a different password
       return res.json({
         success: false,
         message: "Please choose a password you haven't used recently",
@@ -260,8 +276,6 @@ export const makeResetPasswordHandler = (actorType) => async (req, res) => {
     }
 
     await applyNewPassword(actor, newPassword);
-    otpRecord.consumedAt = new Date();
-    await otpRecord.save();
     await revokeAllSessions({ actorType, actorId: actor._id });
 
     await logAction({
@@ -287,6 +301,9 @@ export const makeResetPasswordHandler = (actorType) => async (req, res) => {
 // Shared by the register flows (send immediately on signup when
 // EMAIL_VERIFICATION_REQUIRED=true) and the resend endpoint below.
 export const issueEmailVerificationOtp = async (actorType, actor) => {
+  if (!(await canIssueOtp({ actorType, actorId: actor._id, purpose: "email_verification" }))) {
+    throw new Error("Too many verification codes requested. Please try again later.");
+  }
   const otp = generateOtp();
   await otpModel.create({
     actorType,
@@ -327,24 +344,10 @@ export const makeVerifyEmailHandler = (actorType, getActorId) => async (req, res
     const { otp } = req.body;
     if (!otp) return res.json({ success: false, message: "Code is required" });
 
-    const otpRecord = await otpModel
-      .findOne({ actorType, actorId, purpose: "email_verification", consumedAt: null })
-      .sort({ createdAt: -1 });
-
-    if (!otpRecord || otpRecord.expiresAt < new Date()) {
-      return res.json({ success: false, message: "Code expired, please request a new one" });
+    const verified = await verifyOtp({ filter: { actorType, actorId, purpose: "email_verification" }, code: otp });
+    if (!verified.ok) {
+      return res.json({ success: false, message: OTP_FAILURE_MESSAGES.verify[verified.reason] });
     }
-    if (otpRecord.attempts >= OTP_MAX_ATTEMPTS) {
-      return res.json({ success: false, message: "Too many attempts, please request a new code" });
-    }
-    if (hashOtp(otp) !== otpRecord.codeHash) {
-      otpRecord.attempts += 1;
-      await otpRecord.save();
-      return res.json({ success: false, message: "Invalid code" });
-    }
-
-    otpRecord.consumedAt = new Date();
-    await otpRecord.save();
     await Model.findByIdAndUpdate(actorId, { emailVerified: true });
 
     res.json({ success: true, message: "Email verified" });

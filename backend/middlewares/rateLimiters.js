@@ -1,6 +1,7 @@
 import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
+import { redactUrl } from "../utils/logRedaction.js";
 
 // ============================================================
 // Identity / role resolution
@@ -66,7 +67,7 @@ const makeHandler = (label, friendlyMessage) => (req, res) => {
     actorType: role === "anonymous" ? "system" : role,
     actorLabel: key,
     action: AUDIT_ACTIONS.RATE_LIMIT_EXCEEDED,
-    target: { type: "endpoint", label: `${req.method} ${req.originalUrl}` },
+    target: { type: "endpoint", label: `${req.method} ${redactUrl(req.originalUrl)}` },
     status: "failure",
     reason: label,
   }).catch(() => {});

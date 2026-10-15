@@ -53,6 +53,8 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://curalink-frontend-5y9u.onrender.com
+      # Fails CLOSED: only the origins listed here may call the API from a browser.
+      # Add the admin app's origin too (comma-separated) — see docs/ADMIN_DEPLOYMENT.md.
       - key: CORS_ORIGIN
         value: https://curalink-frontend-5y9u.onrender.com
       - key: NODE_ENV

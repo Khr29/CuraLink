@@ -406,7 +406,7 @@ Never commit real secrets. All values below are placeholders.
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Payment processing |
 | `CURRENCY` | Currency code used for Razorpay orders (e.g. `INR`) |
 | `EMAIL_USER` / `EMAIL_PASS` | SMTP account used by Nodemailer for OTP & notification emails |
-| `CORS_ORIGIN` | Allowlisted origin(s) for the frontend/admin apps |
+| `CORS_ORIGIN` | Comma-separated allowlist of the frontend **and** admin origins. Fails closed: unset in production allows no cross-origin requests (localhost only in development). See `docs/ADMIN_DEPLOYMENT.md` |
 | `EMAIL_VERIFICATION_REQUIRED` | Toggle mandatory email verification on signup |
 | `COOKIE_SECURE` / `COOKIE_SAME_SITE` | Refresh-token cookie flags |
 | `DISABLE_RATE_LIMITING` | Disable rate limiting (dev only — never in production) |
