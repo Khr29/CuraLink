@@ -58,7 +58,18 @@ Without this, refreshing or deep-linking to e.g. `/doctor-dashboard` returns 404
 
 Note the URL Render assigns (e.g. `https://curalink-admin-xxxx.onrender.com`).
 
-## 2. Cookie settings on the backend (required for login to persist)
+## 2. Backend environment (cookies, and variables the code reads)
+
+Every variable the backend reads: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CLOUDINARY_API_KEY`,
+`CLOUDINARY_NAME`, `CLOUDINARY_SECRET_KEY`, `CORS_ORIGIN`, `COOKIE_SAME_SITE`, `COOKIE_SECURE`,
+`CURRENCY`, `DISABLE_RATE_LIMITING`, `EMAIL_PASS`, `EMAIL_USER`, `EMAIL_VERIFICATION_REQUIRED`,
+`FRONTEND_URL`, `JWT_SECRET`, `MONGODB_URI`, `NODE_ENV`, `PORT`, `RAZORPAY_KEY_ID`,
+`RAZORPAY_KEY_SECRET`. `MONGODB_URI` **must include the database name**
+(`mongodb+srv://<host>/<dbname>?<options>`); without it the backend uses the empty default
+database `test` and logs a `[CONFIG]` warning at startup. `CURRENCY` must be a 3-letter code
+(e.g. `INR`), or payments are refused.
+
+### Cookies (required for login to persist)
 
 `*.onrender.com` is on the Public Suffix List, so the frontend, admin and backend
 hosts are all **cross-site** to each other. The refresh-token cookie therefore needs:
@@ -69,9 +80,11 @@ hosts are all **cross-site** to each other. The refresh-token cookie therefore n
 | `COOKIE_SAME_SITE` | `none` |
 
 `render.yaml` leaves `COOKIE_SAME_SITE` as `sync: false` (set in the dashboard), and
-I cannot read the dashboard — **check it is `none`**. If it is unset it defaults to
+this repo cannot read the dashboard — **check it is `none`**. If it is unset it defaults to
 `lax`, and silent token refresh fails cross-site (users get logged out when the
-15-minute access token expires). With a custom domain where all apps share one
+15-minute access token expires). The code (`backend/utils/cookies.js`) forces `Secure`
+whenever `COOKIE_SAME_SITE=none`, because browsers drop an insecure `SameSite=None` cookie.
+`onrender.com` is on the Public Suffix List, which is why these hosts count as cross-site. With a custom domain where all apps share one
 registrable domain (e.g. `app.example.com`, `admin.example.com`, `api.example.com`),
 `lax` is fine.
 
@@ -86,7 +99,7 @@ CORS_ORIGIN=https://curalink-frontend-5y9u.onrender.com,https://<your-admin-host
 - Comma-separated, **exact origins**: scheme + host, no path, no trailing slash needed
   (a trailing slash is tolerated), `https://` not `http://`.
 - A bare `*` is ignored and allows nothing.
-- Saving the variable redeploys the backend.
+- Saving the variable restarts/redeploys the backend (choose "Save, rebuild, and deploy" if Render offers a choice), and the new value only applies after that.
 
 ## 4. Verify (from any terminal)
 

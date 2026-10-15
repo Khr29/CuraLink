@@ -18,12 +18,23 @@ export const REFRESH_COOKIE_NAMES = {
 // and the policy is testable. A browser only honours a clearing Set-Cookie
 // whose Secure/SameSite/Path match the original (and rejects SameSite=None
 // without Secure), so EVERY cookie write/clear must go through these.
-const cookieFlags = (env = process.env) => ({
-  httpOnly: true,
-  secure: env.COOKIE_SECURE ? env.COOKIE_SECURE === "true" : env.NODE_ENV === "production",
-  sameSite: env.COOKIE_SAME_SITE || "lax",
-  path: "/",
-});
+const cookieFlags = (env = process.env) => {
+  const sameSite = env.COOKIE_SAME_SITE || "lax";
+  return {
+    httpOnly: true,
+    // Browsers silently DROP a SameSite=None cookie that is not Secure, which
+    // would make every login fail to persist — so None always implies Secure,
+    // whatever COOKIE_SECURE says.
+    secure:
+      String(sameSite).toLowerCase() === "none"
+        ? true
+        : env.COOKIE_SECURE
+          ? env.COOKIE_SECURE === "true"
+          : env.NODE_ENV === "production",
+    sameSite,
+    path: "/",
+  };
+};
 
 export const refreshCookieOptions = (rememberMe, env = process.env) => ({
   ...cookieFlags(env),

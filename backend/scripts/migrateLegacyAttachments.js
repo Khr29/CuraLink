@@ -25,6 +25,7 @@ import mongoose from "mongoose";
 import { v2 as cloudinary } from "cloudinary";
 import connectDB from "../config/mongodb.js";
 import { planMigration } from "../utils/legacyAttachments.js";
+import { applyAssetToRecords } from "../utils/legacyAttachmentsDb.js";
 
 const apply = process.argv.includes("--apply");
 
@@ -59,19 +60,7 @@ const migrateAsset = async (collection, asset) => {
     }
     // Already authenticated by an earlier run: only the database step is outstanding.
   }
-  const set = { publicId: asset.publicId, resourceType: asset.resourceType, format: asset.format, url: "" };
-  const prefixed = (p) => Object.fromEntries(Object.entries(set).map(([k, v]) => [`${p}.$[a].${k}`, v]));
-  const live = await collection.updateMany(
-    { "attachments.url": asset.url },
-    { $set: prefixed("attachments") },
-    { arrayFilters: [{ "a.url": asset.url }] }
-  );
-  const versions = await collection.updateMany(
-    { "versions.snapshot.attachments.url": asset.url },
-    { $set: prefixed("versions.$[].snapshot.attachments") },
-    { arrayFilters: [{ "a.url": asset.url }] }
-  );
-  return live.modifiedCount + versions.modifiedCount;
+  return applyAssetToRecords(collection, asset);
 };
 
 const main = async () => {

@@ -51,6 +51,12 @@ services:
         sync: false
       - key: CURRENCY
         sync: false
+      # Gmail account + App Password used for OTP / receipt / notification email.
+      # Without them every email silently fails (utils/email.js swallows the error).
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
       - key: FRONTEND_URL
         value: https://curalink-frontend-5y9u.onrender.com
       # Fails CLOSED: only the origins listed here may call the API from a browser.

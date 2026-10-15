@@ -34,10 +34,9 @@
 // app.listen(port, () => console.log("Server Started", port))
 
 import express from "express";
-import cors from "cors";
 import "./config/loadEnv.js";
 import { getMissingAuthConfig } from "./utils/authConfig.js";
-import { buildCorsOptions } from "./utils/corsConfig.js";
+import { corsMiddleware } from "./utils/corsConfig.js";
 
 import connectDB from "./config/mongodb.js";
 import connectCloudinary from "./config/cloudinary.js";
@@ -95,7 +94,7 @@ app.use(cookieParser()); // reads the httpOnly refresh-token cookies
 // Fails closed: explicit allowlist from CORS_ORIGIN; with it unset, nothing is
 // allowed in production and only localhost origins in development. See
 // utils/corsConfig.js.
-app.use(cors(buildCorsOptions()));
+app.use(corsMiddleware());
 
 // General, role-tiered safety net against abuse/flooding — NOT the
 // security control for sensitive endpoints (those are the dedicated

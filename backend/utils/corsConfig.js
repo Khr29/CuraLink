@@ -1,3 +1,4 @@
+import cors from "cors";
 import { isDeployedEnvironment } from "../config/dbSafety.js";
 
 // CORS is combined with `credentials: true`, so reflecting an arbitrary
@@ -17,7 +18,7 @@ export const parseAllowedOrigins = (value) =>
   typeof value === "string"
     ? value
         .split(",")
-        .map(normalizeOrigin)
+        .map((o) => normalizeOrigin(o).toLowerCase()) // browsers send scheme/host lower-cased
         .filter((o) => o && o !== "*")
     : [];
 
@@ -42,3 +43,15 @@ export const buildCorsOptions = () => ({
   origin: corsOriginCallback,
   credentials: true,
 });
+
+// The `cors` package skips CORS handling (and so omits Vary) entirely for a
+// denied origin. The response still depends on the Origin header, so always
+// say so — otherwise a shared cache could serve a "no CORS headers" reply to
+// the allowed origin.
+export const corsMiddleware = () => {
+  const handler = cors(buildCorsOptions());
+  return (req, res, next) => {
+    res.vary("Origin");
+    handler(req, res, next);
+  };
+};
