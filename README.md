@@ -351,7 +351,7 @@ cd CuraLink
 cd backend
 npm install
 cp .env.example .env   # then fill in the values — see Environment Variables below
-npm run server          # nodemon, http://localhost:4000 by default
+npm run server          # node --watch (auto-restart), http://localhost:4000 by default
 ```
 
 Optionally seed demo data:
