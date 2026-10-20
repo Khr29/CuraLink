@@ -24,16 +24,16 @@ import "../config/loadEnv.js";
 import mongoose from "mongoose";
 import { v2 as cloudinary } from "cloudinary";
 import connectDB from "../config/mongodb.js";
+import { resolveCloudinaryConfig } from "../config/cloudinaryConfig.js";
 import { planMigration } from "../utils/legacyAttachments.js";
 import { applyAssetToRecords } from "../utils/legacyAttachmentsDb.js";
 
 const apply = process.argv.includes("--apply");
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_SECRET_KEY,
-});
+// Same fail-closed rule as the server: outside production only the
+// CLOUDINARY_DEV_* account is used (see config/cloudinaryConfig.js).
+const cloudinaryConfig = resolveCloudinaryConfig().config;
+cloudinary.config(cloudinaryConfig);
 
 const legacyElem = { url: { $nin: ["", null] }, publicId: { $in: ["", null] } };
 
@@ -71,7 +71,7 @@ const main = async () => {
     .project({ attachments: 1, "versions.snapshot.attachments": 1 })
     .toArray();
 
-  const { assets, skipped } = planMigration(records, { cloudName: process.env.CLOUDINARY_NAME });
+  const { assets, skipped } = planMigration(records, { cloudName: cloudinaryConfig.cloud_name });
   console.log(`[migrate] mode: ${apply ? "APPLY" : "DRY RUN (no changes)"}`);
   console.log(`[migrate] records with legacy attachments: ${records.length}`);
   console.log(`[migrate] unique assets to migrate: ${assets.length}`);
