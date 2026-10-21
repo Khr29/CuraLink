@@ -8,7 +8,7 @@ import doctorScheduleModel from "../models/doctorScheduleModel.js";
 import hospitalModel from "../models/hospitalModel.js";
 import { computeAvailableSlots, parseSlotDate, parseSlotTime } from "../utils/slotGenerator.js";
 import { nowIST, istCalendarDate } from "../utils/istTime.js";
-import { razorpayInstance } from "../utils/razorpayClient.js";
+import { razorpayInstance, isRazorpayConfigured } from "../utils/razorpayClient.js";
 import {
   toMinorUnits,
   getConfiguredCurrency,
@@ -747,6 +747,10 @@ const cancelAppointment = async (req, res) => {
 
 const paymentRazorpay = async (req, res) => {
   try {
+    if (!isRazorpayConfigured()) {
+      console.error("[PAYMENT] Razorpay keys are not configured; refusing to create an order.");
+      return res.json({ success: false, message: "Online payments are not available right now" });
+    }
     const { appointmentId } = req.body;
     if (!isValidObjectIdString(appointmentId)) {
       return res.json({ success: false, message: "Appointment Cancelled or not found" });
@@ -816,6 +820,10 @@ const paymentRazorpay = async (req, res) => {
 // }
 const verifyRazorpay = async (req, res) => {
   try {
+    if (!isRazorpayConfigured()) {
+      console.error("[PAYMENT] Razorpay keys are not configured; refusing to verify a payment.");
+      return res.json({ success: false, message: "Online payments are not available right now" });
+    }
     const { razorpay_order_id } = req.body;
     if (!isValidRazorpayOrderId(razorpay_order_id)) {
       return res.json({ success: false, message: "Payment verification failed" });
