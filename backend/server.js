@@ -57,6 +57,7 @@ import { createRequestLogger } from "./utils/logRedaction.js";
 import cookieParser from "cookie-parser";
 import { apiNotFound, errorHandler } from "./middlewares/errorHandlers.js";
 import { generalApiLimiter } from "./middlewares/rateLimiters.js";
+import { getMissingIntegrationConfig, getCookieAdvice } from "./utils/integrationConfig.js";
 
 // app config
 const app = express();
@@ -78,6 +79,14 @@ const missingAuthConfig = getMissingAuthConfig();
 if (missingAuthConfig.length) {
   console.error(`[CONFIG] Missing required auth configuration: ${missingAuthConfig.join(", ")}. Logins will fail until these are set.`);
 }
+
+// Same idea for integrations: the site boots without them, but say which
+// features will not work (names only).
+for (const { feature, names } of getMissingIntegrationConfig()) {
+  console.warn(`[CONFIG] ${feature} not configured, missing: ${names.join(", ")}.`);
+}
+const cookieAdvice = getCookieAdvice();
+if (cookieAdvice) console.warn(`[CONFIG] ${cookieAdvice}`);
 
 // connect services (parallel execution for speed)
 await Promise.all([connectDB(), connectCloudinary()]);
