@@ -33,28 +33,13 @@
 // export default AppContextProvider
 
 import { createContext, useMemo } from "react";
+import { calculateAge } from '../utils/calculateAge.js'
 
 export const AppContext = createContext();
 
 const AppContextProvider = (props) => {
 
-    const currency = '$';
-
-    // ✅ calculateAge optimized
-    const calculateAge = (dob) => {
-        const today = new Date();
-        const birthDate = new Date(dob);
-
-        let age = today.getFullYear() - birthDate.getFullYear();
-
-        // 🔥 more accurate (month/day check)
-        const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-        }
-
-        return age;
-    };
+    const currency = '₹';
 
     // ✅ months constant (fixed typo + no re-create)
     const months = useMemo(() => (

@@ -8,7 +8,7 @@ import { DoctorContext } from './context/DoctorContext'
 import { HospitalContext } from './context/HospitalContext'
 import { PharmacyContext } from './context/PharmacyContext'
 import PanelLayout from './components/PanelLayout'
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
 
 // Lazy loaded Admin Pages
@@ -234,6 +234,11 @@ const App = () => {
 
       <Route path="/pharmacy-settings" element={
         <ProtectedRoute token={pToken}><PanelLayout><PharmacySettings /></PanelLayout></ProtectedRoute>
+      } />
+
+      {/* Unknown URL -> the signed-in role's dashboard, or the login page */}
+      <Route path="*" element={
+        <Navigate to={aToken ? '/admin-dashboard' : dToken ? '/doctor-dashboard' : hToken ? '/hospital-dashboard' : pToken ? '/pharmacy-dashboard' : '/'} replace />
       } />
 
     </Routes>

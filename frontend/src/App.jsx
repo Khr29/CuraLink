@@ -39,6 +39,7 @@ const Login = lazy(() => import("./pages/Login"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const Register = lazy(() => import("./pages/Register"));
 const About = lazy(() => import("./pages/About"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 const Contact = lazy(() => import("./pages/Contact"));
 const MyProfile = lazy(() => import("./pages/MyProfile"));
 const MyAppointments = lazy(() => import("./pages/MyAppointments"));
@@ -127,6 +128,9 @@ const App = () => {
                 <Route path="/register" element={<Register />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
+
+                {/* Anything above that did not match */}
+                <Route path="*" element={<NotFound />} />
 
               </Routes>
 

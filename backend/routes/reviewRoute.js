@@ -21,8 +21,12 @@ import authAdmin from "../middlewares/authAdmin.js";
 import authDoctor from "../middlewares/authDoctor.js";
 import authHospital from "../middlewares/authHospital.js";
 import { reviewLimiter } from "../middlewares/rateLimiters.js";
+import { objectIdParam } from "../middlewares/validateObjectId.js";
 
 const reviewRouter = express.Router();
+
+// Malformed ids are rejected with a 400 before any handler/query runs.
+for (const name of ["reviewId", "doctorId", "hospitalId"]) reviewRouter.param(name, objectIdParam);
 
 // =====================================
 // Patient

@@ -660,7 +660,7 @@ const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency, o
         {item.payment ? 'Online' : 'Cash'}
       </span>
 
-      <span style={{ color: '#475569', fontWeight: 500 }}>{item.userData?.dob ? calculateAge(item.userData.dob) : '—'}</span>
+      <span style={{ color: '#475569', fontWeight: 500 }}>{calculateAge(item.userData?.dob) ?? '—'}</span>
 
       <div>
         <p style={{ color: '#0F172A', fontWeight: 600, fontSize: 13, margin: 0 }}>{slotDateFormat(item.slotDate)}</p>

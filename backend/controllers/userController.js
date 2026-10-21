@@ -18,6 +18,7 @@ import {
 } from "../utils/payments.js";
 import { sendEmail } from "../utils/email.js";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
+import { readLoginCredentials } from "../utils/loginInput.js";
 import { validatePasswordStrength } from "../utils/passwordSecurity.js";
 import { sanitizeText, isSafeName } from "../utils/sanitize.js";
 import { toPatientAppointmentView } from "../utils/publicProjections.js";
@@ -243,12 +244,13 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const email = req.body.email?.trim().toLowerCase();
-    const { password } = req.body;
-
-    if (!email || !password) {
+    // Plain non-empty strings only — an object email/password must never reach
+    // the query (see utils/loginInput.js).
+    const credentials = readLoginCredentials(req.body);
+    if (!credentials) {
       return res.json({ success: false, message: "Missing Details" });
     }
+    const { email, password } = credentials;
 
     const user = await userModel.findOne({ email });
     if (!user) {

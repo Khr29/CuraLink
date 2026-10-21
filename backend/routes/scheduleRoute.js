@@ -8,8 +8,12 @@ import {
 import authDoctor from "../middlewares/authDoctor.js";
 import authHospital from "../middlewares/authHospital.js";
 import authAdmin from "../middlewares/authAdmin.js";
+import { objectIdParam } from "../middlewares/validateObjectId.js";
 
 const scheduleRouter = express.Router();
+
+// Malformed ids are rejected with a 400 before any handler/query runs.
+scheduleRouter.param("doctorId", objectIdParam);
 
 // Doctor / owning hospital / admin may read or write the raw schedule —
 // which actor is calling is resolved from whichever auth header is

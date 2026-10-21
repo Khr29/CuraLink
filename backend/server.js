@@ -55,7 +55,7 @@ import helmet from "helmet";
 import compression from "compression";
 import { createRequestLogger } from "./utils/logRedaction.js";
 import cookieParser from "cookie-parser";
-import multer from "multer";
+import { apiNotFound, errorHandler } from "./middlewares/errorHandlers.js";
 import { generalApiLimiter } from "./middlewares/rateLimiters.js";
 
 // app config
@@ -120,17 +120,9 @@ app.use("/api/stats", statsRouter);
 app.use("/api/medical-records", medicalRecordRouter);
 app.use("/api/schedule", scheduleRouter);
 
-// global error handler (reliability)
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  // Multer's own errors (e.g. LIMIT_FILE_SIZE) don't set .status — surface
-  // them as 400s instead of a generic 500.
-  const status = err.status || (err instanceof multer.MulterError ? 400 : 500);
-  res.status(status).json({
-    success: false,
-    message: err.message || "Internal Server Error",
-  });
-});
+// unknown API paths -> JSON 404, then the global error handler (reliability)
+app.use("/api", apiNotFound);
+app.use(errorHandler);
 
 // handle unhandled promise rejections
 process.on("unhandledRejection", (err) => {

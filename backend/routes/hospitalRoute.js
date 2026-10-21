@@ -32,6 +32,7 @@ import {
 import upload from "../middlewares/multer.js";
 import authHospital from "../middlewares/authHospital.js";
 import authAdmin from "../middlewares/authAdmin.js";
+import { objectIdParam } from "../middlewares/validateObjectId.js";
 import {
   makeRefreshTokenHandler,
   makeLogoutAllHandler,
@@ -45,6 +46,9 @@ import {
 import { loginLimiter, forgotPasswordLimiter, otpVerifyLimiter } from "../middlewares/rateLimiters.js";
 
 const hospitalRouter = express.Router();
+
+// Malformed ids are rejected with a 400 before any handler/query runs.
+for (const name of ["id", "doctorId", "patientId"]) hospitalRouter.param(name, objectIdParam);
 const getHospitalId = (req) => req.hospitalId;
 
 // =====================================

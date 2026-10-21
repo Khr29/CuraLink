@@ -331,7 +331,7 @@ const AppointmentRow = ({ item, index, calculateAge, slotDateFormat, currency, o
           padding: '4px 10px', 
           borderRadius: 99 
         }}>
-          {calculateAge(patient)} yrs
+          {calculateAge(patient.dob) !== null ? `${calculateAge(patient.dob)} yrs` : '—'}
         </span>
       </div>
 
