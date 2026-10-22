@@ -14,9 +14,11 @@ import { isDeployedEnvironment } from "./dbSafety.js";
 // fail locally (no credentials, no network write). Values are never logged.
 export const resolveCloudinaryConfig = (env = process.env) => {
   if (isDeployedEnvironment(env)) {
+    // "configured" only when all three are set: with any missing the SDK would
+    // fail every upload with a raw "Must supply api_key" style message.
     return {
       mode: "production",
-      configured: true,
+      configured: Boolean(env.CLOUDINARY_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_SECRET_KEY),
       config: {
         cloud_name: env.CLOUDINARY_NAME,
         api_key: env.CLOUDINARY_API_KEY,

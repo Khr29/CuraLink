@@ -101,11 +101,15 @@ const MyAppointments = () => {
             { headers: { token } }
           );
           if (data.success) {
+            toast.success("Payment successful");
             getUserAppointments();
             navigate("/my-appointments");
+          } else {
+            toast.error(data.message || "Payment could not be verified");
           }
         } catch (error) {
           console.error(error);
+          toast.error(error.response?.data?.message || error.message);
         }
       },
     };
@@ -121,8 +125,10 @@ const MyAppointments = () => {
         { headers: { token } }
       );
       if (data.success) initPay(data.order);
+      else toast.error(data.message || "Could not start the payment");
     } catch (error) {
       console.error(error);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 

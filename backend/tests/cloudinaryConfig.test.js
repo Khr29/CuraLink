@@ -55,7 +55,7 @@ test("connectCloudinary leaves the SDK without credentials in development", asyn
     assert.equal(c.api_key, undefined);
     assert.equal(c.api_secret, undefined);
     // Fails locally for lack of credentials; no network request is made.
-    await assert.rejects(async () => cloudinary.uploader.upload("nonexistent.png"), /api_key|cloud_name/i);
+    await assert.rejects(async () => cloudinary.uploader.upload("nonexistent.png"), /api_key|cloud_name|not configured/i);
   } finally {
     console.warn = savedWarn;
     for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
@@ -75,5 +75,27 @@ test("connectCloudinary applies production credentials in production", async () 
     for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
     Object.assign(process.env, saved);
     cloudinary.config({ cloud_name: undefined, api_key: undefined, api_secret: undefined });
+  }
+});
+
+test("production with a missing Cloudinary variable is unconfigured", () => {
+  const { CLOUDINARY_SECRET_KEY, ...partial } = PROD;
+  assert.equal(resolveCloudinaryConfig({ NODE_ENV: "production", ...partial }).configured, false);
+  assert.equal(resolveCloudinaryConfig({ NODE_ENV: "production", ...PROD }).configured, true);
+});
+
+test("unconfigured uploads fail with a clear message, not the SDK's raw one", async () => {
+  const saved = { ...process.env };
+  const savedWarn = console.warn;
+  console.warn = () => {};
+  try {
+    Object.assign(process.env, { NODE_ENV: "production" });
+    for (const k of ["CLOUDINARY_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_SECRET_KEY"]) delete process.env[k];
+    await connectCloudinary();
+    await assert.rejects(cloudinary.uploader.upload("x.png"), /Image uploads are not configured/);
+  } finally {
+    console.warn = savedWarn;
+    for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
+    Object.assign(process.env, saved);
   }
 });
