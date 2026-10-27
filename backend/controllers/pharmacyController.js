@@ -1,4 +1,7 @@
+import mongoose from "mongoose";
 import pharmacyModel from "../models/pharmacyModel.js";
+import medicalRecordModel from "../models/medicalRecordModel.js";
+import { isObjectIdString } from "../middlewares/validateObjectId.js";
 import bcrypt from "bcrypt";
 import { logAction, AUDIT_ACTIONS } from "../utils/auditLog.js";
 import { issueSession, revokeSession } from "../utils/session.js";
@@ -208,38 +211,103 @@ const changePharmacySelfPassword = async (req, res) => {
 // =====================================
 
 // =============================
+// Admin input helpers
+// =============================
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const PHONE_RE = /^[0-9+()\-\s]{7,20}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ADDRESS_FIELDS = ["line1", "line2", "city", "state", "country", "pincode"];
+
+// Returns { error } or { value } containing only trimmed, length-capped
+// strings. `partial` skips the required checks so create and update share
+// the same rules.
+const parsePharmacyInput = (body, { partial = false } = {}) => {
+  const value = {};
+  const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : null);
+
+  if (body.name !== undefined || !partial) {
+    const name = str(body.name, 120);
+    if (!name) return { error: "Pharmacy name is required" };
+    value.name = name;
+  }
+  if (body.email !== undefined || !partial) {
+    const email = str(body.email, 254)?.toLowerCase();
+    if (!email || !EMAIL_RE.test(email)) return { error: "A valid email is required" };
+    value.email = email;
+  }
+  if (body.licenseNumber !== undefined) {
+    const lic = str(body.licenseNumber, 60);
+    if (lic === null) return { error: "Invalid license number" };
+    value.licenseNumber = lic;
+  }
+  if (body.phone !== undefined) {
+    const phone = str(body.phone, 20);
+    if (phone === null || (phone && !PHONE_RE.test(phone))) return { error: "Invalid phone number" };
+    value.phone = phone;
+  }
+  if (body.address !== undefined) {
+    let addr = body.address;
+    if (typeof addr === "string") {
+      try {
+        addr = JSON.parse(addr);
+      } catch {
+        return { error: "Invalid address" };
+      }
+    }
+    if (!addr || typeof addr !== "object" || Array.isArray(addr)) return { error: "Invalid address" };
+    value.address = {};
+    for (const f of ADDRESS_FIELDS) {
+      if (addr[f] !== undefined) value.address[f] = str(addr[f], 120) ?? "";
+    }
+  }
+  return { value };
+};
+
+// A non-empty license number identifies one pharmacy. Compared
+// case-insensitively; empty values are never treated as duplicates.
+const findDuplicate = async ({ email, licenseNumber }, excludeId) => {
+  const or = [];
+  if (email) or.push({ email });
+  if (licenseNumber) or.push({ licenseNumber: new RegExp(`^${escapeRegex(licenseNumber)}$`, "i") });
+  if (!or.length) return null;
+  const query = { $or: or };
+  if (excludeId) query._id = { $ne: excludeId };
+  const dup = await pharmacyModel.findOne(query).select("email licenseNumber");
+  if (!dup) return null;
+  return dup.email === email
+    ? "A pharmacy with this email already exists"
+    : "A pharmacy with this license number already exists";
+};
+
+const readPaging = (query) => ({
+  page: Math.max(parseInt(query.page, 10) || 1, 1),
+  limit: Math.min(Math.max(parseInt(query.limit, 10) || 10, 1), 100),
+});
+
+// =============================
 // Add Pharmacy (authAdmin)
 // =============================
 const addPharmacy = async (req, res) => {
   try {
-    const { name, email, password, licenseNumber, phone, address } = req.body;
+    const parsed = parsePharmacyInput(req.body || {});
+    if (parsed.error) return res.json({ success: false, message: parsed.error });
 
-    if (!name || !email || !password) {
+    const { password } = req.body;
+    if (typeof password !== "string" || !password) {
       return res.json({ success: false, message: "Name, email and password are required" });
     }
-
     const strength = validatePasswordStrength(password);
     if (!strength.valid) {
       return res.json({ success: false, message: strength.message });
     }
 
-    const exists = await pharmacyModel.findOne({ email: email.trim().toLowerCase() });
-    if (exists) {
-      return res.json({ success: false, message: "Pharmacy already exists" });
-    }
+    const duplicate = await findDuplicate(parsed.value);
+    if (duplicate) return res.json({ success: false, message: duplicate });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const pharmacy = new pharmacyModel({
-      name,
-      email: email.trim().toLowerCase(),
-      password: hashedPassword,
-      licenseNumber: licenseNumber || "",
-      phone: phone || "",
-      address: address ? (typeof address === "string" ? JSON.parse(address) : address) : undefined,
-    });
-
+    const pharmacy = new pharmacyModel({ ...parsed.value, password: hashedPassword });
     await pharmacy.save();
 
     await logAction({
@@ -251,56 +319,111 @@ const addPharmacy = async (req, res) => {
       status: "success",
     });
 
-    res.json({ success: true, message: "Pharmacy created successfully" });
+    res.json({ success: true, message: "Pharmacy created successfully", pharmacyId: pharmacy._id });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    res.json({ success: false, message: "Could not create pharmacy" });
   }
 };
 
 // =============================
-// Get All Pharmacies (authAdmin)
+// Get All Pharmacies (authAdmin) — search, status filter, pagination.
+// `counts` is always the unfiltered total/active/inactive split.
 // =============================
 const getAllPharmacies = async (req, res) => {
   try {
-    const pharmacies = await pharmacyModel.find({}).select("-password");
-    res.json({ success: true, pharmacies });
+    const { page, limit } = readPaging(req.query);
+    const { status, search } = req.query;
+
+    const filter = {};
+    if (status === "active") filter.active = true;
+    else if (status === "inactive") filter.active = false;
+
+    const term = typeof search === "string" ? search.trim().slice(0, 100) : "";
+    if (term) {
+      const rx = new RegExp(escapeRegex(term), "i");
+      filter.$or = [{ name: rx }, { email: rx }, { licenseNumber: rx }, { phone: rx }, { "address.city": rx }];
+    }
+
+    const [pharmacies, total, activeCount, allCount] = await Promise.all([
+      pharmacyModel.find(filter).select("-password").sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+      pharmacyModel.countDocuments(filter),
+      pharmacyModel.countDocuments({ active: true }),
+      pharmacyModel.countDocuments({}),
+    ]);
+
+    res.json({
+      success: true,
+      pharmacies,
+      pagination: { page, limit, total, pages: Math.max(Math.ceil(total / limit), 1) },
+      counts: { total: allCount, active: activeCount, inactive: allCount - activeCount },
+    });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    res.json({ success: false, message: "Could not load pharmacies" });
   }
 };
 
 // =============================
-// Update Pharmacy (authAdmin)
+// Get One Pharmacy (authAdmin)
+// =============================
+const getPharmacyById = async (req, res) => {
+  try {
+    const pharmacy = await pharmacyModel.findById(req.params.id).select("-password");
+    if (!pharmacy) return res.json({ success: false, message: "Pharmacy not found" });
+    res.json({ success: true, pharmacy });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: "Could not load pharmacy" });
+  }
+};
+
+// =============================
+// Update Pharmacy (authAdmin) — whitelisted fields only. `active` has its
+// own endpoint; email/license changes are re-checked for duplicates.
 // =============================
 const updatePharmacy = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = { ...req.body };
+    const pharmacy = await pharmacyModel.findById(id);
+    if (!pharmacy) return res.json({ success: false, message: "Pharmacy not found" });
 
-    if (updateData.password) {
-      const strength = validatePasswordStrength(updateData.password);
-      if (!strength.valid) {
-        return res.json({ success: false, message: strength.message });
-      }
-      const salt = await bcrypt.genSalt(10);
-      updateData.password = await bcrypt.hash(updateData.password, salt);
+    const parsed = parsePharmacyInput(req.body || {}, { partial: true });
+    if (parsed.error) return res.json({ success: false, message: parsed.error });
+    const updateData = parsed.value;
+
+    const duplicate = await findDuplicate(
+      { email: updateData.email, licenseNumber: updateData.licenseNumber },
+      id
+    );
+    if (duplicate) return res.json({ success: false, message: duplicate });
+
+    const changedFields = Object.keys(updateData);
+
+    if (req.body.password) {
+      const strength = validatePasswordStrength(req.body.password);
+      if (!strength.valid) return res.json({ success: false, message: strength.message });
+      updateData.password = await bcrypt.hash(req.body.password, await bcrypt.genSalt(10));
       updateData.passwordChangedAt = new Date();
-    } else {
-      delete updateData.password;
     }
 
-    if (updateData.address && typeof updateData.address === "string") {
-      updateData.address = JSON.parse(updateData.address);
-    }
+    await pharmacyModel.findByIdAndUpdate(id, { $set: updateData });
 
-    await pharmacyModel.findByIdAndUpdate(id, updateData);
+    await logAction({
+      req,
+      actorType: "admin",
+      actorLabel: req.adminEmail || "",
+      action: AUDIT_ACTIONS.PHARMACY_UPDATED,
+      target: { type: "pharmacy", id, label: updateData.name || pharmacy.name },
+      // Field names only — never values.
+      newValue: { fields: changedFields, passwordReset: Boolean(updateData.password) },
+      status: "success",
+    });
 
     res.json({ success: true, message: "Pharmacy updated successfully" });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    res.json({ success: false, message: "Could not update pharmacy" });
   }
 };
 
@@ -331,7 +454,105 @@ const changePharmacyStatus = async (req, res) => {
     res.json({ success: true, message: "Pharmacy status updated" });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    res.json({ success: false, message: "Could not update pharmacy status" });
+  }
+};
+
+// =============================
+// Dispensing history for one pharmacy (authAdmin). Reads the append-only
+// medicalRecord.dispensingRecords ledger, so only confirmed dispenses
+// appear. No patient/doctor identity is returned — the prescription ID is
+// the reference an admin can look up on the Prescriptions page.
+// =============================
+const getPharmacyDispensingHistory = async (req, res) => {
+  try {
+    const pharmacyId = new mongoose.Types.ObjectId(req.params.id);
+    const { page, limit } = readPaging(req.query);
+
+    const rows = await medicalRecordModel.aggregate([
+      { $match: { "dispensingRecords.pharmacyId": pharmacyId } },
+      { $unwind: "$dispensingRecords" },
+      { $match: { "dispensingRecords.pharmacyId": pharmacyId } },
+      { $sort: { "dispensingRecords.dispensedAt": -1 } },
+      {
+        $facet: {
+          items: [
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            {
+              $project: {
+                _id: 0,
+                prescriptionId: 1,
+                medicineName: "$dispensingRecords.medicineName",
+                quantityDispensed: "$dispensingRecords.quantityDispensed",
+                notes: "$dispensingRecords.notes",
+                dispensedAt: "$dispensingRecords.dispensedAt",
+              },
+            },
+          ],
+          total: [{ $count: "n" }],
+        },
+      },
+    ]);
+
+    const total = rows[0]?.total[0]?.n || 0;
+    res.json({
+      success: true,
+      history: rows[0]?.items || [],
+      pagination: { page, limit, total, pages: Math.max(Math.ceil(total / limit), 1) },
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: "Could not load dispensing history" });
+  }
+};
+
+// =============================
+// Aggregated stats (authAdmin): pharmacy counts plus dispensing activity,
+// overall or for one pharmacy (?pharmacyId=).
+// =============================
+const getPharmacyAdminStats = async (req, res) => {
+  try {
+    const match = {};
+    if (req.query.pharmacyId !== undefined) {
+      if (!isObjectIdString(req.query.pharmacyId)) {
+        return res.json({ success: false, message: "Invalid pharmacy id" });
+      }
+      match.pharmacyId = new mongoose.Types.ObjectId(req.query.pharmacyId);
+    }
+
+    const [total, active, dispensing] = await Promise.all([
+      pharmacyModel.countDocuments({}),
+      pharmacyModel.countDocuments({ active: true }),
+      medicalRecordModel.aggregate([
+        { $unwind: "$dispensingRecords" },
+        { $replaceRoot: { newRoot: { $mergeObjects: ["$dispensingRecords", { recordId: "$_id" }] } } },
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            events: { $sum: 1 },
+            units: { $sum: "$quantityDispensed" },
+            prescriptions: { $addToSet: "$recordId" },
+          },
+        },
+      ]),
+    ]);
+
+    res.json({
+      success: true,
+      stats: {
+        total,
+        active,
+        inactive: total - active,
+        dispensingEvents: dispensing[0]?.events || 0,
+        unitsDispensed: dispensing[0]?.units || 0,
+        prescriptionsServed: dispensing[0]?.prescriptions.length || 0,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: "Could not load pharmacy stats" });
   }
 };
 
@@ -345,4 +566,7 @@ export {
   getAllPharmacies,
   updatePharmacy,
   changePharmacyStatus,
+  getPharmacyById,
+  getPharmacyDispensingHistory,
+  getPharmacyAdminStats,
 };

@@ -148,6 +148,16 @@ const AdminSidebar = () => {
       },
 
       // -------------------------
+      // Pharmacy Management
+      // -------------------------
+
+      {
+        name: 'Pharmacies',
+        path: '/admin-pharmacies',
+        icon: assets.list_icon
+      },
+
+      // -------------------------
       // Audit
       // -------------------------
 

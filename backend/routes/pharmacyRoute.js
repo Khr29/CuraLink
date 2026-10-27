@@ -9,9 +9,13 @@ import {
   getAllPharmacies,
   updatePharmacy,
   changePharmacyStatus,
+  getPharmacyById,
+  getPharmacyDispensingHistory,
+  getPharmacyAdminStats,
 } from "../controllers/pharmacyController.js";
 import authPharmacy from "../middlewares/authPharmacy.js";
 import authAdmin from "../middlewares/authAdmin.js";
+import { objectIdParam } from "../middlewares/validateObjectId.js";
 import {
   makeRefreshTokenHandler,
   makeLogoutAllHandler,
@@ -23,6 +27,7 @@ import {
 import { loginLimiter, forgotPasswordLimiter, otpVerifyLimiter } from "../middlewares/rateLimiters.js";
 
 const pharmacyRouter = express.Router();
+pharmacyRouter.param("id", objectIdParam);
 const getPharmacyId = (req) => req.pharmacyId;
 
 // =====================================
@@ -57,6 +62,9 @@ pharmacyRouter.post("/self/password", authPharmacy, changePharmacySelfPassword);
 
 pharmacyRouter.post("/add", authAdmin, addPharmacy);
 pharmacyRouter.get("/list", authAdmin, getAllPharmacies);
+pharmacyRouter.get("/stats", authAdmin, getPharmacyAdminStats);
+pharmacyRouter.get("/detail/:id", authAdmin, getPharmacyById);
+pharmacyRouter.get("/history/:id", authAdmin, getPharmacyDispensingHistory);
 pharmacyRouter.put("/update/:id", authAdmin, updatePharmacy);
 pharmacyRouter.patch("/status/:id", authAdmin, changePharmacyStatus);
 

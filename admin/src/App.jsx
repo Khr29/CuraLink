@@ -25,6 +25,7 @@ const DoctorReviews = lazy(() => import('./pages/Admin/DoctorReviews'))
 const HospitalReviews = lazy(() => import('./pages/Admin/HospitalReviews'))
 const AuditLogs = lazy(() => import('./pages/Admin/AuditLogs'))
 const AdminPrescriptions = lazy(() => import('./pages/Admin/Prescriptions'))
+const AdminPharmacies = lazy(() => import('./pages/Admin/Pharmacies'))
 
 // Lazy loaded Doctor Pages
 const DoctorDashboard = lazy(() => import('./pages/Doctor/DoctorDashboard'))
@@ -123,6 +124,10 @@ const App = () => {
 
       <Route path="/user-list" element={
         <ProtectedRoute token={aToken}><PanelLayout><UsersList /></PanelLayout></ProtectedRoute>
+      } />
+
+      <Route path="/admin-pharmacies" element={
+        <ProtectedRoute token={aToken}><PanelLayout><AdminPharmacies /></PanelLayout></ProtectedRoute>
       } />
 
       <Route path="/admin-prescriptions" element={

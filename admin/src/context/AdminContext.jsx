@@ -572,6 +572,25 @@ const changeHospitalStatus = async (hospitalId) => {
     }, [aToken])
 
 
+    // ✅ PHARMACY MANAGEMENT — thin wrappers; callers handle toasts/results.
+    // Each resolves to the backend's { success, message, ... } body, or a
+    // failure body if the request itself errors.
+    const pharmacyRequest = useCallback(async (method, path, payload, params) => {
+        try {
+            const { data } = await axios({
+                method,
+                url: backendUrl + '/api/pharmacy' + path,
+                data: payload,
+                params,
+                headers: config.headers,
+            })
+            return data
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message || error.message }
+        }
+    }, [aToken])
+
+
     const exportAuditLogs = async (params = {}) => {
         try {
             const response = await axios.get(
@@ -762,6 +781,9 @@ const changeHospitalStatus = async (hospitalId) => {
     prescriptions,
     prescriptionsPagination,
     getAllPrescriptions,
+
+    // Pharmacy management
+    pharmacyRequest,
 
     // Doctor <-> Hospital Association
     doctorRequests,
